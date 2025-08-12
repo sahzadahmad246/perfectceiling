@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
+import Image from "next/image";
 
 export default async function ServicesPage() {
   const services = await prisma.service.findMany({ 
@@ -21,8 +22,19 @@ export default async function ServicesPage() {
         {services.map((s) => (
           <Card
             key={s.id}
-            className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white"
+            className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white overflow-hidden"
           >
+            {s.imageUrl ? (
+              <div className="relative h-40 w-full">
+                <Image
+                  src={s.imageUrl}
+                  alt={s.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </div>
+            ) : null}
             <CardContent className="p-8">
               <div className="space-y-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">

@@ -3,7 +3,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -26,7 +26,7 @@ export default function TermsPage() {
         <Button onClick={add}>Add</Button>
       </div>
       <div className="space-y-2">
-        {(data?.terms ?? []).map((t: any) => (
+        {(data?.terms ?? []).map((t: { id: string; content: string }) => (
           <Card key={t.id} className="p-3">
             <CardContent className="p-0">
               <div className="text-sm text-gray-600">{t.content}</div>

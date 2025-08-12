@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, MapPin, Mail, Clock } from "lucide-react";
+import { Phone, MapPin, Clock } from "lucide-react";
 
 export default async function ContactPage() {
   const settings = await prisma.businessProfile.findFirst().catch(() => null);

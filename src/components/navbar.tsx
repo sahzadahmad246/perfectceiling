@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import type { Session } from "next-auth"
+import type { Session, NextAuthOptions } from "next-auth"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
 import { User, LogOut, LayoutDashboard, Menu } from "lucide-react"
 
 export default async function Navbar() {
-  const session: Session | null = await getServerSession(authOptions as any)
+  const session: Session | null = await getServerSession(authOptions as NextAuthOptions)
 
   return (
     <header className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 shadow-sm">

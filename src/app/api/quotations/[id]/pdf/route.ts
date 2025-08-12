@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { generateQuotationPdf } from "@/lib/pdf";
-import { Image as PdfImage } from "@react-pdf/renderer";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const quotation = await prisma.quotation.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { items: true },
   });
   if (!quotation) return Response.json({ error: "Not found" }, { status: 404 });
@@ -42,7 +42,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     },
   });
 
-  return new Response(pdfBuffer, {
+  const body = new Uint8Array(pdfBuffer);
+  return new Response(body, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename=quotation-${quotation.id}.pdf`,

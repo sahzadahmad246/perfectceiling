@@ -26,16 +26,19 @@ export default function TestimonialsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Testimonials</h1>
-      <div className="flex gap-2">
-        <Input placeholder="Author Name" value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} />
-        <Input className="flex-1" placeholder="Testimonial Content" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+      <div className="flex flex-col md:flex-row gap-2">
+        <Input placeholder="Author name" value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} />
+        <Input className="flex-1" placeholder="Message" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
         <Button onClick={add}>Add</Button>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        {(data?.testimonials ?? []).map((t: any) => (
+        {(data?.testimonials ?? []).map((t: { id: string; authorName: string; content: string; createdAt?: string | Date }) => (
           <Card key={t.id} className="p-3 flex items-start justify-between gap-3">
             <CardContent className="p-0">
               <CardTitle>{t.authorName}</CardTitle>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ""}
+              </div>
               <div className="text-sm text-gray-600 mt-1">{t.content}</div>
             </CardContent>
             <Button variant="destructive" onClick={() => remove(t.id)}>Delete</Button>

@@ -20,11 +20,7 @@ export default function RootLayout({
         {showNavbar && <Navbar />}
         <main className="max-w-6xl mx-auto w-full p-4 py-8">{children}</main>
         <Toaster />
-        <footer className="border-t bg-white/80 backdrop-blur">
-          <div className="max-w-6xl mx-auto p-6 text-sm text-gray-500 text-center">
-            © {new Date().getFullYear()} Perfect Ceiling. All rights reserved.
-          </div>
-        </footer>
+        
       </body>
     </html>
   );
