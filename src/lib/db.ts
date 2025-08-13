@@ -1,16 +1,25 @@
-import { prisma } from "./prisma";
+import mongoose from "mongoose";
 
-type InformationSchemaRow = { table_name: string };
+declare global {
+  // eslint-disable-next-line no-var
+  var __mongooseConnection: Promise<typeof mongoose> | undefined;
+}
 
-export async function getExistingTables(): Promise<Set<string>> {
-  try {
-    const rows = (await prisma.$queryRawUnsafe(
-      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('BusinessProfile','Service','Testimonial','Quotation','QuotationItem','User','Account','Session','VerificationToken')"
-    )) as InformationSchemaRow[];
-    return new Set(rows.map((r) => r.table_name));
-  } catch {
-    return new Set();
+export async function connectToDatabase(): Promise<typeof mongoose> {
+  if (global.__mongooseConnection) {
+    return global.__mongooseConnection;
   }
+
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("MONGODB_URI is not set in environment variables");
+  }
+
+  global.__mongooseConnection = mongoose.connect(uri, {
+    bufferCommands: false,
+  });
+
+  return global.__mongooseConnection;
 }
 
 

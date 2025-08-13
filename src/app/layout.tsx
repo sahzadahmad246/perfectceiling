@@ -1,26 +1,39 @@
-"use client";
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Navbar from "@/components/Navbar";
+import Providers from "@/components/Providers";
 
-import React from "react";
-import Navbar from "@/components/navbar";
-import { usePathname } from "next/navigation";
-import { Toaster } from "sonner";
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Perfect Ceiling",
+    template: "%s | Perfect Ceiling",
+  },
+  description: "Premium ceiling services and solutions.",
+};
+
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-
-  // Hide Navbar if pathname starts with '/dashboard'
-  const showNavbar = !pathname.startsWith("/dashboard");
-
+}>) {
   return (
     <html lang="en">
-      <body className="min-h-screen grid grid-rows-[auto_1fr_auto] bg-gray-50/30">
-        {showNavbar && <Navbar />}
-        <main className="max-w-6xl mx-auto w-full p-4 py-8">{children}</main>
-        <Toaster />
-        
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );
