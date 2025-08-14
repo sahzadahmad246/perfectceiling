@@ -4,21 +4,33 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/db";
 import { User } from "@/models/User";
 import { uploadImageBuffer } from "@/lib/cloudinary";
+import { Types } from "mongoose";
 
 export const runtime = "nodejs";
+
+interface UserUpdateFields {
+  name?: string;
+  profilePicUrl?: string;
+  profilePicPublicId?: string;
+}
 
 export async function POST(req: NextRequest) {
   // handled via file APIs; run on Node runtime
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
   await connectToDatabase();
 
   const formData = await req.formData();
   const name = formData.get("name") as string | null;
   const file = formData.get("file") as File | null;
 
-  const update: any = {};
-  if (name !== null && name !== undefined) update.name = name;
+  const update: UserUpdateFields = {};
+  if (name !== null && name !== undefined) {
+    update.name = name;
+  }
 
   if (file) {
     const arrayBuffer = await file.arrayBuffer();
@@ -35,7 +47,7 @@ export async function POST(req: NextRequest) {
   ).lean();
 
   return NextResponse.json({
-    id: user?._id.toString(),
+    id: user ? (user._id as Types.ObjectId).toString() : null,
     name: user?.name,
     email: user?.email,
     role: user?.role,
@@ -43,5 +55,3 @@ export async function POST(req: NextRequest) {
     profilePicPublicId: user?.profilePicPublicId,
   });
 }
-
-
