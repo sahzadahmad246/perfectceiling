@@ -1,7 +1,6 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { signIn } from "next-auth/react"
 import { useState } from "react"
@@ -10,6 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Edit2, User, Mail, Camera, Save, LogIn } from "lucide-react"
+
+// Define the User interface
+interface User {
+  name: string
+  email: string
+  profilePicUrl?: string
+}
 
 async function fetchUser() {
   const res = await fetch("/api/user", { cache: "no-store" })
@@ -27,10 +33,9 @@ async function updateUser(formData: FormData) {
 }
 
 export default function ProfileClient({ isAuthenticated }: { isAuthenticated: boolean }) {
-  const router = useRouter()
   const qc = useQueryClient()
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<User>({
     queryKey: ["user"],
     queryFn: fetchUser,
     enabled: isAuthenticated,
@@ -100,7 +105,7 @@ export default function ProfileClient({ isAuthenticated }: { isAuthenticated: bo
       </div>
     )
 
-  const user = data as any
+  const user = data as User // Use the defined User interface
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">

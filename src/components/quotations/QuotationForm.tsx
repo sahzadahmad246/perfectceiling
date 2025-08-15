@@ -1,19 +1,28 @@
-// components/QuotationForm.tsx
+// components/quotations/QuotationForm.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { QuotationSchema, type QuotationSchemaType } from "@/lib/validators/quotationValidator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { QuotationListItem } from "@/types/quotation";
 
-const QuotationForm = () => {
+interface QuotationFormProps {
+  initialData?: QuotationListItem; // Optional prop for editing
+}
+
+const QuotationForm = ({ initialData }: QuotationFormProps) => {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isEditing = !!initialData; // Determine if in edit mode
 
   const {
     register,
@@ -25,27 +34,43 @@ const QuotationForm = () => {
     reset,
   } = useForm<QuotationSchemaType>({
     resolver: zodResolver(QuotationSchema),
-    defaultValues: {
-      clientInfo: { 
-        name: "", 
-        phone: "", 
-        address: "" 
-      },
-      workDetails: {
-        items: [{ 
-          description: "", 
-          area: 0, 
-          unit: "sqft", 
-          rate: 0, 
-          total: 0 
-        }],
-        total: 0,
-        discount: 0,
-        grandTotal: 0,
-        notes: "",
-      },
-      status: "pending",
-    },
+    defaultValues: initialData
+      ? {
+          clientInfo: {
+            name: initialData.clientInfo.name,
+            phone: initialData.clientInfo.phone,
+            address: initialData.clientInfo.address,
+          },
+          workDetails: {
+            items: initialData.workDetails.items.map((item) => ({
+              description: item.description,
+              area: item.area ?? 0,
+              unit: item.unit ?? "sqft",
+              rate: item.rate ?? 0,
+              total: item.total,
+            })),
+            total: initialData.workDetails.total ?? 0,
+            discount: initialData.workDetails.discount ?? 0,
+            grandTotal: initialData.workDetails.grandTotal ?? 0,
+            notes: initialData.workDetails.notes ?? "",
+          },
+          status: initialData.status,
+        }
+      : {
+          clientInfo: {
+            name: "",
+            phone: "",
+            address: "",
+          },
+          workDetails: {
+            items: [{ description: "", area: 0, unit: "sqft", rate: 0, total: 0 }],
+            total: 0,
+            discount: 0,
+            grandTotal: 0,
+            notes: "",
+          },
+          status: "pending",
+        },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -55,21 +80,29 @@ const QuotationForm = () => {
 
   const mutation = useMutation({
     mutationFn: async (data: QuotationSchemaType) => {
-      const response = await fetch("/api/quotations", {
-        method: "POST",
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `/api/quotations/${initialData!.id}` : "/api/quotations";
+
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to create quotation");
+        throw new Error(error.error || `Failed to ${isEditing ? "update" : "create"} quotation`);
       }
+
       return response.json() as Promise<{ id: string }>;
     },
     onSuccess: () => {
-      toast.success("Quotation created successfully!");
+      toast.success(`Quotation ${isEditing ? "updated" : "created"} successfully!`);
       setIsSubmitting(false);
-      reset(); // Reset form after successful submission
+      if (!isEditing) {
+        reset(); // Reset form only for create
+      }
+      router.push("/admin/quotations"); // Redirect to quotations list
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -92,7 +125,6 @@ const QuotationForm = () => {
       const area = item.area || 0;
       const rate = item.rate || 0;
       const calculatedTotal = area * rate;
-      
       if (item.total !== calculatedTotal) {
         setValue(`workDetails.items.${index}.total`, calculatedTotal);
       }
@@ -109,13 +141,11 @@ const QuotationForm = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Create Quotation</h1>
-      
+      <h1 className="text-2xl font-bold mb-6">{isEditing ? "Edit Quotation" : "Create Quotation"}</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Info */}
         <div className="bg-gray-50 p-6 rounded-lg space-y-4">
           <h2 className="text-xl font-semibold text-gray-800">Client Information</h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="clientInfo.name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -131,7 +161,6 @@ const QuotationForm = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.clientInfo.name.message}</p>
               )}
             </div>
-            
             <div>
               <label htmlFor="clientInfo.phone" className="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number *
@@ -147,7 +176,6 @@ const QuotationForm = () => {
               )}
             </div>
           </div>
-          
           <div>
             <label htmlFor="clientInfo.address" className="block text-sm font-medium text-gray-700 mb-1">
               Address *
@@ -167,23 +195,16 @@ const QuotationForm = () => {
         {/* Work Details - Items */}
         <div className="bg-gray-50 p-6 rounded-lg space-y-6">
           <h2 className="text-xl font-semibold text-gray-800">Work Details</h2>
-          
           {fields.map((field, index) => (
             <div key={field.id} className="bg-white border border-gray-200 p-4 rounded-md space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-medium text-gray-700">Item {index + 1}</h3>
                 {fields.length > 1 && (
-                  <Button 
-                    type="button" 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => remove(index)}
-                  >
+                  <Button type="button" variant="destructive" size="sm" onClick={() => remove(index)}>
                     Remove
                   </Button>
                 )}
               </div>
-              
               <div>
                 <label
                   htmlFor={`workDetails.items.${index}.description`}
@@ -203,7 +224,6 @@ const QuotationForm = () => {
                   </p>
                 )}
               </div>
-              
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label
@@ -226,7 +246,6 @@ const QuotationForm = () => {
                     </p>
                   )}
                 </div>
-                
                 <div>
                   <label
                     htmlFor={`workDetails.items.${index}.unit`}
@@ -254,7 +273,6 @@ const QuotationForm = () => {
                     </p>
                   )}
                 </div>
-                
                 <div>
                   <label
                     htmlFor={`workDetails.items.${index}.rate`}
@@ -276,7 +294,6 @@ const QuotationForm = () => {
                     </p>
                   )}
                 </div>
-                
                 <div>
                   <label
                     htmlFor={`workDetails.items.${index}.total`}
@@ -302,17 +319,10 @@ const QuotationForm = () => {
               </div>
             </div>
           ))}
-          
           <Button
             type="button"
             variant="outline"
-            onClick={() => append({ 
-              description: "", 
-              area: 0, 
-              unit: "sqft", 
-              rate: 0, 
-              total: 0 
-            })}
+            onClick={() => append({ description: "", area: 0, unit: "sqft", rate: 0, total: 0 })}
             className="w-full"
           >
             + Add Item
@@ -322,7 +332,6 @@ const QuotationForm = () => {
         {/* Work Details - Summary */}
         <div className="bg-gray-50 p-6 rounded-lg space-y-4">
           <h2 className="text-xl font-semibold text-gray-800">Summary</h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="workDetails.total" className="block text-sm font-medium text-gray-700 mb-1">
@@ -341,7 +350,6 @@ const QuotationForm = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.workDetails.total.message}</p>
               )}
             </div>
-            
             <div>
               <label htmlFor="workDetails.discount" className="block text-sm font-medium text-gray-700 mb-1">
                 Discount
@@ -358,7 +366,6 @@ const QuotationForm = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.workDetails.discount.message}</p>
               )}
             </div>
-            
             <div>
               <label htmlFor="workDetails.grandTotal" className="block text-sm font-medium text-gray-700 mb-1">
                 Grand Total
@@ -377,7 +384,6 @@ const QuotationForm = () => {
               )}
             </div>
           </div>
-          
           <div>
             <label htmlFor="workDetails.notes" className="block text-sm font-medium text-gray-700 mb-1">
               Notes
@@ -396,11 +402,11 @@ const QuotationForm = () => {
         </div>
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={() => reset()}>
-            Reset Form
+          <Button type="button" variant="outline" onClick={() => router.push("/quotations")}>
+            Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting} className="px-8">
-            {isSubmitting ? "Creating..." : "Create Quotation"}
+            {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Quotation" : "Create Quotation")}
           </Button>
         </div>
       </form>

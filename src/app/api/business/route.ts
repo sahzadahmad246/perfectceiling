@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { connectToDatabase } from "@/lib/db";
-import { BusinessSettings, IBusinessSettings } from "@/models/BusinessSettings";
+import { BusinessSettings } from "@/models/BusinessSettings";
 import { uploadImageBuffer } from "@/lib/cloudinary";
 import { Types } from "mongoose";
 
