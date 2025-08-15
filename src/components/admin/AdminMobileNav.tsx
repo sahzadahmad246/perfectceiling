@@ -3,8 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { LayoutDashboard, FileText, Home, MoreHorizontal, Wrench, MessageSquare, Settings, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { LayoutDashboard, FileText, Home, MoreHorizontal, Wrench, MessageSquare, Settings } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 const mainNavItems = [
@@ -78,9 +77,7 @@ export default function AdminMobileNav() {
           <SheetContent side="bottom" className="h-auto bg-white border-t border-gray-200 p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">More Options</h3>
-              <Button variant="ghost" size="sm" onClick={() => setIsMoreOpen(false)} className="p-2">
-                <X className="w-4 h-4" />
-              </Button>
+             
             </div>
             <div className="space-y-2 pb-4">
               {moreNavItems.map((item) => {

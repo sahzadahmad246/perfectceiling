@@ -98,9 +98,9 @@ async function getQuotation(id: string) {
 export default async function QuotationDetailsPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const { id } = params
+  const { id } = await params
   const quotation = await getQuotation(id)
 
   if (!quotation) {
@@ -123,7 +123,7 @@ export default async function QuotationDetailsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto">
         <Suspense fallback={<QuotationDetailsSkeleton />}>
           <QuotationDetails quotation={quotation} />
         </Suspense>

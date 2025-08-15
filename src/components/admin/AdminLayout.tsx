@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <AdminMobileNav />
 
       {/* Main Content */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-64">
         <main className="pb-20 lg:pb-0">{children}</main>
       </div>
     </div>

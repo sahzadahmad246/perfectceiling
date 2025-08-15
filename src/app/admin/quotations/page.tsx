@@ -108,7 +108,7 @@ export default async function QuotationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto">
         <Suspense fallback={<QuotationListSkeleton />}>
           <QuotationList initialData={initialQuotations} />
         </Suspense>
@@ -119,6 +119,6 @@ export default async function QuotationsPage() {
 
 // metadata
 export const metadata = {
-  title: "Quotations | Your App Name",
+  title: "Quotations",
   description: "Manage and view all quotations",
 };
