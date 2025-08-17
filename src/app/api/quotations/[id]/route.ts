@@ -21,6 +21,16 @@ export async function GET(
     clientInfo: quotation.clientInfo,
     workDetails: quotation.workDetails,
     status: quotation.status,
+    rejectionReason: quotation.rejectionReason,
+    customerNote: quotation.customerNote,
+    sharing: quotation.sharing || {
+      isShared: false,
+      shareToken: null,
+      sharedAt: null,
+      sharedBy: null,
+      accessCount: 0,
+      lastAccessedAt: null,
+    },
     createdAt: quotation.createdAt,
     updatedAt: quotation.updatedAt,
   });

@@ -17,8 +17,18 @@ export async function GET() {
       clientInfo: q.clientInfo,
       workDetails: q.workDetails,
       status: q.status,
+      rejectionReason: q.rejectionReason,
+      customerNote: q.customerNote,
+      sharing: q.sharing || {
+        isShared: false,
+        shareToken: null,
+        sharedAt: null,
+        sharedBy: null,
+        accessCount: 0,
+        lastAccessedAt: null,
+      },
       createdAt: q.createdAt,
-      updatedAt: q.updatedAt,
+      updatedAt: q.updatedAt
     }))
   );
 }

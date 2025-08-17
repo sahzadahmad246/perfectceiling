@@ -22,6 +22,16 @@ export interface IQuotation {
     notes?: string;
   };
   status: "accepted" | "pending" | "rejected";
+  rejectionReason?: string;
+  customerNote?: string;
+  sharing: {
+    isShared: boolean;
+    shareToken: string | null;
+    sharedAt: Date | null;
+    sharedBy: string | null; // User ID who shared
+    accessCount: number;
+    lastAccessedAt: Date | null;
+  };
   createdByUserId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -54,10 +64,23 @@ const QuotationSchema = new Schema<IQuotation>(
       enum: ["accepted", "pending", "rejected"],
       default: "pending",
     },
+    rejectionReason: { type: String, required: false },
+    customerNote: { type: String, required: false },
+    sharing: {
+      isShared: { type: Boolean, default: false },
+      shareToken: { type: String, default: null },
+      sharedAt: { type: Date, default: null },
+      sharedBy: { type: String, default: null },
+      accessCount: { type: Number, default: 0 },
+      lastAccessedAt: { type: Date, default: null },
+    },
     createdByUserId: { type: String, required: true },
   },
   { timestamps: true }
 );
+
+// Add index for efficient shareToken lookups
+QuotationSchema.index({ "sharing.shareToken": 1 }, { sparse: true });
 
 export const Quotation =
   models.Quotation || model<IQuotation>("Quotation", QuotationSchema);
