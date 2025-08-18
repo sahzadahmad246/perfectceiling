@@ -43,6 +43,7 @@ import {
 } from "lucide-react"
 import { ShareQuotationButton } from "./ShareQuotationButton"
 import { ShareStatusIndicator } from "./ShareStatusIndicator"
+import { useDownloadQuotationPdf } from "@/lib/quotations/pdf"
 import { ensureQuotationsSharing } from "@/lib/sharing/utils"
 
 interface QuotationListProps {
@@ -257,6 +258,9 @@ console.log(quotations)
     }).format(amount)
   }
 
+  const { startDownload } = useDownloadQuotationPdf()
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/50 to-slate-800 relative">
@@ -287,7 +291,6 @@ console.log(quotations)
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/50 to-slate-800 relative">
       <header className="sticky top-0 z-50">
@@ -461,29 +464,16 @@ console.log(quotations)
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={async () => {
-                                    try {
-                                      const response = await fetch(`/api/quotations/${quotation.id}/pdf`)
-                                      if (!response.ok) throw new Error('Failed to generate PDF')
-                                      
-                                      const blob = await response.blob()
-                                      const url = window.URL.createObjectURL(blob)
-                                      const a = document.createElement('a')
-                                      a.style.display = 'none'
-                                      a.href = url
-                                      a.download = `quotation-${quotation.id.slice(-8)}.pdf`
-                                      document.body.appendChild(a)
-                                      a.click()
-                                      window.URL.revokeObjectURL(url)
-                                      toast.success("PDF downloaded successfully!")
-                                    } catch  {
-                                      toast.error("Failed to download PDF")
-                                    }
+                                    setDownloadingId(quotation.id)
                                     setDropdownOpen(null)
+                                    await startDownload(quotation.id, undefined, (d)=>{
+                                      if (!d) setDownloadingId(null)
+                                    })
                                   }}
                                   className="text-white focus:bg-white/10 focus:text-white rounded-lg transition-all duration-200"
                                 >
                                   <Download className="h-4 w-4 mr-2 text-white" />
-                                  Download PDF
+                                  {downloadingId === quotation.id ? "Downloading..." : "Download PDF"}
                                 </DropdownMenuItem>
                                 <div className="px-2 py-1">
                                   <ShareQuotationButton

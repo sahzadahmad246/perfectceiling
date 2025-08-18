@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
+import { useDownloadQuotationPdf } from "@/lib/quotations/pdf"
 import { CustomerQuotationActions } from "./CustomerQuotationActions"
 import { 
   Phone, 
@@ -32,24 +33,8 @@ export function CustomerQuotationView({ quotation, token }: CustomerQuotationVie
     setCurrentQuotation(prev => ({ ...prev, status: newStatus }))
   }
 
-  const handleDownloadPDF = async () => {
-    try {
-      const response = await fetch(`/api/quotations/${quotation.id}/pdf`)
-      if (!response.ok) throw new Error('Failed to generate PDF')
-      
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.style.display = 'none'
-      a.href = url
-      a.download = `quotation-${quotation.id.slice(-8)}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Error downloading PDF:', error)
-    }
-  }
+  const { startDownload } = useDownloadQuotationPdf()
+  const [downloading, setDownloading] = useState(false)
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -127,11 +112,11 @@ export function CustomerQuotationView({ quotation, token }: CustomerQuotationVie
                   {currentQuotation.status.charAt(0).toUpperCase() + currentQuotation.status.slice(1)}
                 </Badge>
                 <Button
-                  onClick={handleDownloadPDF}
+                  onClick={() => startDownload(quotation.id, undefined, setDownloading)}
                   className="bg-white/10 hover:bg-white/15 text-white border border-white/20 backdrop-blur-xl rounded-xl"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Download PDF
+                  {downloading ? "Downloading..." : "Download PDF"}
                 </Button>
               </div>
             </div>

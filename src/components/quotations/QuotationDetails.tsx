@@ -19,16 +19,10 @@ import {
   User,
   Building,
   IndianRupee,
+  MoreVertical,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -37,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useDownloadQuotationPdf } from "@/lib/quotations/pdf";
 
 interface QuotationDetailsProps {
   quotation: QuotationListItem;
@@ -116,98 +111,8 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
     }
   };
 
-  const handleDownloadPDF = () => {
-    const printContent = `
-      <html>
-        <head>
-          <title>Quotation - ${quotation.clientInfo.name}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .section { margin-bottom: 20px; }
-            .table { width: 100%; border-collapse: collapse; }
-            .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .table th { background-color: #f2f2f2; }
-            .total { font-weight: bold; font-size: 18px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Quotation</h1>
-            <p>For: ${quotation.clientInfo.name}</p>
-            <p>Date: ${new Date(quotation.createdAt).toLocaleDateString()}</p>
-          </div>
-          
-          <div class="section">
-            <h3>Client Information</h3>
-            <p><strong>Name:</strong> ${quotation.clientInfo.name}</p>
-            <p><strong>Phone:</strong> ${quotation.clientInfo.phone}</p>
-            <p><strong>Address:</strong> ${quotation.clientInfo.address}</p>
-          </div>
-          
-          <div class="section">
-            <h3>Work Details</h3>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Area</th>
-                  <th>Unit</th>
-                  <th>Rate</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${quotation.workDetails.items
-                  .map(
-                    (item) => `
-                  <tr>
-                    <td>${item.description}</td>
-                    <td>${item.area}</td>
-                    <td>${item.unit}</td>
-                    <td>$${item.rate.toFixed(2)}</td>
-                    <td>$${item.total.toFixed(2)}</td>
-                  </tr>
-                `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="section">
-            <p><strong>Subtotal:</strong> $${quotation.workDetails.total.toFixed(
-              2
-            )}</p>
-            <p><strong>Discount:</strong> $${quotation.workDetails.discount.toFixed(
-              2
-            )}</p>
-            <p class="total"><strong>Grand Total:</strong> $${quotation.workDetails.grandTotal.toFixed(
-              2
-            )}</p>
-          </div>
-          
-          ${
-            quotation.workDetails.notes
-              ? `
-            <div class="section">
-              <h3>Notes</h3>
-              <p>${quotation.workDetails.notes}</p>
-            </div>
-          `
-              : ""
-          }
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
+  const { startDownload } = useDownloadQuotationPdf()
+  const [downloading, setDownloading] = useState(false)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -271,10 +176,28 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
               </Badge>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-xl font-medium backdrop-blur-xl border border-white/20 transition-all duration-200">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Update Status
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-xl font-medium backdrop-blur-xl border border-white/20 transition-all duration-200">
+                        <MoreVertical className="h-4 w-4 mr-2" />
+                        Actions
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setDialogOpen(true)}>
+                        <Edit className="h-4 w-4 mr-2" /> Update Status
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/admin/quotations/${quotation.id}/edit`)}>
+                        <Edit className="h-4 w-4 mr-2" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => startDownload(quotation.id, undefined, setDownloading)}>
+                        <Download className="h-4 w-4 mr-2" /> {downloading ? "Downloading..." : "Download PDF"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShare}>
+                        <Share className="h-4 w-4 mr-2" /> Share
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl">
                   <DialogHeader>
@@ -514,11 +437,11 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
                   Share
                 </Button>
                 <Button
-                  onClick={handleDownloadPDF}
+                  onClick={() => startDownload(quotation.id, undefined, setDownloading)}
                   className="w-full bg-white/10 hover:bg-white/15 text-white backdrop-blur-xl border border-white/20 rounded-xl transition-all duration-200"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Download PDF
+                  {downloading ? "Downloading..." : "Download PDF"}
                 </Button>
               </CardContent>
             </Card>

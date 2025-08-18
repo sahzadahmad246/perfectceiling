@@ -39,12 +39,10 @@ interface QuotationData {
 
 interface BusinessInfo {
   name: string;
-  phone: string;
-  email: string;
-  website: string;
-  address: string;
-  gst?: string;
-  termsAndConditions?: string[];
+  primaryPhone: string;
+  secondaryPhone?: string;
+  terms?: string[];
+  logoUrl?: string;
 }
 
 // GET /api/quotations/[id]/pdf - Generate PDF for quotation
@@ -66,8 +64,19 @@ export async function GET(
     }
 
     // Get business information
-    const businessResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/business`);
-    const businessInfo = await businessResponse.json() as BusinessInfo;
+    const businessResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/business`);
+    const rawBusiness = await businessResponse.json() as Record<string, unknown>;
+    const businessInfo: BusinessInfo = {
+      name: String(rawBusiness.name || 'Perfect Ceiling'),
+      primaryPhone: String(rawBusiness.primaryPhone || rawBusiness.phone || ''),
+      secondaryPhone: rawBusiness.secondaryPhone ? String(rawBusiness.secondaryPhone) : undefined,
+      terms: Array.isArray(rawBusiness.terms)
+        ? (rawBusiness.terms as string[])
+        : Array.isArray((rawBusiness as Record<string, unknown>).termsAndConditions as unknown[])
+          ? (((rawBusiness as Record<string, unknown>).termsAndConditions as string[]))
+          : [],
+      logoUrl: rawBusiness.logoUrl ? String(rawBusiness.logoUrl) : undefined,
+    };
 
     // Generate PDF HTML
     const pdfHtml = generateQuotationPDF(quotation, businessInfo);
@@ -139,26 +148,14 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
             box-sizing: border-box;
         }
         
-        body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f8f9fa;
-        }
+        body { font-family: 'Arial', sans-serif; line-height: 1.5; color: #333; background: #fff; }
         
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
+        .container { max-width: 820px; margin: 12px auto; background:#fff; }
         
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+        .header { display:flex; align-items:center; gap:16px; padding:16px 20px; border-bottom:2px solid #667eea; }
+        .brand-logo { width:48px; height:48px; object-fit:contain; border-radius:6px; }
+        .brand-title { font-size:22px; font-weight:700; color:#222; }
+        .brand-contact { font-size:12px; color:#555; margin-top:2px; }
         
         .header h1 {
             font-size: 2.5em;
@@ -171,70 +168,19 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
             opacity: 0.9;
         }
         
-        .business-info {
-            background: #f8f9fa;
-            padding: 20px 30px;
-            border-bottom: 3px solid #667eea;
-        }
+        .meta-bar { display:flex; justify-content:space-between; padding:10px 20px; background:#fafafa; border-bottom:1px solid #eee; font-size:12px; color:#555; }
         
-        .business-info h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
+        .quotation-details { padding: 18px 20px; }
         
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
+        .section { margin-bottom: 18px; }
         
-        .info-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+        .section h3 { color:#667eea; border-bottom:1px solid #e6e6ff; padding-bottom:8px; margin-bottom:12px; font-size:16px; }
         
-        .info-item strong {
-            min-width: 80px;
-            color: #555;
-        }
+        .customer-info { background:#fafafa; padding:12px; border-radius:6px; border-left:3px solid #667eea; }
         
-        .quotation-details {
-            padding: 30px;
-        }
+        .items-table { width:100%; border-collapse:collapse; margin-top:8px; }
         
-        .section {
-            margin-bottom: 30px;
-        }
-        
-        .section h3 {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: 1.2em;
-        }
-        
-        .customer-info {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        
-        .items-table th,
-        .items-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
+        .items-table th, .items-table td { padding:8px 10px; text-align:left; border-bottom:1px solid #ddd; }
         
         .items-table th {
             background: #667eea;
@@ -250,28 +196,11 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
             background: #e9ecef;
         }
         
-        .total-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
+        .total-section { background:#fafafa; padding:14px; border-radius:6px; margin-top:12px; }
         
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 5px 0;
-        }
+        .total-row { display:flex; justify-content:space-between; margin-bottom:6px; padding:4px 0; }
         
-        .total-row.grand-total {
-            border-top: 2px solid #667eea;
-            padding-top: 15px;
-            margin-top: 15px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #667eea;
-        }
+        .total-row.grand-total { border-top:2px solid #667eea; padding-top:10px; margin-top:10px; font-size:1.05em; font-weight:bold; color:#667eea; }
         
         .status-badge {
             display: inline-block;
@@ -300,12 +229,7 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
             border: 1px solid #f5c6cb;
         }
         
-        .terms {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #28a745;
-        }
+        .terms { background:#fafafa; padding:12px; border-radius:6px; border-left:3px solid #28a745; }
         
         .terms h4 {
             color: #28a745;
@@ -331,17 +255,7 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
             font-weight: bold;
         }
         
-        .footer {
-            background: #343a40;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            margin-top: 30px;
-        }
-        
-        .footer p {
-            margin-bottom: 5px;
-        }
+        .footer { text-align:center; padding:14px; margin-top:16px; color:#777; font-size:12px; }
         
         @media print {
             body {
@@ -357,50 +271,18 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
-            <h1>${businessInfo.name}</h1>
-            <p>Professional Quotation</p>
+          ${businessInfo.logoUrl ? `<img class="brand-logo" src="${businessInfo.logoUrl}" alt="${businessInfo.name} logo" />` : ''}
+          <div>
+            <div class="brand-title">${businessInfo.name}</div>
+            <div class="brand-contact">${businessInfo.primaryPhone}${businessInfo.secondaryPhone ? ` | ${businessInfo.secondaryPhone}` : ''}</div>
+          </div>
         </div>
-        
-        <!-- Business Information -->
-        <div class="business-info">
-            <h2>Contact Information</h2>
-            <div class="info-grid">
-                <div>
-                    <div class="info-item">
-                        <strong>Phone:</strong> ${businessInfo.phone}
-                    </div>
-                    <div class="info-item">
-                        <strong>Email:</strong> ${businessInfo.email}
-                    </div>
-                    ${businessInfo.gst ? `<div class="info-item"><strong>GST:</strong> ${businessInfo.gst}</div>` : ''}
-                </div>
-                <div>
-                    <div class="info-item">
-                        <strong>Website:</strong> ${businessInfo.website}
-                    </div>
-                    <div class="info-item">
-                        <strong>Address:</strong> ${businessInfo.address}
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="meta-bar"><div>Quotation #${quotation._id.toString().slice(-8)}</div><div>Date: ${formatDate(quotation.createdAt)}</div><div>Status: ${quotation.status}</div></div>
         
         <!-- Quotation Details -->
         <div class="quotation-details">
-            <!-- Quotation Info -->
-            <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h2 style="color: #667eea; margin-bottom: 5px;">Quotation #${quotation._id.toString().slice(-8)}</h2>
-                        <p style="color: #666;">Date: ${formatDate(quotation.createdAt)}</p>
-                    </div>
-                    <div>
-                        <span class="status-badge status-${quotation.status}">${quotation.status}</span>
-                    </div>
-                </div>
-            </div>
+            <!-- Quotation Info condensed into header/meta-bar -->
             
             <!-- Customer Information -->
             <div class="section">
@@ -473,12 +355,12 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
             </div>
             
             <!-- Terms and Conditions -->
-            ${businessInfo.termsAndConditions && businessInfo.termsAndConditions.length > 0 ? `
+            ${businessInfo.terms && businessInfo.terms.length > 0 ? `
                 <div class="section">
                     <h3>Terms & Conditions</h3>
                     <div class="terms">
                         <ul>
-                            ${businessInfo.termsAndConditions.map((term: string) => `<li>${term}</li>`).join('')}
+                            ${businessInfo.terms.map((term: string) => `<li>${term}</li>`).join('')}
                         </ul>
                     </div>
                 </div>
@@ -486,13 +368,7 @@ function generateQuotationPDF(quotation: QuotationData, businessInfo: BusinessIn
         </div>
         
         <!-- Footer -->
-        <div class="footer">
-            <p><strong>${businessInfo.name}</strong></p>
-            <p>${businessInfo.phone} | ${businessInfo.email}</p>
-            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
-                Thank you for choosing ${businessInfo.name}. We look forward to working with you!
-            </p>
-        </div>
+        <div class="footer"><p><strong>${businessInfo.name}</strong></p><p>Thank you for choosing us. We look forward to working with you!</p></div>
     </div>
     
     <script>
