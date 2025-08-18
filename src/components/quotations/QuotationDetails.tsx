@@ -1,13 +1,13 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { QuotationListItem } from "@/types/quotation";
-import Link from "next/link";
-import { Button } from "../ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import type { QuotationListItem } from "@/types/quotation"
+import Link from "next/link"
+import { Button } from "../ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Edit,
   Share,
@@ -20,393 +20,376 @@ import {
   Building,
   IndianRupee,
   MoreVertical,
-} from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock,
+  DollarSign,
+} from "lucide-react"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { useDownloadQuotationPdf } from "@/lib/quotations/pdf";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { useDownloadQuotationPdf } from "@/lib/quotations/pdf"
 
 interface QuotationDetailsProps {
-  quotation: QuotationListItem;
+  quotation: QuotationListItem
 }
 
 export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<
-    "accepted" | "pending" | "rejected"
-  >(quotation.status as "accepted" | "pending" | "rejected");
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [newStatus, setNewStatus] = useState<"accepted" | "pending" | "rejected">(
+    quotation.status as "accepted" | "pending" | "rejected",
+  )
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({
       id,
       status,
     }: {
-      id: string;
-      status: "accepted" | "pending" | "rejected";
+      id: string
+      status: "accepted" | "pending" | "rejected"
     }) => {
-      const response = await fetch(`/api/quotations/${id}`);
+      const response = await fetch(`/api/quotations/${id}`)
       if (!response.ok) {
-        throw new Error("Failed to fetch quotation for update");
+        throw new Error("Failed to fetch quotation for update")
       }
-      const quotationData = await response.json();
+      const quotationData = await response.json()
 
       const updatedData = {
         ...quotationData,
         status,
-      };
+      }
 
       const putResponse = await fetch(`/api/quotations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
-      });
+      })
 
       if (!putResponse.ok) {
-        const error = await putResponse.json();
-        throw new Error(error.error || "Failed to update status");
+        const error = await putResponse.json()
+        throw new Error(error.error || "Failed to update status")
       }
-      return putResponse.json();
+      return putResponse.json()
     },
     onSuccess: () => {
-      toast.success("Status updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["quotation", quotation.id] });
-      queryClient.invalidateQueries({ queryKey: ["quotations"] });
-      setDialogOpen(false);
+      toast.success("Status updated successfully")
+      queryClient.invalidateQueries({ queryKey: ["quotation", quotation.id] })
+      queryClient.invalidateQueries({ queryKey: ["quotations"] })
+      setDialogOpen(false)
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update status");
+      toast.error(error.message || "Failed to update status")
     },
-  });
+  })
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Quotation for ${quotation.clientInfo.name}`,
-          text: `Quotation #${quotation.id.slice(
-            -8
-          )} - $${quotation.workDetails.grandTotal.toFixed(2)}`,
+          text: `Quotation #${quotation.id.slice(-8)} - ${formatCurrency(quotation.workDetails.grandTotal)}`,
           url: window.location.href,
-        });
+        })
       } catch (error) {
-        console.log("Error sharing:", error);
+        console.log("Error sharing:", error)
       }
     } else {
-      const shareText = `Quotation for ${
-        quotation.clientInfo.name
-      }\nAmount: $${quotation.workDetails.grandTotal.toFixed(2)}\nView: ${
-        window.location.href
-      }`;
-      await navigator.clipboard.writeText(shareText);
-      toast.success("Quotation details copied to clipboard!");
+      const shareText = `Quotation for ${quotation.clientInfo.name
+        }\nAmount: ${formatCurrency(quotation.workDetails.grandTotal)}\nView: ${window.location.href}`
+      await navigator.clipboard.writeText(shareText)
+      toast.success("Quotation details copied to clipboard!")
     }
-  };
+  }
 
   const { startDownload } = useDownloadQuotationPdf()
   const [downloading, setDownloading] = useState(false)
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "accepted":
-        return "bg-emerald-400/20 text-emerald-100 border-emerald-300/30";
+        return (
+          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-1.5 px-3 py-1 font-medium">
+            <CheckCircle className="h-3.5 w-3.5" />
+            Accepted
+          </Badge>
+        )
       case "rejected":
-        return "bg-red-400/20 text-red-100 border-red-300/30";
-      case "pending":
-        return "bg-amber-400/20 text-amber-100 border-amber-300/30";
+        return (
+          <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors flex items-center gap-1.5 px-3 py-1 font-medium">
+            <XCircle className="h-3.5 w-3.5" />
+            Rejected
+          </Badge>
+        )
       default:
-        return "bg-white/20 text-white border-white/30";
+        return (
+          <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 transition-colors flex items-center gap-1.5 px-3 py-1 font-medium">
+            <Clock className="h-3.5 w-3.5" />
+            Pending
+          </Badge>
+        )
     }
-  };
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
-    }).format(amount);
-  };
+    }).format(amount)
+  }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-IN", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
-    });
-  };
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/50 to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-100 to-indigo-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/5 border-b border-white/10">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <Link
                 href="/quotations"
-                className="text-white hover:text-white hover:bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl h-10 w-10 p-0 transition-all duration-200 flex items-center justify-center"
+                className="   h-10 w-10 p-0 transition-all duration-200 flex items-center justify-center"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-white">
-                  Quotation Details
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  Details
                 </h1>
-                <p className="text-sm text-white/70">
-                  ID: #{quotation.id.slice(-8)}
-                </p>
+                <p className="text-sm text-slate-500">ID: #{quotation.id.slice(-8)}</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              <Badge
-                className={`${getStatusColor(
-                  quotation.status
-                )} border font-medium rounded-full px-3 py-1 backdrop-blur-xl`}
-              >
-                {quotation.status.charAt(0).toUpperCase() +
-                  quotation.status.slice(1)}
-              </Badge>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-xl font-medium backdrop-blur-xl border border-white/20 transition-all duration-200">
-                        <MoreVertical className="h-4 w-4 mr-2" />
-                        Actions
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setDialogOpen(true)}>
-                        <Edit className="h-4 w-4 mr-2" /> Update Status
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/admin/quotations/${quotation.id}/edit`)}>
-                        <Edit className="h-4 w-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => startDownload(quotation.id, undefined, setDownloading)}>
-                        <Download className="h-4 w-4 mr-2" /> {downloading ? "Downloading..." : "Download PDF"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleShare}>
-                        <Share className="h-4 w-4 mr-2" /> Share
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">
-                      Update Quotation Status
-                    </DialogTitle>
-                    <DialogDescription className="text-white/80">
-                      Change the status for this quotation.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <Select
-                      value={newStatus}
-                      onValueChange={(
-                        value: "accepted" | "pending" | "rejected"
-                      ) => setNewStatus(value)}
-                    >
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white backdrop-blur-xl rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white/10 border-white/20 backdrop-blur-xl rounded-xl">
-                        <SelectItem
-                          value="pending"
-                          className="text-white focus:bg-white/10 rounded-lg"
-                        >
-                          Pending
-                        </SelectItem>
-                        <SelectItem
-                          value="accepted"
-                          className="text-white focus:bg-white/10 rounded-lg"
-                        >
-                          Accepted
-                        </SelectItem>
-                        <SelectItem
-                          value="rejected"
-                          className="text-white focus:bg-white/10 rounded-lg"
-                        >
-                          Rejected
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setDialogOpen(false)}
-                      className="bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/20 rounded-xl text-white"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        updateStatusMutation.mutate({
-                          id: quotation.id,
-                          status: newStatus,
-                        })
-                      }
-                      disabled={updateStatusMutation.isPending}
-                      className="bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/20 rounded-xl text-white"
-                    >
-                      {updateStatusMutation.isPending
-                        ? "Updating..."
-                        : "Update Status"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              {getStatusBadge(quotation.status)}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+
+                  <MoreVertical className="h-4 w-4 mr-2" />
+
+
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl rounded-xl"
+                >
+                  <DropdownMenuItem onClick={() => setDialogOpen(true)} className="rounded-lg">
+                    <Edit className="h-4 w-4 mr-2" /> Update Status
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/admin/quotations/${quotation.id}/edit`)}
+                    className="rounded-lg"
+                  >
+                    <Edit className="h-4 w-4 mr-2" /> Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => startDownload(quotation.id, undefined, setDownloading)}
+                    className="rounded-lg"
+                  >
+                    <Download className="h-4 w-4 mr-2" /> {downloading ? "Downloading..." : "Download PDF"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleShare} className="rounded-lg">
+                    <Share className="h-4 w-4 mr-2" /> Share
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Client Information & Work Details */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Rejection Reason Alert */}
             {quotation.status === "rejected" && quotation.rejectionReason && (
-              <Card className="bg-red-500/10 border border-red-300/30 backdrop-blur-xl rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="text-red-200">Rejection Reason</CardTitle>
+              <Card className="border-0 shadow-lg bg-red-50 border-red-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-red-800 flex items-center gap-2">
+                    <XCircle className="h-5 w-5" />
+                    Rejection Reason
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-red-100">{quotation.rejectionReason}</p>
+                  <p className="text-red-700 font-medium">{quotation.rejectionReason}</p>
                 </CardContent>
               </Card>
             )}
+
             {/* Client Information */}
-            <Card className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/10 transition-all duration-200">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <User className="h-5 w-5 mr-2" />
+            <Card className="shadow-lg hover:shadow-2xl transition-all duration-300 bg-white/80 backdrop-blur-sm p-0 ">
+              <CardHeader className=" m-0 p-0">
+                <CardTitle className=" rounded-t-xl text-slate-900 flex items-center bg-gradient-to-r from-slate-100 to-blue-50 p-4">
+                  <User className="h-5 w-5 text-slate-600" />
                   Client Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-white/70">
-                      Name
-                    </label>
-                    <p className="text-white font-medium">
-                      {quotation.clientInfo.name}
-                    </p>
+              <CardContent className="pb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Client Name</p>
+                        <p className="font-bold text-slate-900 text-lg">{quotation.clientInfo.name}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-white/70">
-                      Phone
-                    </label>
-                    <p className="text-white font-medium flex items-center">
-                      <Phone className="h-4 w-4 mr-2" />
-                      {quotation.clientInfo.phone}
-                    </p>
+
+                  <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <Phone className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Phone</p>
+                        <p className="font-bold text-slate-900 text-lg">{quotation.clientInfo.phone}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-white/70">
-                    Address
-                  </label>
-                  <p className="text-white font-medium flex items-start">
-                    <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                    {quotation.clientInfo.address}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-white/70">
-                    Created
-                  </label>
-                  <p className="text-white font-medium flex items-center">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {formatDate(quotation.createdAt)}
-                  </p>
+
+                  <div className="md:col-span-2 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MapPin className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-purple-600 uppercase tracking-wide">Address</p>
+                        <p className="font-bold text-slate-900 text-lg leading-relaxed">
+                          {quotation.clientInfo.address}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-amber-600 uppercase tracking-wide">Created</p>
+                        <p className="font-bold text-slate-900 text-lg">{formatDate(quotation.createdAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Quotation ID</p>
+                        <p className="font-bold text-slate-900 text-lg">#{quotation.id.slice(-8)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Work Details */}
-            <Card className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/10 transition-all duration-200">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Building className="h-5 w-5 mr-2" />
+            <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-white/80 backdrop-blur-sm p-0">
+              <CardHeader className=" m-0 p-0">
+                <CardTitle className="rounded-t-xl p-4 text-slate-900 flex items-center gap-2 bg-gradient-to-r from-slate-100 to-blue-50">
+                  <Building className="h-5 w-5 text-slate-600" />
                   Work Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="pb-6 space-y-6">
                 <div className="space-y-4">
                   {quotation.workDetails.items.map((item, index) => (
                     <div
                       key={index}
-                      className="bg-white/5 rounded-xl p-4 border border-white/10 backdrop-blur-xl"
+                      className="bg-gradient-to-br from-slate-100 to-blue-50 rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200"
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-white">
-                          {item.description}
-                        </h4>
-                        <span className="text-white font-bold">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-bold text-slate-900 text-lg">{item.description}</h4>
+                        <span className="text-slate-900 font-bold text-xl flex items-center gap-1">
+                          <DollarSign className="h-5 w-5 text-emerald-600" />
                           {formatCurrency(item.total)}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm text-white/70">
-                        <div>
-                          Area: {item.area} {item.unit}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200">
+                          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Area</p>
+                          <p className="font-semibold text-slate-900">
+                            {item.area} {item.unit}
+                          </p>
                         </div>
-                        <div>Rate: {formatCurrency(item.rate)}</div>
-                        <div>Unit: {item.unit}</div>
+                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200">
+                          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Rate</p>
+                          <p className="font-semibold text-slate-900">{formatCurrency(item.rate)}</p>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200">
+                          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Unit</p>
+                          <p className="font-semibold text-slate-900">{item.unit}</p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {quotation.status === "rejected" && quotation.rejectionReason && (
-                  <div className="border-t border-white/20 pt-4">
-                    <label className="text-sm font-medium text-red-200 block mb-2">
-                      Rejection Reason
-                    </label>
-                    <p className="text-red-100 font-medium leading-relaxed">
-                      {quotation.rejectionReason}
-                    </p>
-                  </div>
-                )}
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-slate-700">
+                      <span className="font-medium">Subtotal</span>
+                      <span className="font-semibold">{formatCurrency(quotation.workDetails.total)}</span>
+                    </div>
+                    {quotation.workDetails.discount > 0 && (
+                      <div className="flex justify-between text-slate-700">
+                        <span className="font-medium">Discount</span>
+                        <span className="font-semibold text-red-600">
+                          -{formatCurrency(quotation.workDetails.discount)}
+                        </span>
+                      </div>
+                    )}
 
-                <div className="border-t border-white/20 pt-4 space-y-2">
-                  <div className="flex justify-between text-white/70">
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(quotation.workDetails.total)}</span>
-                  </div>
-                  <div className="flex justify-between text-white/70">
-                    <span>Discount</span>
-                    <span>
-                      {formatCurrency(quotation.workDetails.discount)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xl font-bold text-white border-t border-white/20 pt-2">
-                    <span>Grand Total</span>
-                    <span className="flex items-center">
-                      <IndianRupee className="h-5 w-5 mr-1" />
-                      {formatCurrency(quotation.workDetails.grandTotal)}
-                    </span>
+                    <div className="flex justify-between  font-bold text-slate-900 border-t border-emerald-200 pt-3">
+                      <span>Grand Total</span>
+                      <span className="flex items-center gap-2 text-emerald-700">
+                        <IndianRupee className="h-6 w-6" />
+                        {formatCurrency(quotation.workDetails.grandTotal)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {quotation.workDetails.notes && (
-                  <div className="border-t border-white/20 pt-4">
-                    <label className="text-sm font-medium text-white/70 block mb-2">
-                      Notes
-                    </label>
-                    <p className="text-white font-medium leading-relaxed">
-                      {quotation.workDetails.notes}
-                    </p>
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">Notes</p>
+                        <p className="text-slate-900 font-medium leading-relaxed">{quotation.workDetails.notes}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -415,39 +398,125 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
 
           {/* Actions Sidebar */}
           <div className="space-y-6">
-            <Card className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/10 transition-all duration-200">
-              <CardHeader>
-                <CardTitle className="text-white">Actions</CardTitle>
+            <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-white/80 backdrop-blur-sm p-0">
+              <CardHeader className="m-0 p-0 ">
+                <CardTitle className=" rounded-t-xl p-4 bg-gradient-to-r from-slate-100 to-blue-50 text-slate-900">Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pb-6 space-y-3">
                 <Button
-                  onClick={() =>
-                    router.push(`/admin/quotations/${quotation.id}/edit`)
-                  }
-                  className="w-full bg-white/10 hover:bg-white/15 text-white backdrop-blur-xl border border-white/20 rounded-xl transition-all duration-200"
+                  onClick={() => router.push(`/admin/quotations/${quotation.id}/edit`)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Quotation
                 </Button>
                 <Button
                   onClick={handleShare}
-                  className="w-full bg-white/10 hover:bg-white/15 text-white backdrop-blur-xl border border-white/20 rounded-xl transition-all duration-200"
+                  variant="outline"
+                  className="w-full border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
                 >
                   <Share className="h-4 w-4 mr-2" />
                   Share
                 </Button>
                 <Button
                   onClick={() => startDownload(quotation.id, undefined, setDownloading)}
-                  className="w-full bg-white/10 hover:bg-white/15 text-white backdrop-blur-xl border border-white/20 rounded-xl transition-all duration-200"
+                  variant="outline"
+                  className="w-full border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   {downloading ? "Downloading..." : "Download PDF"}
                 </Button>
+                <Button
+                  onClick={() => setDialogOpen(true)}
+                  variant="outline"
+                  className="w-full border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Update Status
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Status Summary */}
+            <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-white/80 backdrop-blur-sm p-0">
+              <CardHeader className="m-0 p-0">
+                <CardTitle className=" p-4 rounded-t-xl bg-gradient-to-r from-slate-100 to-blue-50 text-slate-900">Status Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Current Status</span>
+                    {getStatusBadge(quotation.status)}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Total Amount</span>
+                    <span className="font-bold text-slate-900 text-lg flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-emerald-600" />
+                      {formatCurrency(quotation.workDetails.grandTotal)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Items Count</span>
+                    <span className="font-bold text-slate-900">{quotation.workDetails.items.length}</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
+
+      {/* Status Update Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-sm border-slate-200 shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 text-xl font-bold">Update Quotation Status</DialogTitle>
+            <DialogDescription className="text-slate-600">Change the status for this quotation.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select
+              value={newStatus}
+              onValueChange={(value: "accepted" | "pending" | "rejected") => setNewStatus(value)}
+            >
+              <SelectTrigger className="bg-white border-slate-200 text-slate-900 rounded-xl h-12">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl rounded-xl">
+                <SelectItem value="pending" className="rounded-lg">
+                  Pending
+                </SelectItem>
+                <SelectItem value="accepted" className="rounded-lg">
+                  Accepted
+                </SelectItem>
+                <SelectItem value="rejected" className="rounded-lg">
+                  Rejected
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="border-slate-200 hover:bg-slate-50 rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                updateStatusMutation.mutate({
+                  id: quotation.id,
+                  status: newStatus,
+                })
+              }
+              disabled={updateStatusMutation.isPending}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              {updateStatusMutation.isPending ? "Updating..." : "Update Status"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

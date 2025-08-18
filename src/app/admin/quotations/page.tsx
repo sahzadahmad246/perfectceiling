@@ -97,23 +97,23 @@ async function getQuotations(): Promise<QuotationWithSharing[]> {
       customerNote: q.customerNote ?? "",
       sharing: q.sharing
         ? {
-            isShared: q.sharing.isShared,
-            shareToken: q.sharing.shareToken,
-            sharedAt: q.sharing.sharedAt ? q.sharing.sharedAt.toISOString() : null,
-            sharedBy: q.sharing.sharedBy,
-            accessCount: q.sharing.accessCount,
-            lastAccessedAt: q.sharing.lastAccessedAt
-              ? q.sharing.lastAccessedAt.toISOString()
-              : null,
-          }
+          isShared: q.sharing.isShared,
+          shareToken: q.sharing.shareToken,
+          sharedAt: q.sharing.sharedAt ? q.sharing.sharedAt.toISOString() : null,
+          sharedBy: q.sharing.sharedBy,
+          accessCount: q.sharing.accessCount,
+          lastAccessedAt: q.sharing.lastAccessedAt
+            ? q.sharing.lastAccessedAt.toISOString()
+            : null,
+        }
         : {
-            isShared: false,
-            shareToken: null,
-            sharedAt: null,
-            sharedBy: null,
-            accessCount: 0,
-            lastAccessedAt: null,
-          },
+          isShared: false,
+          shareToken: null,
+          sharedAt: null,
+          sharedBy: null,
+          accessCount: 0,
+          lastAccessedAt: null,
+        },
       createdAt: q.createdAt.toISOString(),
       updatedAt: q.updatedAt.toISOString(),
     }));
@@ -128,13 +128,11 @@ export default async function QuotationsPage() {
   const initialQuotations = await getQuotations();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto">
-        <Suspense fallback={<QuotationListSkeleton />}>
-          <QuotationList initialData={initialQuotations} />
-        </Suspense>
-      </div>
-    </div>
+
+    <Suspense fallback={<QuotationListSkeleton />}>
+      <QuotationList initialData={initialQuotations} />
+    </Suspense>
+
   );
 }
 

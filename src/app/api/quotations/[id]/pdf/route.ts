@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Quotation } from "@/models/Quotation";
-import puppeteer from 'puppeteer';
+// Use puppeteer in dev, puppeteer-core + @sparticuz/chromium in serverless/prod
 
 // Define interfaces for type safety
 interface WorkItem {
@@ -81,11 +81,24 @@ export async function GET(
     // Generate PDF HTML
     const pdfHtml = generateQuotationPDF(quotation, businessInfo);
     
-    // Generate PDF using Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // Generate PDF using Puppeteer/Chromium
+    const isServerless = !!process.env.VERCEL
+    let browser: import('puppeteer-core').Browser | import('puppeteer').Browser
+    if (isServerless) {
+      const { default: chromium } = await import('@sparticuz/chromium')
+      const puppeteer = await import('puppeteer-core')
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+        headless: true,
+      })
+    } else {
+      const puppeteer = await import('puppeteer')
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      })
+    }
     
     const page = await browser.newPage();
     await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
