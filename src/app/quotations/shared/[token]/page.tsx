@@ -30,6 +30,21 @@ export default function SharedQuotationPage() {
   useEffect(() => {
     const validateToken = async () => {
       try {
+        const storageKey = `quotation_verification_${token}`
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw) as { quotation?: QuotationListItem }
+            if (parsed?.quotation) {
+              setQuotation(parsed.quotation)
+              setIsLoading(false)
+              return
+            }
+          } catch {}
+        }
+      } catch {}
+
+      try {
         const response = await fetch(`/api/quotations/shared/${token}`)
         
         if (!response.ok) {
@@ -48,7 +63,7 @@ export default function SharedQuotationPage() {
         const data: TokenValidationResponse = await response.json()
         setTokenData(data)
         setRemainingAttempts(data.remainingAttempts)
-      } catch (error) {
+      } catch {
         setError("Unable to load quotation. Please check your connection and try again.")
       } finally {
         setIsLoading(false)

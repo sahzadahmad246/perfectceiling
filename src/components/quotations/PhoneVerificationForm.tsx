@@ -7,13 +7,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Shield, Phone, AlertCircle, CheckCircle } from "lucide-react"
-import type { VerificationResponse, ErrorResponse } from "@/types/quotation"
+import type { VerificationResponse, ErrorResponse, QuotationListItem } from "@/types/quotation"
 
 interface PhoneVerificationFormProps {
     token: string
     clientName: string
     remainingAttempts: number
-    onVerificationSuccess: (quotation: unknown) => void
+    onVerificationSuccess: (quotation: QuotationListItem) => void
     onVerificationError: (error: string, remainingAttempts?: number) => void
 }
 
@@ -58,7 +58,16 @@ export function PhoneVerificationForm({
             const data: VerificationResponse | ErrorResponse = await response.json()
 
             if (response.ok && "success" in data && data.success) {
-                onVerificationSuccess(data.quotation)
+                try {
+                    const storageKey = `quotation_verification_${token}`
+                    const payload = {
+                        phoneDigits,
+                        verifiedAt: new Date().toISOString(),
+                        quotation: data.quotation,
+                    }
+                    localStorage.setItem(storageKey, JSON.stringify(payload))
+                } catch {}
+                onVerificationSuccess(data.quotation as QuotationListItem)
             } else {
                 const errorData = data as VerificationResponse
                 const errorMessage = errorData.error || "Verification failed"

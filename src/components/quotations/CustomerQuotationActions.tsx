@@ -59,6 +59,18 @@ export function CustomerQuotationActions({
         throw new Error("Failed to accept quotation")
       }
 
+      try {
+        const storageKey = `quotation_verification_${token}`
+        const raw = localStorage.getItem(storageKey)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          localStorage.setItem(storageKey, JSON.stringify({
+            ...parsed,
+            quotation: { ...quotation, status: "accepted" }
+          }))
+        }
+      } catch {}
+
       toast.success("Quotation accepted successfully!")
       onStatusUpdate("accepted")
       setAcceptDialogOpen(false)
@@ -91,6 +103,18 @@ export function CustomerQuotationActions({
       if (!response.ok) {
         throw new Error("Failed to reject quotation")
       }
+
+      try {
+        const storageKey = `quotation_verification_${token}`
+        const raw = localStorage.getItem(storageKey)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          localStorage.setItem(storageKey, JSON.stringify({
+            ...parsed,
+            quotation: { ...quotation, status: "rejected", rejectionReason: reason }
+          }))
+        }
+      } catch {}
 
       toast.success("Thank you for your feedback. We'll be in touch soon.")
       onStatusUpdate("rejected")
@@ -125,6 +149,9 @@ export function CustomerQuotationActions({
             : "This quotation has been declined. Please contact us if you have any questions."
           }
         </p>
+        {quotation.status === 'rejected' && quotation.rejectionReason && (
+          <div className="mt-3 text-red-200 text-sm">Reason: {quotation.rejectionReason}</div>
+        )}
       </div>
     )
   }

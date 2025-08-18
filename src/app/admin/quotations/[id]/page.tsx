@@ -86,6 +86,8 @@ async function getQuotation(id: string) {
         notes: quotation.workDetails.notes ?? "",
       },
       status: quotation.status,
+      rejectionReason: quotation.rejectionReason ?? "",
+      customerNote: quotation.customerNote ?? "",
       createdAt: quotation.createdAt.toISOString(),
       updatedAt: quotation.updatedAt.toISOString(),
     }

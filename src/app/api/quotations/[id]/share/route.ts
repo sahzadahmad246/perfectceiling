@@ -33,7 +33,7 @@ async function logAuditEvent(
   userId: string,
   ipAddress: string,
   userAgent: string,
-  metadata?: Record<string, unknownS>
+  metadata?: Record<string, unknown>
 ) {
   try {
     await ShareAuditLog.create({

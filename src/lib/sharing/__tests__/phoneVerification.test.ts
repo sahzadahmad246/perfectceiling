@@ -66,8 +66,10 @@ describe('PhoneVerification', () => {
     it('should handle edge cases', () => {
       expect(sanitizePhoneDigits('')).toBe('');
       expect(sanitizePhoneDigits('abc')).toBe('');
-      expect(sanitizePhoneDigits(null as any)).toBe('');
-      expect(sanitizePhoneDigits(undefined as any)).toBe('');
+      // @ts-expect-error testing invalid input types
+      expect(sanitizePhoneDigits(null)).toBe('');
+      // @ts-expect-error testing invalid input types
+      expect(sanitizePhoneDigits(undefined)).toBe('');
     });
   });
 
@@ -116,7 +118,8 @@ describe('PhoneVerification', () => {
     });
 
     it('should reject non-string input', () => {
-      const result = validatePhoneDigitsInput(1234 as any);
+      // @ts-expect-error testing invalid input types
+      const result = validatePhoneDigitsInput(1234);
       expect(result.isValid).toBe(false);
       expect(result.error).toBe('Phone digits must be a string');
     });

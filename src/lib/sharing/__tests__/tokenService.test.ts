@@ -46,8 +46,10 @@ describe('TokenService', () => {
 
     it('should reject empty or null tokens', () => {
       expect(isValidTokenFormat('')).toBe(false);
-      expect(isValidTokenFormat(null as any)).toBe(false);
-      expect(isValidTokenFormat(undefined as any)).toBe(false);
+      // @ts-expect-error testing invalid input types
+      expect(isValidTokenFormat(null)).toBe(false);
+      // @ts-expect-error testing invalid input types
+      expect(isValidTokenFormat(undefined)).toBe(false);
     });
   });
 

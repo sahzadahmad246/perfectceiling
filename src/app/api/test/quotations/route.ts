@@ -1,7 +1,7 @@
 // app/api/test/quotations/route.ts
 import {  NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import { Quotation } from "@/models/Quotation";
+import { Quotation, type IQuotation } from "@/models/Quotation";
 
 // GET /api/test/quotations - Check quotations structure
 export async function GET() {
@@ -9,7 +9,7 @@ export async function GET() {
     await connectToDatabase();
     
     // Get a sample quotation to check its structure
-    const sampleQuotation = await Quotation.findOne({}).lean();
+    const sampleQuotation = await Quotation.findOne({}).lean<IQuotation>();
     
     if (!sampleQuotation) {
       return NextResponse.json({

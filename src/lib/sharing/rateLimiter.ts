@@ -219,8 +219,8 @@ export function getRateLimitStats(): {
  * @param res - Express response object
  * @param next - Express next function
  */
-export function rateLimitMiddleware(req: any, res: any, next: any): void {
-  const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+export function rateLimitMiddleware(req: { ip?: string; connection?: { remoteAddress?: string } | undefined; params: { token?: string }; rateLimit?: unknown }, res: { status: (code: number) => { json: (body: unknown) => void } }, next: () => void): void {
+  const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
   const token = req.params.token;
   
   const rateLimitStatus = checkRateLimit(ipAddress, token);

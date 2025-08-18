@@ -2,7 +2,7 @@
 import { Suspense } from "react";
 import { connectToDatabase } from "@/lib/db";
 import { Quotation, IQuotation } from "@/models/Quotation";
-import { QuotationListItem } from "@/types/quotation";
+import { QuotationWithSharing } from "@/types/quotation";
 import QuotationList from "@/components/quotations/QuotationList";
 
 // loading component with new styles
@@ -71,7 +71,7 @@ function QuotationListSkeleton() {
 }
 
 // server-side data fetching
-async function getQuotations(): Promise<QuotationListItem[]> {
+async function getQuotations(): Promise<QuotationWithSharing[]> {
   try {
     await connectToDatabase();
     const quotations = await Quotation.find({})
@@ -93,6 +93,27 @@ async function getQuotations(): Promise<QuotationListItem[]> {
         notes: q.workDetails.notes ?? "",
       },
       status: q.status,
+      rejectionReason: q.rejectionReason ?? "",
+      customerNote: q.customerNote ?? "",
+      sharing: q.sharing
+        ? {
+            isShared: q.sharing.isShared,
+            shareToken: q.sharing.shareToken,
+            sharedAt: q.sharing.sharedAt ? q.sharing.sharedAt.toISOString() : null,
+            sharedBy: q.sharing.sharedBy,
+            accessCount: q.sharing.accessCount,
+            lastAccessedAt: q.sharing.lastAccessedAt
+              ? q.sharing.lastAccessedAt.toISOString()
+              : null,
+          }
+        : {
+            isShared: false,
+            shareToken: null,
+            sharedAt: null,
+            sharedBy: null,
+            accessCount: 0,
+            lastAccessedAt: null,
+          },
       createdAt: q.createdAt.toISOString(),
       updatedAt: q.updatedAt.toISOString(),
     }));

@@ -352,6 +352,16 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Client Information & Work Details */}
           <div className="lg:col-span-2 space-y-6">
+            {quotation.status === "rejected" && quotation.rejectionReason && (
+              <Card className="bg-red-500/10 border border-red-300/30 backdrop-blur-xl rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-red-200">Rejection Reason</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-red-100">{quotation.rejectionReason}</p>
+                </CardContent>
+              </Card>
+            )}
             {/* Client Information */}
             <Card className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/10 transition-all duration-200">
               <CardHeader>
@@ -434,6 +444,17 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
                     </div>
                   ))}
                 </div>
+
+                {quotation.status === "rejected" && quotation.rejectionReason && (
+                  <div className="border-t border-white/20 pt-4">
+                    <label className="text-sm font-medium text-red-200 block mb-2">
+                      Rejection Reason
+                    </label>
+                    <p className="text-red-100 font-medium leading-relaxed">
+                      {quotation.rejectionReason}
+                    </p>
+                  </div>
+                )}
 
                 <div className="border-t border-white/20 pt-4 space-y-2">
                   <div className="flex justify-between text-white/70">

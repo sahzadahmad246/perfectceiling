@@ -100,7 +100,7 @@ export async function POST(
     if (quotation.status !== "pending") {
       const errorResponse: ErrorResponse = {
         error: "Quotation already processed",
-        code: "INVALID_QUOTATION",
+        code: "SERVER_ERROR",
         details: `This quotation has already been ${quotation.status}`
       };
       return NextResponse.json(errorResponse, { status: 400 });

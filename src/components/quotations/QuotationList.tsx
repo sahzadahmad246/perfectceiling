@@ -544,6 +544,14 @@ console.log(quotations)
                             <span className="line-clamp-2">{quotation.clientInfo.address}</span>
                           </div>
                         </GlassBackground>
+                        {quotation.status === "rejected" && quotation.rejectionReason && (
+                          <GlassBackground variant="primary" className="rounded-xl">
+                            <div className="flex items-start text-sm text-red-200 p-3">
+                              <X className="h-4 w-4 mr-3 mt-0.5 flex-shrink-0" />
+                              <span className="line-clamp-2">Reason: {quotation.rejectionReason}</span>
+                            </div>
+                          </GlassBackground>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <GlassBackground variant="primary" className="rounded-xl">

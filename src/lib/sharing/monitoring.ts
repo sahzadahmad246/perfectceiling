@@ -1,6 +1,7 @@
 // lib/sharing/monitoring.ts
 import { ShareAuditLog } from "@/models/ShareAuditLog";
 import { QuotationAccess } from "@/models/QuotationAccess";
+import type { PipelineStage } from "mongoose";
 import { getRateLimitStats } from "./rateLimiter";
 
 export interface SharingMetrics {
@@ -32,7 +33,7 @@ export interface SecurityMetrics {
   rateLimitStats: {
     totalEntries: number;
     blockedEntries: number;
-    config: any;
+    config: unknown;
   };
   unusualPatterns: Array<{
     pattern: string;
@@ -82,11 +83,11 @@ export async function getSharingMetrics(timeRange: {
 
     // Get top accessed quotations
     const topAccessedQuotations = Object.entries(quotationAccessCounts)
-      .sort(([, a], [, b]) => b - a)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
       .slice(0, 10)
       .map(([quotationId, accessCount]) => ({
         quotationId,
-        accessCount,
+        accessCount: accessCount as number,
       }));
 
     // Get recent activity
@@ -194,7 +195,7 @@ export async function getSecurityMetrics(timeRange: {
     }
 
     // Pattern 2: Rapid successive attempts from same IP
-    const rapidAttempts = await QuotationAccess.aggregate([
+    const rapidAttempts = await QuotationAccess.aggregate(([
       {
         $match: {
           accessedAt: { $gte: startDate, $lte: endDate },
@@ -218,7 +219,7 @@ export async function getSecurityMetrics(timeRange: {
           timeSpan: { $lt: 300000 }, // Less than 5 minutes
         },
       },
-    ]);
+    ]) as unknown as PipelineStage[]);
 
     if (rapidAttempts.length > 0) {
       unusualPatterns.push({
@@ -271,7 +272,7 @@ export async function createSecurityAlert(
     quotationId?: string;
     description: string;
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }
 ): Promise<void> {
   try {

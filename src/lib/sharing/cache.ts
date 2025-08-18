@@ -152,7 +152,7 @@ setInterval(() => {
 /**
  * Cache middleware for quotation access
  */
-export function withQuotationCache<T extends (...args: any[]) => Promise<QuotationListItem | null>>(
+export function withQuotationCache<T extends (...args: unknown[]) => Promise<QuotationListItem | null>>(
   fn: T,
   getCacheKey: (...args: Parameters<T>) => string
 ): T {

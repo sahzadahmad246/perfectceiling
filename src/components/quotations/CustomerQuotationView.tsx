@@ -138,6 +138,17 @@ export function CustomerQuotationView({ quotation, token }: CustomerQuotationVie
           </CardContent>
         </Card>
 
+        {currentQuotation.status === "rejected" && currentQuotation.rejectionReason && (
+          <Card className="bg-red-500/10 border-red-300/30 backdrop-blur-xl rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-red-200">Rejection Reason</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-red-100">{currentQuotation.rejectionReason}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customer Information */}
         <Card className="bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl">
           <CardHeader>

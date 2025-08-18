@@ -1,14 +1,13 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Share, Eye, Clock, User } from "lucide-react"
+import { Share, Eye, Clock } from "lucide-react"
 import type { QuotationWithSharing } from "@/types/quotation"
 
 interface ShareStatusIndicatorProps {

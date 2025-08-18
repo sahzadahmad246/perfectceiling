@@ -94,13 +94,7 @@ export async function GET(
     
     await browser.close();
     
-    // Convert Buffer to ArrayBuffer for NextResponse
-    const arrayBuffer = pdfBuffer.buffer.slice(
-      pdfBuffer.byteOffset,
-      pdfBuffer.byteOffset + pdfBuffer.byteLength
-    );
-    
-    return new NextResponse(arrayBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="quotation-${quotation._id.toString().slice(-8)}.pdf"`,

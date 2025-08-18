@@ -8,7 +8,7 @@ export interface IShareAuditLog {
   userId?: string; // For admin actions
   ipAddress: string;
   userAgent: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }
 

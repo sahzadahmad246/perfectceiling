@@ -5,11 +5,11 @@ import { SharingPerformanceMonitor } from "./monitoring";
 /**
  * Performance monitoring middleware for API routes
  */
-export function withPerformanceMonitoring(
-  handler: (req: NextRequest, context: any) => Promise<NextResponse>,
+export function withPerformanceMonitoring<C, R extends NextResponse = NextResponse>(
+  handler: (req: NextRequest, context: C) => Promise<R>,
   endpointName: string
 ) {
-  return async (req: NextRequest, context: any): Promise<NextResponse> => {
+  return async (req: NextRequest, context: C): Promise<R> => {
     const startTime = Date.now();
     
     try {
@@ -33,7 +33,7 @@ export function withPerformanceMonitoring(
         });
       }
       
-      return response;
+      return response as R;
     } catch (error) {
       const duration = Date.now() - startTime;
       
@@ -96,7 +96,7 @@ export class DatabasePerformanceMonitor {
     maxTime: number;
     queryCount: number;
   }> {
-    const stats: Record<string, any> = {};
+    const stats: Record<string, { averageTime: number; maxTime: number; queryCount: number }> = {};
 
     for (const [queryName, metrics] of this.queryMetrics.entries()) {
       if (metrics.length === 0) continue;
@@ -147,7 +147,7 @@ export async function getSystemHealth(): Promise<{
   }>;
   timestamp: string;
 }> {
-  const checks: Record<string, any> = {};
+  const checks: Record<string, { status: 'pass' | 'fail'; responseTime?: number; error?: string }> = {};
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
 
   // Database connectivity check
