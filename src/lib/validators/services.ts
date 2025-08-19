@@ -31,10 +31,20 @@ export const ServiceSchema = z.object({
   priceRange: z.string().optional().default(""),
   tags: z.array(z.string()).default([]),
   status: z.enum(["active", "inactive"]).default("active"),
+  images: z.array(ImageRefSchema).default([]),
 })
 
 export type CategorySchemaType = z.infer<typeof CategorySchema>
 export type SubcategorySchemaType = z.infer<typeof SubcategorySchema>
 export type ServiceSchemaType = z.infer<typeof ServiceSchema>
+
+export const TestimonialSchema = z.object({
+  authorName: z.string().min(1),
+  message: z.string().min(1),
+  subcategoryId: z.string().min(1),
+  status: z.enum(["published", "hidden"]).default("published"),
+})
+
+export type TestimonialSchemaType = z.infer<typeof TestimonialSchema>
 
 

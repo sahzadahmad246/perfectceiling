@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { connectToDatabase } from "@/lib/db"
-import { Subcategory } from "@/models/Subcategory"
-import { deleteImageByPublicId } from "@/lib/cloudinary"
-import { SubcategorySchema } from "@/lib/validators/services"
+import { Testimonial } from "@/models/Testimonial"
+import { TestimonialSchema } from "@/lib/validators/services"
 
 export async function GET(
   req: NextRequest,
@@ -12,17 +11,16 @@ export async function GET(
 ) {
   const { id } = await params
   await connectToDatabase()
-  const s = await Subcategory.findById(id).lean()
-  if (!s) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  const t = await Testimonial.findById(id).lean()
+  if (!t) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json({
-    id: s._id.toString(),
-    categoryId: s.categoryId,
-    name: s.name,
-    slug: s.slug,
-    description: s.description || "",
-    image: s.image,
-    createdAt: s.createdAt,
-    updatedAt: s.updatedAt,
+    id: t._id.toString(),
+    authorName: t.authorName,
+    message: t.message,
+    subcategoryId: t.subcategoryId,
+    status: t.status,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
   })
 }
 
@@ -37,11 +35,11 @@ export async function PUT(
   }
   await connectToDatabase()
   const body = await req.json()
-  const parsed = SubcategorySchema.safeParse(body)
+  const parsed = TestimonialSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues }, { status: 400 })
   }
-  const doc = await Subcategory.findById(id)
+  const doc = await Testimonial.findById(id)
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 })
   Object.assign(doc, parsed.data)
   await doc.save()
@@ -58,14 +56,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
   await connectToDatabase()
-  const doc = await Subcategory.findById(id)
-  if (doc) {
-    const image = (doc as unknown as { image?: { url: string; publicId: string } }).image
-    if (image?.publicId) {
-      try { await deleteImageByPublicId(image.publicId) } catch {}
-    }
-    await doc.deleteOne()
-  }
+  const doc = await Testimonial.findById(id)
+  if (doc) await doc.deleteOne()
   return NextResponse.json({ ok: true })
 }
 

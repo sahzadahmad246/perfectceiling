@@ -7,6 +7,7 @@ import type { QuotationListItem } from "@/types/quotation"
 import Link from "next/link"
 import { Button } from "../ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Edit,
@@ -25,6 +26,7 @@ import {
   XCircle,
   Clock,
   DollarSign,
+
 } from "lucide-react"
 import {
   Dialog,
@@ -224,17 +226,17 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Rejection Reason Alert */}
             {quotation.status === "rejected" && quotation.rejectionReason && (
-              <Card className="border-0 shadow-lg bg-red-50 border-red-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-red-800 flex items-center gap-2">
+              <Card className="border-0 shadow-lg bg-red-50 border border-red-200">
+                <CardContent className="flex flex-col gap-1">
+                  <div className="text-red-800 flex items-center gap-2 font-semibold">
                     <XCircle className="h-5 w-5" />
                     Rejection Reason
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-red-700 font-medium">{quotation.rejectionReason}</p>
+                  </div>
+                  <span className="text-red-700 font-medium pl-7">{quotation.rejectionReason}</span>
                 </CardContent>
               </Card>
+
+
             )}
 
             {/* Client Information */}
@@ -314,86 +316,81 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
 
             {/* Work Details */}
             <Card className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 bg-white/80 backdrop-blur-sm p-0">
-              <CardHeader className=" m-0 p-0">
-                <CardTitle className="rounded-t-xl p-4 text-slate-900 flex items-center gap-2 bg-gradient-to-r from-slate-100 to-blue-50">
+              <CardHeader className="m-0 p-0">
+                <CardTitle className="rounded-t-xl px-4 py-3 text-slate-900 flex items-center gap-2 bg-gradient-to-r from-slate-100 to-blue-50">
                   <Building className="h-5 w-5 text-slate-600" />
                   Work Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pb-6 space-y-6">
-                <div className="space-y-4">
-                  {quotation.workDetails.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="bg-gradient-to-br from-slate-100 to-blue-50 rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <h4 className="font-bold text-slate-900 text-lg">{item.description}</h4>
-                        <span className="text-slate-900 font-bold text-xl flex items-center gap-1">
-                          <DollarSign className="h-5 w-5 text-emerald-600" />
-                          {formatCurrency(item.total)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200">
-                          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Area</p>
-                          <p className="font-semibold text-slate-900">
-                            {item.area} {item.unit}
-                          </p>
-                        </div>
-                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200">
-                          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Rate</p>
-                          <p className="font-semibold text-slate-900">{formatCurrency(item.rate)}</p>
-                        </div>
-                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200">
-                          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Unit</p>
-                          <p className="font-semibold text-slate-900">{item.unit}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-slate-700">
-                      <span className="font-medium">Subtotal</span>
-                      <span className="font-semibold">{formatCurrency(quotation.workDetails.total)}</span>
-                    </div>
-                    {quotation.workDetails.discount > 0 && (
-                      <div className="flex justify-between text-slate-700">
-                        <span className="font-medium">Discount</span>
-                        <span className="font-semibold text-red-600">
-                          -{formatCurrency(quotation.workDetails.discount)}
-                        </span>
+              <CardContent className="space-y-4">
+                {/* items */}
+                <div className="space-y-2">
+                  <h3 className="text-slate-900 font-medium">Items</h3>
+                  <div className="space-y-2">
+                    {quotation.workDetails.items.map((item, index) => (
+                      <div
+                        key={index}
+                        className="bg-slate-50 px-3 py-2 rounded-lg border border-slate-200"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="text-slate-900 font-medium">{item.description}</p>
+                            {item.area && item.unit && item.rate && (
+                              <p className="text-slate-600 text-sm">
+                                {item.area} {item.unit} × {formatCurrency(item.rate)}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-slate-900 font-medium">{formatCurrency(item.total)}</p>
+                          </div>
+                        </div>
                       </div>
-                    )}
-
-                    <div className="flex justify-between  font-bold text-slate-900 border-t border-emerald-200 pt-3">
-                      <span>Grand Total</span>
-                      <span className="flex items-center gap-2 text-emerald-700">
-                        <IndianRupee className="h-6 w-6" />
-                        {formatCurrency(quotation.workDetails.grandTotal)}
-                      </span>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
+                <Separator className="bg-slate-200" />
+
+                {/* subtotal */}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600 text-sm">Subtotal</span>
+                  <span className="text-slate-900 text-sm">{formatCurrency(quotation.workDetails.total)}</span>
+                </div>
+
+                {/* discount (optional) */}
+                {quotation.workDetails.discount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600 text-sm">Discount</span>
+                    <span className="text-green-600 text-sm">-{formatCurrency(quotation.workDetails.discount)}</span>
+                  </div>
+                )}
+
+                <Separator className="bg-slate-200" />
+
+                {/* total */}
+                <div className="flex justify-between items-center text-base font-semibold">
+                  <span className="text-slate-900">Total Amount</span>
+                  <span className="text-slate-900">{formatCurrency(quotation.workDetails.grandTotal)}</span>
+                </div>
+
+                {/* notes */}
                 {quotation.workDetails.notes && (
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FileText className="h-4 w-4 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">Notes</p>
-                        <p className="text-slate-900 font-medium leading-relaxed">{quotation.workDetails.notes}</p>
+                  <>
+                    <Separator className="bg-slate-200" />
+                    <div className="mb-4">
+                      <h3 className="text-slate-900 font-medium mb-1">Additional Notes</h3>
+                      <div className="bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                        <p className="text-slate-700 text-sm">{quotation.workDetails.notes}</p>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </CardContent>
             </Card>
+
+
           </div>
 
           {/* Actions Sidebar */}

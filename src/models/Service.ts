@@ -13,6 +13,7 @@ export interface IService extends Document {
   priceRange?: string
   tags: string[]
   status: ServiceStatus
+  images?: Array<{ url: string; publicId: string }>
   createdAt: Date
   updatedAt: Date
 }
@@ -29,6 +30,7 @@ const ServiceSchema = new Schema<IService>(
     priceRange: { type: String },
     tags: { type: [String], default: [] },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    images: { type: [{ url: String, publicId: String }], default: [] },
   },
   { timestamps: true }
 )

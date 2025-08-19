@@ -21,6 +21,9 @@ export async function GET() {
       priceRange: s.priceRange || "",
       tags: s.tags || [],
       status: s.status,
+      images: Array.isArray((s as unknown as { images?: { url: string; publicId: string }[] }).images)
+        ? (s as unknown as { images: { url: string; publicId: string }[] }).images
+        : [],
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     }))

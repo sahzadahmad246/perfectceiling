@@ -463,7 +463,6 @@ const QuotationList = ({ initialData = [] }: QuotationListProps) => {
             </div>
           </div>
         </div>
-
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -510,74 +509,7 @@ const QuotationList = ({ initialData = [] }: QuotationListProps) => {
                                   {quotation.clientInfo.name}
                                 </h3>
 
-                                <DropdownMenu
-                                  open={dropdownOpen === quotation.id}
-                                  onOpenChange={(open) => setDropdownOpen(open ? quotation.id : null)}
-                                >
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-9 w-9 p-0 border-slate-200 hover:bg-white/80 bg-white/60 backdrop-blur-sm rounded-xl shadow-sm"
-                                    >
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl rounded-xl"
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={() => (window.location.href = `/admin/quotations/${quotation.id}`)}
-                                      className="rounded-lg"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => (window.location.href = `/admin/quotations/${quotation.id}/edit`)}
-                                      className="rounded-lg"
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={async () => {
-                                        setDownloadingId(quotation.id)
-                                        setDropdownOpen(null)
-                                        await startDownload(quotation.id, undefined, (d) => {
-                                          if (!d) setDownloadingId(null)
-                                        })
-                                      }}
-                                      className="rounded-lg"
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      Download PDF
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedQuotationId(quotation.id)
-                                        setNewStatus(quotation.status as "accepted" | "pending" | "rejected")
-                                        setDialogOpen(true)
-                                        setDropdownOpen(null)
-                                      }}
-                                      className="rounded-lg"
-                                    >
-                                      <FileText className="h-4 w-4 mr-2" />
-                                      Update Status
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        handleDeleteClick(quotation)
-                                        setDropdownOpen(null)
-                                      }}
-                                      className="text-red-600 focus:text-red-700 rounded-lg"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                {/* Removed duplicate mobile dropdown - now using single dropdown - now using single dropdown below */}
                               </div>
 
                               {/* row 2: id (left) + date (right) */}
@@ -625,14 +557,7 @@ const QuotationList = ({ initialData = [] }: QuotationListProps) => {
                           </div>
 
                           {/* right: desktop total + desktop menu */}
-                          <div className="hidden sm:flex items-center justify-end gap-4">
-                            <div className="text-right">
-                              <div className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-                                <DollarSign className="h-6 w-6 text-emerald-600" />
-                                {formatCurrency(quotation.workDetails.grandTotal)}
-                              </div>
-                            </div>
-
+                          <div className="flex items-center justify-end">
                             <DropdownMenu
                               open={dropdownOpen === quotation.id}
                               onOpenChange={(open) => setDropdownOpen(open ? quotation.id : null)}
@@ -651,14 +576,20 @@ const QuotationList = ({ initialData = [] }: QuotationListProps) => {
                                 className="bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl rounded-xl"
                               >
                                 <DropdownMenuItem
-                                  onClick={() => (window.location.href = `/admin/quotations/${quotation.id}`)}
+                                  onClick={() => {
+                                    setDropdownOpen(null)
+                                    window.location.href = `/admin/quotations/${quotation.id}`
+                                  }}
                                   className="rounded-lg"
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => (window.location.href = `/admin/quotations/${quotation.id}/edit`)}
+                                  onClick={() => {
+                                    setDropdownOpen(null)
+                                    window.location.href = `/admin/quotations/${quotation.id}/edit`
+                                  }}
                                   className="rounded-lg"
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
@@ -686,7 +617,10 @@ const QuotationList = ({ initialData = [] }: QuotationListProps) => {
                                         ? `${window.location.origin}/quotations/shared/${quotation.sharing.shareToken}`
                                         : undefined
                                     }
-                                    onShareStatusChange={(shared) => handleShareStatusChange(quotation.id, shared)}
+                                    onShareStatusChange={(shared) => {
+                                      handleShareStatusChange(quotation.id, shared)
+                                      setDropdownOpen(null)
+                                    }}
                                     className="w-full justify-start text-slate-700 hover:text-slate-900 rounded-lg"
                                   />
                                 </div>
@@ -717,7 +651,6 @@ const QuotationList = ({ initialData = [] }: QuotationListProps) => {
                           </div>
                         </div>
                       </div>
-
 
                       {/* Content Section */}
                       <div className="p-6">

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { connectToDatabase } from "@/lib/db"
 import { Category } from "@/models/Category"
+import { deleteImageByPublicId } from "@/lib/cloudinary"
 import { CategorySchema } from "@/lib/validators/services"
 
 export async function GET(
@@ -57,7 +58,17 @@ export async function DELETE(
   }
   await connectToDatabase()
   const doc = await Category.findById(id)
-  if (doc) await doc.deleteOne()
+  if (doc) {
+    const images = Array.isArray((doc as unknown as { images?: { url: string; publicId: string }[] }).images)
+      ? (doc as unknown as { images: { url: string; publicId: string }[] }).images
+      : []
+    for (const img of images) {
+      if (img?.publicId) {
+        try { await deleteImageByPublicId(img.publicId) } catch {}
+      }
+    }
+    await doc.deleteOne()
+  }
   return NextResponse.json({ ok: true })
 }
 

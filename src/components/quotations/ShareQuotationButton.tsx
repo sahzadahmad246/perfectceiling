@@ -96,7 +96,7 @@ export function ShareQuotationButton({
       setCopied(true)
       toast.success("Share URL copied to clipboard!")
       setTimeout(() => setCopied(false), 2000)
-    } catch  {
+    } catch {
       toast.error("Failed to copy URL to clipboard")
     }
   }
@@ -105,7 +105,7 @@ export function ShareQuotationButton({
     // Get quotation details for sharing text
     const quotationResponse = await fetch(`/api/quotations/${quotationId}`)
     const quotation = await quotationResponse.json()
-    
+
     const shareText = `Dear ${quotation.clientInfo.name},
 
 Here is your quotation from Perfect Ceiling for ${quotation.workDetails.items[0]?.description}${quotation.workDetails.items.length > 1 ? ' and more' : ''}.
@@ -156,11 +156,10 @@ Thank you for choosing Perfect Ceiling!`
       <Button
         onClick={handleShare}
         disabled={isLoading}
-        className={`${className} ${
-          isShared 
-            ? "bg-green-500/20 hover:bg-green-500/30 text-green-100 border-green-300/30" 
+        className={`${className} ${isShared
+            ? "bg-green-300 hover:bg-green-400 text-black border-green-400/40"
             : "bg-white/10 hover:bg-white/15 text-white border-white/20"
-        } backdrop-blur-xl rounded-xl transition-all duration-200`}
+          } backdrop-blur-xl rounded-xl transition-all duration-200`}
         style={{ filter: "url(#glass-button)" }}
       >
         {isLoading ? (
@@ -173,7 +172,7 @@ Thank you for choosing Perfect Ceiling!`
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="sm:max-w-md bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl"
+          className="sm:max-w-md bg-white/10 border-white/20 backdrop-blur-xs rounded-2xl"
           style={{ filter: "url(#glass-frosted)" }}
         >
           <DialogHeader>

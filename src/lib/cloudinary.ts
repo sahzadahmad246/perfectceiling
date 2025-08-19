@@ -47,4 +47,9 @@ export async function uploadImageFromUrl(
   return uploadImageBuffer(buffer, folder);
 }
 
+export async function deleteImageByPublicId(publicId: string): Promise<void> {
+  configureCloudinary();
+  await cloudinary.uploader.destroy(publicId);
+}
+
 

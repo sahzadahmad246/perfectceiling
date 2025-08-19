@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
 import { useSession, signIn, signOut } from "next-auth/react"
-import { Home, Wrench, User, LogOut, Phone, FileText, Sparkles } from "lucide-react"
+import { Home, Wrench, User, LogOut, Phone, FileText, Sparkles, Settings } from "lucide-react"
 
 export default function Navbar() {
   const { data: session, status } = useSession()
@@ -12,6 +12,7 @@ export default function Navbar() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false)
 
   const avatarUrl = session?.user?.image || "/next.svg"
+  const isAdmin = session?.user?.role === "admin"
 
   return (
     <>
@@ -49,12 +50,12 @@ export default function Navbar() {
                 <Phone className="w-4 h-4" />
                 Contact
               </Link>
-              {session?.user?.role === "admin" && (
+              {isAdmin && (
                 <Link
                   href="/admin/settings"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200"
                 >
-                  <Wrench className="w-4 h-4" />
+                  <Settings className="w-4 h-4" />
                   Admin
                 </Link>
               )}
@@ -86,8 +87,8 @@ export default function Navbar() {
                   <Image
                     src={avatarUrl || "/placeholder.svg"}
                     alt="avatar"
-                    width={36}
-                    height={36}
+                    width={40}
+                    height={40}
                     className="rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm"
                   />
                   <div className="text-left">
@@ -109,6 +110,16 @@ export default function Navbar() {
                       <User className="w-4 h-4" />
                       Profile Settings
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        href="/admin/settings"
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
+                        onClick={() => setOpen(false)}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Admin Panel
+                      </Link>
+                    )}
                     <button
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-red-600 dark:text-red-400"
                       onClick={() => {
@@ -129,11 +140,11 @@ export default function Navbar() {
 
       {/* Mobile Bottom Navigation */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-black/95 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-800/50 shadow-lg">
-        <div className="flex items-center justify-around py-1">
+        <div className="flex items-center justify-around py-2 px-2">
           {/* Home */}
           <Link
             href="/"
-            className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
+            className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
           >
             <Home className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Home</span>
@@ -142,25 +153,30 @@ export default function Navbar() {
           {/* Services */}
           <Link
             href="/services"
-            className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
+            className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
           >
             <Wrench className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Services</span>
           </Link>
 
-          <Link
-            href="/quote"
-            className="flex flex-col items-center gap-1 p-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 min-w-0 flex-1 mx-1"
-          >
-            <FileText className="w-5 h-5" />
-            <span className="text-xs font-medium">Quote</span>
-          </Link>
+
+
+          {/* Admin - Only show if user is admin */}
+          {isAdmin && (
+            <Link
+              href="/admin/settings"
+              className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
+            >
+              <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Admin</span>
+            </Link>
+          )}
 
           {/* Profile */}
           {status !== "authenticated" ? (
             <button
               onClick={() => signIn("google")}
-              className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
+              className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 min-w-0 flex-1"
             >
               <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Login</span>
@@ -169,15 +185,15 @@ export default function Navbar() {
             <div className="relative min-w-0 flex-1">
               <button
                 onClick={() => setMobileProfileOpen((v) => !v)}
-                className="w-full flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                className="w-full flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
               >
                 <div className="relative">
                   <Image
                     src={avatarUrl || "/placeholder.svg"}
                     alt="avatar"
-                    width={20}
-                    height={20}
-                    className="rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                    width={28}
+                    height={28}
+                    className="rounded-full object-cover border-2 border-gray-300 dark:border-gray-600 shadow-sm"
                   />
                 </div>
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Profile</span>
@@ -187,8 +203,21 @@ export default function Navbar() {
               {mobileProfileOpen && (
                 <div className="absolute bottom-full right-0 mb-2 w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden backdrop-blur-sm">
                   <div className="p-3 border-b border-gray-100 dark:border-gray-800">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{session?.user?.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
+                    <div className="flex items-center gap-3 mb-2">
+                      <Image
+                        src={avatarUrl || "/placeholder.svg"}
+                        alt="avatar"
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 shadow-sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {session?.user?.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
+                      </div>
+                    </div>
                   </div>
                   <Link
                     href="/profile"
@@ -198,6 +227,16 @@ export default function Navbar() {
                     <User className="w-4 h-4" />
                     Profile Settings
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/settings"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
+                      onClick={() => setMobileProfileOpen(false)}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Admin Panel
+                    </Link>
+                  )}
                   <button
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-red-600 dark:text-red-400"
                     onClick={() => {
@@ -215,8 +254,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Spacer */}
-      <div className="sm:hidden h-16" />
+
     </>
   )
 }

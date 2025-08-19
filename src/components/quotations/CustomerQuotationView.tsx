@@ -7,11 +7,11 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { useDownloadQuotationPdf } from "@/lib/quotations/pdf"
 import { CustomerQuotationActions } from "./CustomerQuotationActions"
-import { 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  FileText, 
+import {
+  Phone,
+  MapPin,
+  Calendar,
+  FileText,
   CheckCircle,
   Clock,
   XCircle,
@@ -136,38 +136,42 @@ export function CustomerQuotationView({ quotation, token }: CustomerQuotationVie
 
         {/* Customer Information */}
         <Card className="bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white flex items-center text-base">
               <Building2 className="h-5 w-5 mr-2" />
               Customer Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3 bg-white/5 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+
+          <CardContent className="space-y-3 ">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-center space-x-3 bg-white/5 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/10">
                 <FileText className="h-5 w-5 text-white/70" />
                 <div>
-                  <p className="text-white/70 text-sm">Name</p>
-                  <p className="text-white font-medium">{quotation.clientInfo.name}</p>
+                  <p className="text-white/70 text-xs">Name</p>
+                  <p className="text-white text-sm font-medium">{quotation.clientInfo.name}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 bg-white/5 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+
+              <div className="flex items-center space-x-3 bg-white/5 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/10">
                 <Phone className="h-5 w-5 text-white/70" />
                 <div>
-                  <p className="text-white/70 text-sm">Phone</p>
-                  <p className="text-white font-medium">{quotation.clientInfo.phone}</p>
+                  <p className="text-white/70 text-xs">Phone</p>
+                  <p className="text-white text-sm font-medium">{quotation.clientInfo.phone}</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-start space-x-3 bg-white/5 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+
+            <div className="flex items-start space-x-3 bg-white/5 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/10">
               <MapPin className="h-5 w-5 text-white/70 mt-1" />
               <div>
-                <p className="text-white/70 text-sm">Address</p>
-                <p className="text-white font-medium">{quotation.clientInfo.address}</p>
+                <p className="text-white/70 text-xs">Address</p>
+                <p className="text-white text-sm font-medium">{quotation.clientInfo.address}</p>
               </div>
             </div>
           </CardContent>
         </Card>
+
 
         {/* Work Details */}
         <Card className="bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl">
@@ -264,7 +268,7 @@ export function CustomerQuotationView({ quotation, token }: CustomerQuotationVie
         {token && (
           <Card className="bg-white/10 border-white/20 backdrop-blur-xl rounded-2xl">
             <CardContent className="p-6">
-              <CustomerQuotationActions 
+              <CustomerQuotationActions
                 quotation={currentQuotation}
                 token={token}
                 onStatusUpdate={handleStatusUpdate}

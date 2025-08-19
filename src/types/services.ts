@@ -38,6 +38,17 @@ export interface ServiceDTO {
   priceRange?: string;
   tags: string[];
   status: ServiceStatus;
+  images: ImageRef[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TestimonialDTO {
+  id: string;
+  authorName: string;
+  message: string;
+  subcategoryId: string;
+  status: "published" | "hidden";
   createdAt: string;
   updatedAt: string;
 }
