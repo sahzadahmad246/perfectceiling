@@ -10,16 +10,24 @@ export default function ServicesClientPage() {
   const [services, setServices] = useState<ServiceDTO[]>([])
   const [categories, setCategories] = useState<CategoryDTO[]>([])
   const [subcategories, setSubcategories] = useState<SubcategoryDTO[]>([])
+  const [isLoading, setIsLoading] = useState(true) // Add loading state
 
   useEffect(() => {
     const fetchData = async () => {
-      const servicesData = await fetch("/api/services/list").then((res) => res.json())
-      const categoriesData = await fetch("/api/services/categories").then((res) => res.json())
-      const subcategoriesData = await fetch("/api/services/subcategories").then((res) => res.json())
+      setIsLoading(true) // Set loading to true before fetching
+      try {
+        const servicesData = await fetch("/api/services/list").then((res) => res.json())
+        const categoriesData = await fetch("/api/services/categories").then((res) => res.json())
+        const subcategoriesData = await fetch("/api/services/subcategories").then((res) => res.json())
 
-      setServices(servicesData)
-      setCategories(categoriesData)
-      setSubcategories(subcategoriesData)
+        setServices(servicesData)
+        setCategories(categoriesData)
+        setSubcategories(subcategoriesData)
+      } catch (error) {
+        console.error("Failed to fetch data:", error)
+      } finally {
+        setIsLoading(false) // Set loading to false after fetching
+      }
     }
 
     fetchData()
@@ -28,6 +36,18 @@ export default function ServicesClientPage() {
   // Create lookup maps for efficient category/subcategory name resolution
   const categoryMap = new Map(categories.map((c) => [c.id, c]))
   const subcategoryMap = new Map(subcategories.map((s) => [s.id, s]))
+
+  // Loading UI
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm sm:text-base text-slate-600">Loading services...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -112,7 +132,6 @@ export default function ServicesClientPage() {
                         <p className="text-xs text-slate-500">{categoryServices.length} services</p>
                       </div>
                     </div>
-                    
                   </div>
                 </Link>
               )
@@ -180,8 +199,6 @@ export default function ServicesClientPage() {
                         </Link>
                       )}
                     </div>
-
-                   
 
                     <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-100">
                       <span className="text-xs sm:text-sm text-slate-500 font-medium">Learn more</span>

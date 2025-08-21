@@ -1,15 +1,19 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Suspense } from "react"
+"use client"; // Mark as client component
 
-// New HeroImages component to fetch and display images
+import Link from "next/link";
+import Image from "next/image";
+import { Suspense } from "react";
+
+// HeroImages component
 async function HeroImages() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/images`, {
-    next: { revalidate: 60 }, // Revalidate every 60 seconds
-  })
-  const data = res.ok ? await res.json() : { success: false, data: [] }
-
-  const images = data.success && data.data ? data.data : []
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/images`,
+    {
+      next: { revalidate: 60 },
+    }
+  );
+  const data = res.ok ? await res.json() : { success: false, data: [] };
+  const images = data.success && data.data ? data.data : [];
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:gap-6">
@@ -62,62 +66,74 @@ async function HeroImages() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 interface Testimonial {
-  id: string
-  authorName: string
-  message: string
+  id: string;
+  authorName: string;
+  message: string;
 }
 
 interface Service {
-  id: string
-  title: string
-  priceRange?: string
-  images?: Array<{ url: string }>
+  id: string;
+  title: string;
+  priceRange?: string;
+  images?: Array<{ url: string }>;
 }
 
+// Testimonials component
 async function Testimonials() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/testimonials?status=published`, {
-    next: { revalidate: 60 },
-  })
-  const items = res.ok ? await res.json() : []
+  const res = await fetch(
+    `${
+      process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    }/api/testimonials?status=published`,
+    {
+      next: { revalidate: 60 },
+    }
+  );
+  const items = res.ok ? await res.json() : [];
 
   return (
-    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 ">
+    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 border ">
       {items.slice(0, 6).map((t: Testimonial, index: number) => (
         <div
           key={t.id}
           className={`relative group overflow-hidden ${
-            index % 3 === 0 ? "lg:rotate-1" : index % 3 === 1 ? "lg:-rotate-1" : "lg:rotate-0"
-          } hover:rotate-0 transition-all duration-700  rounded-3xl`}
+            index % 3 === 0
+              ? "lg:rotate-1"
+              : index % 3 === 1
+              ? "lg:-rotate-1"
+              : "lg:rotate-0"
+          } hover:rotate-0 transition-all duration-700 `}
         >
-          {/* Animated background gradient */}
-          <div className=" absolute inset-0 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/40 rounded-3xl opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className=" absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-amber-100/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-          {/* Floating orbs */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/40 rounded-3xl opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-amber-100/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-primary/20 to-amber-300/30 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse" />
           <div
-            className=" absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-tr from-orange-200/30 to-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-all duration-700 animate-pulse"
+            className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-tr from-orange-200/30 to-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-all duration-700 animate-pulse"
             style={{ animationDelay: "1s" }}
           />
-
-          <div className="  relative bg-white/95 backdrop-blur-sm border border-white/60 rounded-3xl p-8 shadow-xl group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-3 group-hover:scale-[1.02]">
-            {/* Premium header with enhanced avatar */}
+          <div className=" relative bg-white/95 backdrop-blur-sm border border-white/60 rounded-3xl p-8 shadow-xl group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-3 group-hover:scale-[1.02]">
             <div className="flex items-center mb-8">
               <div className="relative mr-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-primary/30 via-primary/20 to-amber-200/30 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
                   <div className="w-16 h-16 bg-gradient-to-br from-white/90 to-white/70 rounded-xl flex items-center justify-center">
-                    <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-8 h-8 text-primary"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                     </svg>
                   </div>
                 </div>
-                {/* Verified badge */}
                 <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
@@ -129,22 +145,32 @@ async function Testimonials() {
                 <div className="flex items-center gap-1 mb-2">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="relative">
-                      <svg className="w-5 h-5 text-amber-400 drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
+                      <svg
+                        className="w-5 h-5 text-amber-400 drop-shadow-sm"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                       </svg>
                       <div className="absolute inset-0 bg-gradient-to-r from-amber-300 to-amber-500 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
                     </div>
                   ))}
-                  <span className="text-amber-600 text-sm font-bold ml-2 px-2 py-1 bg-amber-50 rounded-full">5.0</span>
+                  <span className="text-amber-600 text-sm font-bold ml-2 px-2 py-1 bg-amber-50 rounded-full">
+                    5.0
+                  </span>
                 </div>
-                <div className="text-sm text-slate-500 font-medium">Verified Customer</div>
+                <div className="text-sm text-slate-500 font-medium">
+                  Verified Customer
+                </div>
               </div>
             </div>
-
-            {/* Enhanced quote with premium styling */}
             <div className="relative mb-8">
               <div className="absolute -top-6 -left-6 w-16 h-16 bg-gradient-to-br from-primary/15 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-8 h-8 text-primary"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.142 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z" />
                 </svg>
               </div>
@@ -153,17 +179,22 @@ async function Testimonials() {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </blockquote>
             </div>
-
-            {/* Premium footer with enhanced elements */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-amber-50/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center justify-between p-4 border-t border-gradient-to-r from-amber-200/30 to-primary/20">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-600 rounded-full mr-3 animate-pulse" />
-                  <span className="text-sm text-slate-600 font-semibold">Verified Review</span>
+                  <span className="text-sm text-slate-600 font-semibold">
+                    Verified Review
+                  </span>
                 </div>
                 <div className="flex items-center text-primary text-sm font-bold bg-primary/10 px-3 py-1 rounded-full">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -179,9 +210,14 @@ async function Testimonials() {
         </div>
       ))}
       {items.length === 0 && (
-        <div className="col-span-full text-center py-20">
+        <div className="col-span-full text-center py-20 border ">
           <div className="w-24 h-24 bg-gradient-to-br from-gray-100 via-gray-50 to-amber-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-12 h-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -190,21 +226,28 @@ async function Testimonials() {
               />
             </svg>
           </div>
-          <div className="text-gray-600 text-2xl font-bold mb-3">No testimonials yet.</div>
+          <div className="text-gray-600 text-2xl font-bold mb-3">
+            No testimonials yet.
+          </div>
           <p className="text-gray-500 text-lg max-w-md mx-auto">
-            Be the first to share your experience with our amazing ceiling services!
+            Be the first to share your experience with our amazing ceiling
+            services!
           </p>
         </div>
       )}
     </div>
-  )
+  );
 }
 
+// ServicesPreview component
 async function ServicesPreview() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/services/list`, {
-    next: { revalidate: 60 },
-  })
-  const items = res.ok ? await res.json() : []
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/services/list`,
+    {
+      next: { revalidate: 60 },
+    }
+  );
+  const items = res.ok ? await res.json() : [];
 
   return (
     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -212,28 +255,25 @@ async function ServicesPreview() {
         <Link key={s.id} href={`/services`} className="group block">
           <div
             className={`h-full relative overflow-hidden ${
-              index % 3 === 0 ? "lg:rotate-1" : index % 3 === 1 ? "lg:-rotate-1" : "lg:rotate-0"
-            } hover:rotate-0 transition-all duration-700 rounded-3xl `}
+              index % 3 === 0
+                ? "lg:rotate-1"
+                : index % 3 === 1
+                ? "lg:-rotate-1"
+                : "lg:rotate-0"
+            } hover:rotate-0 transition-all duration-700`}
           >
-            {/* Animated background layers */}
             <div className="absolute inset-0 bg-gradient-to-br from-white via-gray-50/80 to-amber-50/60 rounded-3xl" />
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/8 via-transparent to-orange-100/30 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-            {/* Floating elements */}
             <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-primary/20 to-amber-300/30 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse" />
             <div
               className="absolute -bottom-6 -left-6 w-20 h-20 bg-gradient-to-tr from-orange-200/30 to-primary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700 animate-pulse"
               style={{ animationDelay: "1s" }}
             />
-
-            <div className="  relative bg-white/95 backdrop-blur-sm border border-white/60 rounded-3xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-4 group-hover:scale-[1.03]">
-              {/* Premium image section with advanced effects */}
+            <div className="relative bg-white/95 backdrop-blur-sm border border-white/60 rounded-3xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-4 group-hover:scale-[1.03]">
               {s.images?.[0]?.url && (
                 <div className="relative overflow-hidden h-64">
-                  {/* Image overlays */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-20 opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-amber-300/20 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
                   <Image
                     src={s.images[0].url || "/placeholder.svg"}
                     alt={s.title}
@@ -241,32 +281,45 @@ async function ServicesPreview() {
                     height={256}
                     className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-1000"
                   />
-
-                  {/* Premium floating badges */}
                   <div className="absolute top-6 right-6 z-30 flex flex-col gap-3">
                     <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg transform translate-x-12 group-hover:translate-x-0 transition-transform duration-500 border border-white/50">
                       <div className="flex items-center">
-                        <svg className="w-4 h-4 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-4 h-4 text-amber-500 mr-2"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                         </svg>
-                        <span className="text-sm font-bold text-slate-700">Premium</span>
+                        <span className="text-sm font-bold text-slate-700">
+                          Premium
+                        </span>
                       </div>
                     </div>
                     <div className="bg-gradient-to-r from-green-400 to-green-600 rounded-2xl px-4 py-2 shadow-lg transform translate-x-16 group-hover:translate-x-0 transition-transform duration-700 delay-100">
                       <div className="flex items-center">
-                        <svg className="w-4 h-4 text-white mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-4 h-4 text-white mr-2"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                         </svg>
-                        <span className="text-sm font-bold text-white">Available</span>
+                        <span className="text-sm font-bold text-white">
+                          Available
+                        </span>
                       </div>
                     </div>
                   </div>
-
-                  {/* Enhanced overlay content */}
                   <div className="absolute bottom-6 left-6 right-6 z-30 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-300 transform translate-y-4 group-hover:translate-y-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-white font-bold bg-black/30 backdrop-blur-sm rounded-full px-4 py-2">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -283,27 +336,39 @@ async function ServicesPreview() {
                         View Details
                       </div>
                       <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors duration-300">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <svg
+                          className="w-6 h-6 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
-
-              {/* Premium content section */}
               <div className="p-8 relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-transparent rounded-b-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative">
                   <h3 className="font-bold text-foreground text-2xl mb-4 line-clamp-2 group-hover:text-primary transition-colors duration-300 leading-tight">
                     {s.title}
                   </h3>
-
                   {s.priceRange && (
                     <div className="inline-flex items-center px-5 py-3 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/15 to-amber-200/20 text-primary text-sm font-bold mb-6 shadow-lg border border-primary/30 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                       <div className="w-6 h-6 bg-gradient-to-br from-primary/30 to-primary/20 rounded-full flex items-center justify-center mr-3">
-                        <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="w-3 h-3 text-primary"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -315,7 +380,6 @@ async function ServicesPreview() {
                       {s.priceRange}
                     </div>
                   )}
-
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-muted-foreground group-hover:text-primary transition-colors duration-300 font-bold text-lg">
                       <span>Explore Service</span>
@@ -325,12 +389,27 @@ async function ServicesPreview() {
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </div>
                     <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-primary/40 group-hover:to-primary/30 transition-all duration-300 shadow-lg group-hover:shadow-xl">
-                      <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="w-7 h-7 text-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -343,7 +422,12 @@ async function ServicesPreview() {
       {items.length === 0 && (
         <div className="col-span-full text-center py-16">
           <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-10 h-10 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -352,27 +436,35 @@ async function ServicesPreview() {
               />
             </svg>
           </div>
-          <div className="text-gray-600 text-xl font-semibold mb-2">No services available yet.</div>
-          <p className="text-gray-500">Check back soon for our amazing ceiling solutions!</p>
+          <div className="text-gray-600 text-xl font-semibold mb-2">
+            No services available yet.
+          </div>
+          <p className="text-gray-500">
+            Check back soon for our amazing ceiling solutions!
+          </p>
         </div>
       )}
     </div>
-  )
+  );
 }
 
+// BusinessCta component
 async function BusinessCta() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/business`, {
-    next: { revalidate: 300 },
-  })
-  const data = res.ok ? await res.json() : {}
-  const phone = (data?.primaryPhone as string) || (data?.phone as string) || ""
-  const digits = phone.replace(/[^0-9]/g, "")
-  const waText = encodeURIComponent("Hello! I am interested in your services.")
-  const waHref = digits ? `https://wa.me/${digits}?text=${waText}` : "#"
-  const telHref = phone ? `tel:${phone}` : "#"
-  const name = (data?.name as string) || "Perfect Ceiling"
-  const address = (data?.address as string) || undefined
-  const email = (data?.email as string) || undefined
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/business`,
+    {
+      next: { revalidate: 300 },
+    }
+  );
+  const data = res.ok ? await res.json() : {};
+  const phone = (data?.primaryPhone as string) || (data?.phone as string) || "";
+  const digits = phone.replace(/[^0-9]/g, "");
+  const waText = encodeURIComponent("Hello! I am interested in your services.");
+  const waHref = digits ? `https://wa.me/${digits}?text=${waText}` : "#";
+  const telHref = phone ? `tel:${phone}` : "#";
+  const name = (data?.name as string) || "Perfect Ceiling";
+  const address = (data?.address as string) || undefined;
+  const email = (data?.email as string) || undefined;
 
   return (
     <div className="relative overflow-hidden rounded-3xl">
@@ -391,7 +483,6 @@ async function BusinessCta() {
           style={{ animationDelay: "2s" }}
         />
       </div>
-
       <div className="relative p-8 sm:p-12 lg:p-16">
         <div className="grid gap-12 lg:gap-16 lg:grid-cols-5 items-center">
           <div className="lg:col-span-3 text-center lg:text-left">
@@ -406,8 +497,9 @@ async function BusinessCta() {
               </span>
             </h2>
             <p className="text-muted-foreground text-xl mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-              Get a free consultation and personalized quote for your ceiling project. Our expert craftsmen are ready to
-              bring your vision to life with precision and style.
+              Get a free consultation and personalized quote for your ceiling
+              project. Our expert craftsmen are ready to bring your vision to
+              life with precision and style.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
               <a
@@ -452,7 +544,12 @@ async function BusinessCta() {
               <div className="relative bg-white/90 backdrop-blur-sm border border-white/50 rounded-3xl p-8 shadow-2xl group-hover:shadow-3xl transition-all duration-300 transform group-hover:-translate-y-2">
                 <div className="flex items-center mb-6">
                   <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-7 h-7 text-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -467,10 +564,14 @@ async function BusinessCta() {
                       />
                     </svg>
                   </div>
-                  <h3 className="font-bold text-foreground text-2xl">Get In Touch</h3>
+                  <h3 className="font-bold text-foreground text-2xl">
+                    Get In Touch
+                  </h3>
                 </div>
                 <div className="space-y-4">
-                  <div className="font-bold text-foreground text-xl">{name}</div>
+                  <div className="font-bold text-foreground text-xl">
+                    {name}
+                  </div>
                   {address && (
                     <div className="text-muted-foreground flex items-start group/item hover:text-foreground transition-colors">
                       <svg
@@ -541,7 +642,40 @@ async function BusinessCta() {
                       </a>
                     </div>
                   )}
-                  
+                  <div className="pt-4 border-t border-gray-200">
+                    <Link
+                      href="/contact"
+                      className="inline-flex items-center text-primary hover:text-primary/80 transition-colors font-bold text-lg group/link"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                      Contact Form
+                      <svg
+                        className="w-5 h-5 ml-2 group-hover/link:translate-x-1 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -549,10 +683,10 @@ async function BusinessCta() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default function Home() {
+export default function ClientHome() {
   return (
     <div className="min-h-screen bg-background">
       <div className="relative bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100/90 overflow-hidden">
@@ -574,7 +708,8 @@ export default function Home() {
             {/* Hero Content */}
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-primary/15 to-primary/10 text-primary text-sm font-bold mb-8 shadow-lg backdrop-blur-sm border border-primary/20">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3 animate-pulse"></span>✨ Premium Ceiling Solutions
+                <span className="w-2 h-2 bg-primary rounded-full mr-3 animate-pulse"></span>
+                ✨ Premium Ceiling Solutions
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-8 leading-tight">
                 Transform Your Space with
@@ -583,8 +718,9 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                Expert craftsmanship meets modern design. From elegant installations to precision repairs, we create
-                ceiling solutions that elevate your space to new heights.
+                Expert craftsmanship meets modern design. From elegant
+                installations to precision repairs, we create ceiling solutions
+                that elevate your space to new heights.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6">
                 <Link
@@ -599,7 +735,12 @@ export default function Home() {
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                   </span>
                 </Link>
@@ -637,7 +778,12 @@ export default function Home() {
           <div className="space-y-12">
             <div className="text-center max-w-4xl mx-auto">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -654,15 +800,18 @@ export default function Home() {
                 </span>
               </h2>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Discover our most requested ceiling solutions, crafted with precision and attention to detail that
-                exceeds expectations
+                Discover our most requested ceiling solutions, crafted with
+                precision and attention to detail that exceeds expectations
               </p>
             </div>
             <Suspense
               fallback={
-                <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ">
+                <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
                   {[...Array(6)].map((_, i) => (
-                    <div key={i} className="bg-muted rounded-2xl h-80 animate-pulse" />
+                    <div
+                      key={i}
+                      className="bg-muted rounded-2xl h-80 animate-pulse"
+                    />
                   ))}
                 </div>
               }
@@ -681,7 +830,12 @@ export default function Home() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </Link>
             </div>
@@ -689,7 +843,11 @@ export default function Home() {
 
           {/* Contact CTA Section */}
           <div className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
-            <Suspense fallback={<div className="bg-muted rounded-2xl h-48 animate-pulse" />}>
+            <Suspense
+              fallback={
+                <div className="bg-muted rounded-2xl h-48 animate-pulse" />
+              }
+            >
               <BusinessCta />
             </Suspense>
           </div>
@@ -698,7 +856,12 @@ export default function Home() {
           <div className="space-y-12">
             <div className="text-center max-w-4xl mx-auto">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -715,14 +878,18 @@ export default function Home() {
                 </span>
               </h2>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Real experiences from satisfied customers who trusted us with their most important ceiling projects
+                Real experiences from satisfied customers who trusted us with
+                their most important ceiling projects
               </p>
             </div>
             <Suspense
               fallback={
                 <div className="grid gap-6 md:grid-cols-2">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-muted rounded-2xl h-40 animate-pulse" />
+                    <div
+                      key={i}
+                      className="bg-muted rounded-2xl h-40 animate-pulse border"
+                    />
                   ))}
                 </div>
               }
@@ -736,7 +903,8 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
               <div className="text-muted-foreground text-lg">
-                © {new Date().getFullYear()} Perfect Ceiling. All rights reserved.
+                © {new Date().getFullYear()} Perfect Ceiling. All rights
+                reserved.
               </div>
               <div className="flex flex-wrap gap-8">
                 <Link
@@ -763,5 +931,5 @@ export default function Home() {
         </footer>
       </div>
     </div>
-  )
+  );
 }

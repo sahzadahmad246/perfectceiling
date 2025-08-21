@@ -19,7 +19,6 @@ import {
   Calendar,
   User,
   Building,
-  IndianRupee,
   MoreVertical,
   FileText,
   CheckCircle,
@@ -226,7 +225,7 @@ export default function QuotationDetails({ quotation }: QuotationDetailsProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Rejection Reason Alert */}
             {quotation.status === "rejected" && quotation.rejectionReason && (
-              <Card className="border-0 shadow-lg bg-red-50 border border-red-200">
+              <Card className="border-0 shadow-lg bg-red-50 ">
                 <CardContent className="flex flex-col gap-1">
                   <div className="text-red-800 flex items-center gap-2 font-semibold">
                     <XCircle className="h-5 w-5" />

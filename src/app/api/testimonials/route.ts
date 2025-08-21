@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { connectToDatabase } from "@/lib/db"
 import { Testimonial } from "@/models/Testimonial"
-import type { ITestimonial } from "@/models/Testimonial"
+
 import { TestimonialSchema } from "@/lib/validators/services"
 
 export async function GET(req: NextRequest) {

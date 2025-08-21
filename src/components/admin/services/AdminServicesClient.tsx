@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import Image from "next/image"
 import {
   Dialog,
   DialogContent,
@@ -359,7 +360,7 @@ export default function AdminServicesClient() {
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-3">
                         {Array.isArray((s as unknown as { images?: { url: string }[] }).images) && (s as unknown as { images?: { url: string }[] }).images!.length > 0 ? (
-                          <img src={(s as unknown as { images: { url: string }[] }).images[0].url} alt={s.title} className="w-12 h-12 rounded-xl object-cover border" />
+                          <Image src={(s as unknown as { images: { url: string }[] }).images[0].url} alt={s.title} className="w-12 h-12 rounded-xl object-cover border" />
                         ) : (
                           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                             <Briefcase className="h-6 w-6 text-white" />
@@ -443,7 +444,7 @@ export default function AdminServicesClient() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4 flex-1">
                       {Array.isArray((c as unknown as { images?: { url: string }[] }).images) && (c as unknown as { images?: { url: string }[] }).images!.length > 0 ? (
-                        <img src={(c as unknown as { images: { url: string }[] }).images[0].url} alt={c.name} className="w-10 h-10 rounded-lg object-cover border" />
+                        <Image src={(c as unknown as { images: { url: string }[] }).images[0].url} alt={c.name} className="w-10 h-10 rounded-lg object-cover border" />
                       ) : (
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center shadow-md">
                           <Layers className="h-5 w-5 text-white" />
@@ -486,7 +487,7 @@ export default function AdminServicesClient() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4 flex-1">
                       {(s as unknown as { image?: { url: string } }).image?.url ? (
-                        <img src={(s as unknown as { image?: { url: string } }).image!.url} alt={s.name} className="w-10 h-10 rounded-lg object-cover border" />
+                        <Image src={(s as unknown as { image?: { url: string } }).image!.url} alt={s.name} className="w-10 h-10 rounded-lg object-cover border" />
                       ) : (
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
                           <Settings className="h-5 w-5 text-white" />
@@ -574,7 +575,7 @@ export default function AdminServicesClient() {
               <div className="flex items-center gap-3 mt-2">
                 <Button type="button" variant="outline" onClick={() => catFileRef.current?.click()}>Upload</Button>
                 {catImages.map((img) => (
-                  <img key={img.publicId} src={img.url} alt="cat" className="h-16 w-16 rounded object-cover border" />
+                  <Image key={img.publicId} src={img.url} alt="cat" className="h-16 w-16 rounded object-cover border" />
                 ))}
               </div>
             </div>
@@ -672,7 +673,7 @@ export default function AdminServicesClient() {
               }} />
               <div className="flex items-center gap-3 mt-2">
                 <Button type="button" variant="outline" onClick={() => subFileRef.current?.click()}>Upload</Button>
-                {subImage && <img src={subImage.url} alt="sub" className="h-16 w-16 rounded object-cover border" />}
+                {subImage && <Image src={subImage.url} alt="sub" className="h-16 w-16 rounded object-cover border" />}
               </div>
             </div>
           </div>
@@ -875,7 +876,7 @@ export default function AdminServicesClient() {
                 <div className="flex items-center gap-3 mt-2 flex-wrap">
                   <Button type="button" variant="outline" onClick={() => srvFilesRef.current?.click()}>Upload</Button>
                   {srvImages.map((img) => (
-                    <img key={img.publicId} src={img.url} alt="srv" className="h-16 w-16 rounded object-cover border" />
+                    <Image key={img.publicId} src={img.url} alt="srv" className="h-16 w-16 rounded object-cover border" />
                   ))}
                 </div>
               </div>
