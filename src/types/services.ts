@@ -13,23 +13,11 @@ export interface CategoryDTO {
   updatedAt: string;
 }
 
-export interface SubcategoryDTO {
-  id: string;
-  categoryId: string;
-  name: string;
-  slug: string;
-  description?: string;
-  image?: ImageRef;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export type ServiceStatus = "active" | "inactive";
 
 export interface ServiceDTO {
   id: string;
   categoryId: string;
-  subcategoryId: string;
   title: string;
   slug: string;
   summary?: string;
@@ -47,7 +35,7 @@ export interface TestimonialDTO {
   id: string;
   authorName: string;
   message: string;
-  subcategoryId: string;
+  categoryId: string;
   status: "published" | "hidden";
   createdAt: string;
   updatedAt: string;

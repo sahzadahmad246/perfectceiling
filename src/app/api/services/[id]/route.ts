@@ -17,7 +17,7 @@ export async function GET(
   return NextResponse.json({
     id: s._id.toString(),
     categoryId: s.categoryId,
-    subcategoryId: s.subcategoryId,
+
     title: s.title,
     slug: s.slug,
     summary: s.summary || "",

@@ -5,34 +5,50 @@ export const metadata: Metadata = {
   description: "Admin dashboard for Perfect Ceiling business management.",
 }
 
+import { DashboardPageWrapper } from "@/components/admin/DashboardPageWrapper"
+import { Users, FileText, CheckSquare, Briefcase } from "lucide-react"
+
 export default function AdminDashboardPage() {
+  const stats = [
+    { label: "Total Quotes", value: "24", icon: FileText, color: "bg-blue-500" },
+    { label: "Active Services", value: "8", icon: Briefcase, color: "bg-indigo-500" },
+    { label: "Testimonials", value: "12", icon: Users, color: "bg-purple-500" },
+    { label: "Pending Tasks", value: "3", icon: CheckSquare, color: "bg-orange-500" },
+  ]
+
   return (
-    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8 border border-red-500 m-2">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome to your admin dashboard</p>
+    <DashboardPageWrapper title="Dashboard" showBack={false}>
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-start justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-medium mb-1">{stat.label}</p>
+                <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
+              </div>
+              <div className={`p-3 rounded-xl ${stat.color} text-white shadow-lg shadow-blue-500/20`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6 rounded-xl text-white">
-            <h3 className="text-lg font-semibold mb-2">Total Quotes</h3>
-            <p className="text-3xl font-bold">24</p>
+        {/* Placeholder for Recent Activity/Charts */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 min-h-[400px]">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Activity</h3>
+            <div className="flex items-center justify-center h-full text-slate-400">
+              Chart Placeholder
+            </div>
           </div>
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6 rounded-xl text-white">
-            <h3 className="text-lg font-semibold mb-2">Active Services</h3>
-            <p className="text-3xl font-bold">8</p>
-          </div>
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-xl text-white">
-            <h3 className="text-lg font-semibold mb-2">Testimonials</h3>
-            <p className="text-3xl font-bold">12</p>
-          </div>
-          <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6 rounded-xl text-white">
-            <h3 className="text-lg font-semibold mb-2">Pending Tasks</h3>
-            <p className="text-3xl font-bold">3</p>
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 min-h-[400px]">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h3>
+            <div className="flex items-center justify-center h-full text-slate-400">
+              Actions Placeholder
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </DashboardPageWrapper>
   )
 }

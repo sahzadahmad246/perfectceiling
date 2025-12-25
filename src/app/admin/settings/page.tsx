@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Megaphone,
 } from "lucide-react";
+import { DashboardPageWrapper } from "@/components/admin/DashboardPageWrapper";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
@@ -96,6 +97,8 @@ interface DialogProps {
   };
 }
 
+
+
 export default function BusinessSettingsPage() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState<string | null>(null);
@@ -135,10 +138,12 @@ export default function BusinessSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="text-muted-foreground text-sm animate-pulse">Loading business settings...</p>
-      </div>
+      <DashboardPageWrapper title="Settings">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-muted-foreground text-sm animate-pulse">Loading business settings...</p>
+        </div>
+      </DashboardPageWrapper>
     );
   }
 
@@ -155,181 +160,182 @@ export default function BusinessSettingsPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Settings</h2>
-          <p className="text-muted-foreground text-lg">
-            Manage your business profile, contact info, and branding.
-          </p>
+    <DashboardPageWrapper title="Settings">
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b">
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Business Configuration</h2>
+            <p className="text-muted-foreground">
+              Manage your business profile, contact info, and branding.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-        {/* General Info */}
-        <Card className="h-full border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <CardContent className="pt-6">
-            <SectionHeader
-              title="General Identity"
-              description="Basic information about your business entity and current operating status."
-              icon={Building2}
-              onEdit={() => setOpenDialog("general")}
-            />
-            <div className="bg-muted/30 rounded-xl p-5 space-y-6">
-              <ReadOnlyField label="Business Name" value={settings?.name} />
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Current Status
-                </div>
-                <Badge
-                  variant={settings?.status === 'open' ? 'default' : 'secondary'}
-                  className={`capitalize px-3 py-1 text-sm ${settings?.status === 'open' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''
-                    }`}
-                >
-                  {settings?.status?.replace('_', ' ')}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Contact Details */}
-        <Card className="h-full border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <CardContent className="pt-6">
-            <SectionHeader
-              title="Contact Information"
-              description="How customers can reach you. Used across the website."
-              icon={Phone}
-              onEdit={() => setOpenDialog("contact")}
-            />
-            <div className="bg-muted/30 rounded-xl p-5 space-y-5">
-              <div className="grid sm:grid-cols-2 gap-5">
-                <ReadOnlyField label="Primary Phone" value={settings?.primaryPhone} />
-                <ReadOnlyField label="Secondary Phone" value={settings?.secondaryPhone} />
-              </div>
-              <Separator className="bg-border/50" />
-              <ReadOnlyField label="Email Address" value={settings?.email} icon={Mail} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Location & Brand */}
-        <Card className="md:col-span-2 border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <CardContent className="pt-6">
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <SectionHeader
-                  title="Branding & Location"
-                  description="Your official address and brand assets."
-                  icon={MapPin}
-                  onEdit={() => setOpenDialog("location")}
-                />
-                <div className="bg-muted/30 rounded-xl p-5 min-h-[140px] flex items-center">
-                  <ReadOnlyField label="Office Address" value={settings?.address} className="w-full" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+          {/* General Info */}
+          <Card className="h-full border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <CardContent className="pt-6">
+              <SectionHeader
+                title="General Identity"
+                description="Basic information about your business entity and current operating status."
+                icon={Building2}
+                onEdit={() => setOpenDialog("general")}
+              />
+              <div className="bg-muted/30 rounded-xl p-5 space-y-6">
+                <ReadOnlyField label="Business Name" value={settings?.name} />
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Current Status
+                  </div>
+                  <Badge
+                    variant={settings?.status === 'open' ? 'default' : 'secondary'}
+                    className={`capitalize px-3 py-1 text-sm ${settings?.status === 'open' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''
+                      }`}
+                  >
+                    {settings?.status?.replace('_', ' ')}
+                  </Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-primary" />
-                    Business Logo
-                  </h4>
-                  <Button variant="ghost" size="sm" onClick={() => setOpenDialog("location")} className="h-6 w-6 p-0 hover:bg-transparent">
-                    <Pencil className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
-                  </Button>
+          {/* Contact Details */}
+          <Card className="h-full border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <CardContent className="pt-6">
+              <SectionHeader
+                title="Contact Information"
+                description="How customers can reach you. Used across the website."
+                icon={Phone}
+                onEdit={() => setOpenDialog("contact")}
+              />
+              <div className="bg-muted/30 rounded-xl p-5 space-y-5">
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <ReadOnlyField label="Primary Phone" value={settings?.primaryPhone} />
+                  <ReadOnlyField label="Secondary Phone" value={settings?.secondaryPhone} />
                 </div>
-                <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-center min-h-[140px] relative overflow-hidden group">
-                  {/* Grid pattern background */}
-                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
+                <Separator className="bg-border/50" />
+                <ReadOnlyField label="Email Address" value={settings?.email} icon={Mail} />
+              </div>
+            </CardContent>
+          </Card>
 
-                  {settings?.logoUrl ? (
-                    <div className="relative w-full h-32 transition-transform duration-500 group-hover:scale-105">
-                      <Image
-                        src={settings.logoUrl}
-                        alt="Business Logo"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
-                        <Upload className="w-5 h-5 text-muted-foreground/50" />
+          {/* Location & Brand */}
+          <Card className="md:col-span-2 border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <CardContent className="pt-6">
+              <div className="grid lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                  <SectionHeader
+                    title="Branding & Location"
+                    description="Your official address and brand assets."
+                    icon={MapPin}
+                    onEdit={() => setOpenDialog("location")}
+                  />
+                  <div className="bg-muted/30 rounded-xl p-5 min-h-[140px] flex items-center">
+                    <ReadOnlyField label="Office Address" value={settings?.address} className="w-full" />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-primary" />
+                      Business Logo
+                    </h4>
+                    <Button variant="ghost" size="sm" onClick={() => setOpenDialog("location")} className="h-6 w-6 p-0 hover:bg-transparent">
+                      <Pencil className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
+                    </Button>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-center min-h-[140px] relative overflow-hidden group">
+                    {/* Grid pattern background */}
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
+
+                    {settings?.logoUrl ? (
+                      <div className="relative w-full h-32 transition-transform duration-500 group-hover:scale-105">
+                        <Image
+                          src={settings.logoUrl}
+                          alt="Business Logo"
+                          fill
+                          className="object-contain"
+                        />
                       </div>
-                      <p className="text-xs text-muted-foreground font-medium">No Logo Uploaded</p>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="text-center space-y-2">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                          <Upload className="w-5 h-5 text-muted-foreground/50" />
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">No Logo Uploaded</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Terms */}
-        <Card className="md:col-span-2 border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
-          <CardContent className="pt-6">
-            <SectionHeader
-              title="Terms & Policies"
-              description="Standard terms displayed on your quotations and invoices."
-              icon={ShieldCheck}
-              onEdit={() => setOpenDialog("terms")}
-            />
-            <div className="bg-muted/30 rounded-xl p-6">
-              {settings?.terms?.length > 0 ? (
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {settings.terms.map((term: string, i: number) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-foreground/80 bg-background/50 p-3 rounded-lg border border-border/50">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-[-2px]">
-                        {i + 1}
-                      </span>
-                      <span className="leading-relaxed">{term}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-8">
-                  <Megaphone className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground italic">No terms configured yet.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          {/* Terms */}
+          <Card className="md:col-span-2 border-muted/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <CardContent className="pt-6">
+              <SectionHeader
+                title="Terms & Policies"
+                description="Standard terms displayed on your quotations and invoices."
+                icon={ShieldCheck}
+                onEdit={() => setOpenDialog("terms")}
+              />
+              <div className="bg-muted/30 rounded-xl p-6">
+                {settings?.terms?.length > 0 ? (
+                  <ul className="grid gap-3 sm:grid-cols-2">
+                    {settings.terms.map((term: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-foreground/80 bg-background/50 p-3 rounded-lg border border-border/50">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-[-2px]">
+                          {i + 1}
+                        </span>
+                        <span className="leading-relaxed">{term}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-center py-8">
+                    <Megaphone className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground italic">No terms configured yet.</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* --- Dialogs --- */}
+
+        <GeneralDialog
+          open={openDialog === "general"}
+          onOpenChange={(open) => setOpenDialog(open ? "general" : null)}
+          defaultValues={defaultValues}
+          mutation={updateMutation}
+        />
+
+        <ContactDialog
+          open={openDialog === "contact"}
+          onOpenChange={(open) => setOpenDialog(open ? "contact" : null)}
+          defaultValues={defaultValues}
+          mutation={updateMutation}
+        />
+
+        <LocationDialog
+          open={openDialog === "location"}
+          onOpenChange={(open) => setOpenDialog(open ? "location" : null)}
+          defaultValues={defaultValues}
+          mutation={updateMutation}
+        />
+
+        <TermsDialog
+          open={openDialog === "terms"}
+          onOpenChange={(open) => setOpenDialog(open ? "terms" : null)}
+          defaultValues={defaultValues}
+          mutation={updateMutation}
+        />
+
       </div>
-
-      {/* --- Dialogs --- */}
-
-      <GeneralDialog
-        open={openDialog === "general"}
-        onOpenChange={(open) => setOpenDialog(open ? "general" : null)}
-        defaultValues={defaultValues}
-        mutation={updateMutation}
-      />
-
-      <ContactDialog
-        open={openDialog === "contact"}
-        onOpenChange={(open) => setOpenDialog(open ? "contact" : null)}
-        defaultValues={defaultValues}
-        mutation={updateMutation}
-      />
-
-      <LocationDialog
-        open={openDialog === "location"}
-        onOpenChange={(open) => setOpenDialog(open ? "location" : null)}
-        defaultValues={defaultValues}
-        mutation={updateMutation}
-      />
-
-      <TermsDialog
-        open={openDialog === "terms"}
-        onOpenChange={(open) => setOpenDialog(open ? "terms" : null)}
-        defaultValues={defaultValues}
-        mutation={updateMutation}
-      />
-
-    </div>
+    </DashboardPageWrapper>
   );
 }
 

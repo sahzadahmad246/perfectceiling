@@ -1,7 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import { Service } from "@/models/Service";
 import { Category } from "@/models/Category";
-import { Subcategory } from "@/models/Subcategory";
+
 import { Testimonial } from "@/models/Testimonial";
 import { BusinessSettings } from "@/models/BusinessSettings";
 
@@ -29,7 +29,7 @@ interface DbService {
   images?: ImageRef[];
   status: string;
   categoryId: string;
-  subcategoryId: string;
+
   summary?: string;
   description?: string;
   content?: string;
@@ -42,15 +42,13 @@ interface DbCategory {
   images?: ImageRef[];
 }
 
-interface DbSubcategory {
-  image?: ImageRef;
-}
+
 
 interface DbTestimonial {
   _id: { toString(): string };
   authorName: string;
   message: string;
-  subcategoryId: string;
+  categoryId: string;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -75,19 +73,10 @@ export async function getHeroImages() {
     const categories = await Category.find({ "images.0": { $exists: true } })
       .select("images")
       .lean<DbCategory[]>();
-    const subcategories = await Subcategory.find({ image: { $exists: true } })
-      .select("image")
-      .lean<DbSubcategory[]>();
-
     const allImages: ImageRef[] = [
       ...services.flatMap((s) => s.images || []),
       ...categories.flatMap((c) => c.images || []),
-      ...subcategories
-        .map((sc) => sc.image)
-        .filter((img): img is ImageRef => img !== null && img !== undefined),
     ];
-
-    if (allImages.length === 0) return [];
     
     // We shuffle a clear copy to avoid side effects if needed, 
     // though shuffleArray creates a copy already.
@@ -110,7 +99,7 @@ export async function getPublishedTestimonials() {
       id: t._id.toString(),
       authorName: t.authorName,
       message: t.message,
-      subcategoryId: t.subcategoryId,
+      categoryId: t.categoryId,
       status: t.status,
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,

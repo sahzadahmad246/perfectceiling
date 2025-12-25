@@ -9,11 +9,11 @@ import { TestimonialSchema } from "@/lib/validators/services"
 export async function GET(req: NextRequest) {
   await connectToDatabase()
   const { searchParams } = new URL(req.url)
-  const subcategoryId = searchParams.get("subcategoryId") || undefined
+  const categoryId = searchParams.get("categoryId") || undefined
   const status = (searchParams.get("status") as "published" | "hidden" | null) || "published"
 
-  const filter: { subcategoryId?: string; status?: "published" | "hidden" } = {}
-  if (subcategoryId) filter.subcategoryId = subcategoryId
+  const filter: { categoryId?: string; status?: "published" | "hidden" } = {}
+  if (categoryId) filter.categoryId = categoryId
   if (status) filter.status = status
 
   const raw = await Testimonial.find(filter).sort({ createdAt: -1 }).lean()
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     _id: { toString(): string }
     authorName: string
     message: string
-    subcategoryId: string
+    categoryId: string
     status: "published" | "hidden"
     createdAt: Date
     updatedAt: Date
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       id: t._id.toString(),
       authorName: t.authorName,
       message: t.message,
-      subcategoryId: t.subcategoryId,
+      categoryId: t.categoryId,
       status: t.status,
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,

@@ -9,7 +9,6 @@ export async function GET() {
     items.map((s) => ({
       id: s._id.toString(),
       categoryId: s.categoryId,
-      subcategoryId: s.subcategoryId,
       title: s.title,
       slug: s.slug,
       summary: s.summary || "",

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Service } from "@/models/Service";
 import { Category } from "@/models/Category";
-import { Subcategory } from "@/models/Subcategory";
 import { connectToDatabase } from "@/lib/db";
 
 // Define response data type
@@ -9,8 +8,6 @@ interface ImageRef {
   url: string;
   publicId: string;
 }
-
-
 
 // Function to shuffle an array (Fisher-Yates shuffle)
 function shuffleArray<T>(array: T[]): T[] {
@@ -26,24 +23,18 @@ export async function GET() {
   try {
     await connectToDatabase(); 
 
-    // Fetch all images from Service, Category, and Subcategory
+    // Fetch all images from Service and Category
     const services = await Service.find({ "images.0": { $exists: true } })
       .select("images")
       .lean();
     const categories = await Category.find({ "images.0": { $exists: true } })
       .select("images")
       .lean();
-    const subcategories = await Subcategory.find({ image: { $exists: true } })
-      .select("image")
-      .lean();
 
     // Aggregate all images into a single array
     const allImages: ImageRef[] = [
       ...services.flatMap((service) => service.images || []),
       ...categories.flatMap((category) => category.images || []),
-      ...subcategories
-        .map((subcategory) => subcategory.image)
-        .filter((image): image is ImageRef => image !== null && image !== undefined),
     ];
 
     // If no images are found

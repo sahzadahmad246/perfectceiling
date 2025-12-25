@@ -3,18 +3,15 @@
 import Link from "next/link"
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react"
-import type { CategoryDTO, SubcategoryDTO, ServiceDTO } from "@/types/services"
+import type { CategoryDTO, ServiceDTO } from "@/types/services"
 import { Briefcase, Tag, DollarSign, Home, ChevronRight, ArrowLeft } from "lucide-react"
 
 interface ServiceClientPageProps {
-  category: string
-  subcategory: string
-  service: string
+  slug: string
 }
 
-export default function ServiceClientPage({ category, subcategory, service }: ServiceClientPageProps) {
+export default function ServiceClientPage({ slug }: ServiceClientPageProps) {
   const [cat, setCat] = useState<CategoryDTO | null>(null)
-  const [sub, setSub] = useState<SubcategoryDTO | null>(null)
   const [s, setS] = useState<ServiceDTO | null>(null)
   const [loading, setLoading] = useState(true)
   const [testimonials, setTestimonials] = useState<Array<{ id: string; authorName: string; message: string }>>([])
@@ -22,29 +19,26 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch lists and resolve by slug client-side since our API uses IDs
-        const [categoriesRes, subcategoriesRes, servicesRes] = await Promise.all([
+        const [categoriesRes, servicesRes] = await Promise.all([
           fetch(`/api/services/categories`),
-          fetch(`/api/services/subcategories`),
           fetch(`/api/services/list`),
         ])
 
-        const [categories, subcategories, services] = await Promise.all([
+        const [categories, services] = await Promise.all([
           categoriesRes.json(),
-          subcategoriesRes.json(),
           servicesRes.json(),
         ])
 
-        const currentCategory = (categories as CategoryDTO[]).find((c) => c.slug === category) || null
-        const currentSubcategory = (subcategories as SubcategoryDTO[]).find((s) => s.slug === subcategory) || null
-        const currentService = (services as ServiceDTO[]).find((svc) => svc.slug === service) || null
+        const currentService = (services as ServiceDTO[]).find((svc) => svc.slug === slug) || null
+        const currentCategory = currentService
+          ? (categories as CategoryDTO[]).find((c) => c.id === currentService.categoryId) || null
+          : null
 
         setCat(currentCategory)
-        setSub(currentSubcategory)
         setS(currentService)
 
-        if (currentSubcategory) {
-          const tRes = await fetch(`/api/testimonials?subcategoryId=${currentSubcategory.id}&status=published`)
+        if (currentCategory) {
+          const tRes = await fetch(`/api/testimonials?categoryId=${currentCategory.id}&status=published`)
           if (tRes.ok) {
             const t = await tRes.json()
             setTestimonials(t)
@@ -58,7 +52,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
     }
 
     fetchData()
-  }, [category, subcategory, service])
+  }, [slug])
 
   if (loading) {
     return (
@@ -71,7 +65,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
     )
   }
 
-  if (!cat || !sub || !s) {
+  if (!cat || !s) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4">
         <div className="text-center">
@@ -122,7 +116,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
         .rich-content span { @apply text-xs sm:text-sm lg:text-base; }
       `}</style>
 
-      {/* Header section - keep in container */}
+      {/* Header section */}
       <div className="bg-white/80 backdrop-blur-lg border-b border-slate-200/60">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
           <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
@@ -142,21 +136,11 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
               <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400 flex-shrink-0" />
               <li className="min-w-0 max-w-[80px] sm:max-w-[120px] lg:max-w-none">
                 <Link
-                  href={`/services/${category}`}
+                  href={`/services/${cat.slug}`}
                   className="hover:text-blue-600 transition-colors truncate block"
                   title={cat.name}
                 >
                   {cat.name}
-                </Link>
-              </li>
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400 flex-shrink-0" />
-              <li className="min-w-0 max-w-[80px] sm:max-w-[120px] lg:max-w-none">
-                <Link
-                  href={`/services/${category}/${subcategory}`}
-                  className="hover:text-blue-600 transition-colors truncate block"
-                  title={sub.name}
-                >
-                  {sub.name}
                 </Link>
               </li>
               <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400 flex-shrink-0" />
@@ -172,18 +156,18 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
           </nav>
 
           <Link
-            href={`/services/${category}/${subcategory}`}
+            href={`/services/${cat.slug}`}
             className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-600 hover:text-blue-600 transition-colors mb-4 sm:mb-6"
           >
             <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="truncate">Back to {sub.name}</span>
+            <span className="truncate">Back to {cat.name}</span>
           </Link>
         </div>
       </div>
 
       <div className="sm:max-w-4xl sm:mx-auto py-6 sm:py-8 lg:py-12">
         <article className="bg-white/80 backdrop-blur-sm border-0 sm:border border-slate-200 rounded-none sm:rounded-xl sm:rounded-2xl shadow-none sm:shadow-xl overflow-hidden mx-0 sm:mx-3 lg:mx-8">
-          {/* Title section - full width on mobile */}
+          {/* Title section */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
             <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg flex-shrink-0 border border-white/30">
@@ -200,17 +184,12 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
                       {cat.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs sm:text-sm font-medium border border-white/30">
-                    <span className="truncate max-w-[80px] sm:max-w-[120px] lg:max-w-none" title={sub.name}>
-                      {sub.name}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Summary section - full width on mobile */}
+          {/* Summary section */}
           {s.summary && (
             <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-3 sm:px-6 lg:px-8 py-3 sm:py-6 border-b border-slate-200/60">
               <div className="flex items-start gap-2 sm:gap-4">
@@ -227,7 +206,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
             </div>
           )}
 
-          {/* Price section - full width on mobile */}
+          {/* Price section */}
           {s.priceRange && (
             <div className="bg-white px-3 sm:px-6 lg:px-8 py-3 sm:py-5 border-b border-slate-200/60">
               <div className="flex items-center justify-center">
@@ -239,14 +218,14 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
             </div>
           )}
 
-          {/* Main content - reduced padding on mobile */}
+          {/* Main content */}
           <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
             {/* Gallery code */}
             {(() => {
               const gallery =
                 s?.images && s.images.length
                   ? s.images
-                  : ([sub?.image, ...(cat?.images || [])].filter(Boolean) as { url: string; publicId: string }[])
+                  : (cat?.images || []).filter(Boolean) as { url: string; publicId: string }[]
               return gallery.length ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8">
                   {gallery.map((img) => (
@@ -261,7 +240,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
               ) : null
             })()}
 
-            {/* Overview section - reduced spacing on mobile */}
+            {/* Overview section */}
             {s.description && (
               <div className="mb-4 sm:mb-6 lg:mb-8">
                 <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-slate-900 mb-2 sm:mb-3 lg:mb-4 flex items-center gap-2">
@@ -274,7 +253,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
               </div>
             )}
 
-            {/* Details section - reduced spacing on mobile */}
+            {/* Details section */}
             {s.content && (
               <div className="mb-4 sm:mb-6 lg:mb-8">
                 <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-slate-900 mb-2 sm:mb-3 lg:mb-4 flex items-center gap-2">
@@ -287,7 +266,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
               </div>
             )}
 
-            {/* Tags section - reduced mobile padding */}
+            {/* Tags section */}
             {s.tags?.length ? (
               <div className="mb-4 sm:mb-6 lg:mb-8">
                 <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-slate-900 mb-2 sm:mb-3 lg:mb-4 flex items-center gap-2">
@@ -307,7 +286,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
               </div>
             ) : null}
 
-            {/* CTA section - reduced mobile padding */}
+            {/* CTA section */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-3 sm:p-6 border border-blue-100">
               <div className="text-center">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 sm:mb-2">
@@ -335,21 +314,21 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
           </div>
         </article>
 
-        {/* Related services and testimonials - reduced mobile spacing */}
+        {/* Related services and testimonials */}
         <div className="mt-6 sm:mt-10 lg:mt-12 px-3 sm:px-0">
           <div className="mt-8 sm:mt-10 lg:mt-12">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mb-4 sm:mb-6 text-center">
               More services in{" "}
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {sub.name}
+                {cat.name}
               </span>
             </h2>
             <div className="text-center">
               <Link
-                href={`/services/${category}/${subcategory}`}
+                href={`/services/${cat.slug}`}
                 className="inline-flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 font-medium rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-sm sm:text-base"
               >
-                <span className="truncate">View all {sub.name} services</span>
+                <span className="truncate">View all {cat.name} services</span>
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
               </Link>
             </div>
@@ -371,7 +350,7 @@ export default function ServiceClientPage({ category, subcategory, service }: Se
               ))}
               {testimonials.length === 0 && (
                 <div className="text-center text-slate-500 text-xs sm:text-sm col-span-full">
-                  No testimonials yet for this subcategory.
+                  No testimonials yet for this service category.
                 </div>
               )}
             </div>

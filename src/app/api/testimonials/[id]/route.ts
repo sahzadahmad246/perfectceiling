@@ -17,7 +17,7 @@ export async function GET(
     id: t._id.toString(),
     authorName: t.authorName,
     message: t.message,
-    subcategoryId: t.subcategoryId,
+
     status: t.status,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,

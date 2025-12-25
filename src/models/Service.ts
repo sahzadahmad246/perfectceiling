@@ -4,7 +4,6 @@ export type ServiceStatus = "active" | "inactive"
 
 export interface IService extends Document {
   categoryId: string
-  subcategoryId: string
   title: string
   slug: string
   summary?: string
@@ -21,7 +20,6 @@ export interface IService extends Document {
 const ServiceSchema = new Schema<IService>(
   {
     categoryId: { type: String, required: true, index: true },
-    subcategoryId: { type: String, required: true, index: true },
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true, index: true },
     summary: { type: String },

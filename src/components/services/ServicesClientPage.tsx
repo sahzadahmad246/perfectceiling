@@ -2,40 +2,36 @@
 
 import Link from "next/link"
 /* eslint-disable @next/next/no-img-element */
-import type { CategoryDTO, SubcategoryDTO, ServiceDTO } from "@/types/services"
+import { CategoryDTO, ServiceDTO } from "@/types/services"
 import { Briefcase, Tag, ArrowRight, Home, ChevronRight } from "lucide-react"
 import { useEffect, useState } from "react"
 
 export default function ServicesClientPage() {
   const [services, setServices] = useState<ServiceDTO[]>([])
   const [categories, setCategories] = useState<CategoryDTO[]>([])
-  const [subcategories, setSubcategories] = useState<SubcategoryDTO[]>([])
-  const [isLoading, setIsLoading] = useState(true) // Add loading state
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true) // Set loading to true before fetching
+      setIsLoading(true)
       try {
         const servicesData = await fetch("/api/services/list").then((res) => res.json())
         const categoriesData = await fetch("/api/services/categories").then((res) => res.json())
-        const subcategoriesData = await fetch("/api/services/subcategories").then((res) => res.json())
 
         setServices(servicesData)
         setCategories(categoriesData)
-        setSubcategories(subcategoriesData)
       } catch (error) {
         console.error("Failed to fetch data:", error)
       } finally {
-        setIsLoading(false) // Set loading to false after fetching
+        setIsLoading(false)
       }
     }
 
     fetchData()
   }, [])
 
-  // Create lookup maps for efficient category/subcategory name resolution
+  // Create lookup maps for efficient category name resolution
   const categoryMap = new Map(categories.map((c) => [c.id, c]))
-  const subcategoryMap = new Map(subcategories.map((s) => [s.id, s]))
 
   // Loading UI
   if (isLoading) {
@@ -146,12 +142,11 @@ export default function ServicesClientPage() {
           {services.map((service) => {
             const serviceId = service.id
             const category = categoryMap.get(service.categoryId)
-            const subcategory = subcategoryMap.get(service.subcategoryId)
-            const imageUrl = service.images?.[0]?.url || subcategory?.image?.url || category?.images?.[0]?.url
+            const imageUrl = service.images?.[0]?.url || category?.images?.[0]?.url
 
             return (
               <Link
-                href={`/services/${category?.slug}/${subcategory?.slug}/${service.slug}`}
+                href={`/services/${service.slug}`} // Changed to simple slug
                 key={serviceId}
                 className="group block"
               >
@@ -187,15 +182,6 @@ export default function ServicesClientPage() {
                         >
                           <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                           <span className="truncate max-w-20 sm:max-w-none">{category.name}</span>
-                        </Link>
-                      )}
-                      {subcategory && (
-                        <Link
-                          href={`/services/${category?.slug}/${subcategory.slug}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200 hover:border-blue-300 transition-colors"
-                        >
-                          <span className="truncate max-w-24 sm:max-w-none">{subcategory.name}</span>
                         </Link>
                       )}
                     </div>
@@ -236,12 +222,12 @@ export default function ServicesClientPage() {
               "@type": "Service",
               name: service.title,
               description: service.summary || service.description,
-              url: `/services/${categoryMap.get(service.categoryId)?.slug}/${subcategoryMap.get(service.subcategoryId)?.slug}/${service.slug}`,
+              url: `/services/${service.slug}`,
               offers: service.priceRange
                 ? {
-                    "@type": "Offer",
-                    price: service.priceRange,
-                  }
+                  "@type": "Offer",
+                  price: service.priceRange,
+                }
                 : undefined,
             })),
           }),

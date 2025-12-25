@@ -1,222 +1,90 @@
-import Link from "next/link";
-import { Suspense } from "react";
-import { HeroImages } from "@/components/home/HeroImages";
-import { Testimonials } from "@/components/home/Testimonials";
-import { ServicesPreview } from "@/components/home/ServicesPreview";
-import { BusinessCta } from "@/components/home/BusinessCta";
+import { Hero } from "@/components/home/Hero"
+import ServicesGrid from "@/components/home/ServicesGrid"
+import { FeatureSection } from "@/components/home/FeatureSection"
+import { ProcessTimeline } from "@/components/home/ProcessTimeline"
+import { Testimonials } from "@/components/home/Testimonials"
+import { Newsletter } from "@/components/home/Newsletter"
+import Link from "next/link"
+import { Metadata } from "next"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "Perfect Ceiling | Expert False Ceiling & POP Wall Plastering Solutions",
+  description: "Transform your home and office with Perfect Ceiling. We specialize in modern Gypsum False Ceilings, POP Wall Punishing, Armstrong Grid Systems, and Wooden accents.",
+  keywords: ["False Ceiling", "POP Plaster", "Armstrong Ceiling", "Wall Decor", "Interior Contractor", "Gypsum Design"],
+  openGraph: {
+    title: "Perfect Ceiling - Expert Wall & Ceiling Solutions",
+    description: "Premium false ceiling and wall plastering services for homes and offices.",
+    images: ["/images/home/hero.png"],
+  },
+}
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="relative bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100/90 overflow-hidden">
-        <div className="absolute inset-0 opacity-40">
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/30 to-transparent transform rotate-12 animate-pulse"
-            style={{ animationDuration: "4s" }}
-          ></div>
-          <div
-            className="absolute inset-0 bg-gradient-to-l from-transparent via-orange-200/25 to-transparent transform -rotate-12 animate-pulse"
-            style={{ animationDuration: "6s", animationDelay: "1s" }}
-          ></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-orange-300/15 to-transparent rounded-full blur-3xl"></div>
-        </div>
+    <main className="min-h-screen bg-white">
+      <Hero />
+      <ServicesGrid />
+      <FeatureSection />
+      <ProcessTimeline />
+      <Testimonials />
+      <Newsletter />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
-          <div className="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
-            {/* Hero Content */}
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-primary/15 to-primary/10 text-primary text-sm font-bold mb-8 shadow-lg backdrop-blur-sm border border-primary/20">
-                <span className="w-2 h-2 bg-primary rounded-full mr-3 animate-pulse"></span>✨ Premium Ceiling Solutions
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-8 leading-tight">
-                Transform Your Space with
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-600 to-primary mt-2 animate-pulse">
-                  Perfect Ceilings
-                </span>
-              </h1>
-              <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                Expert craftsmanship meets modern design. From elegant installations to precision repairs, we create
-                ceiling solutions that elevate your space to new heights.
+      {/* Footer Section */}
+      <footer className="bg-slate-950 pt-32 pb-12 px-4 sm:px-6 lg:px-8 mt-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-12 lg:gap-8 mb-16 text-slate-400">
+            <div className="col-span-2 md:col-span-1">
+              <h3 className="text-white text-2xl font-bold mb-6">PerfectCeiling</h3>
+              <p className="leading-relaxed mb-6">
+                Your trusted partner for professional false ceiling and wall plastering services. Quality execution, every time.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6">
-                <Link
-                  href="/services"
-                  className="group w-full sm:w-auto px-10 py-5 text-lg font-bold bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-2xl hover:from-primary/90 hover:to-primary transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105"
-                >
-                  <span className="flex items-center justify-center">
-                    Explore Our Services
-                    <svg
-                      className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </Link>
-                <Link
-                  href="/contact"
-                  className="group w-full sm:w-auto px-10 py-5 text-lg font-bold border-2 border-primary bg-white/80 text-primary rounded-2xl hover:bg-primary hover:text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm"
-                >
-                  Get Free Estimate
-                </Link>
+              <div className="flex gap-4">
+                {/* Social Icons Placeholder */}
+                <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center hover:bg-white hover:text-slate-900 transition-colors cursor-pointer">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" /></svg>
+                </div>
+                <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center hover:bg-white hover:text-slate-900 transition-colors cursor-pointer">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.072 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg>
+                </div>
               </div>
             </div>
 
-            {/* Hero Images Grid */}
-            <Suspense
-              fallback={
-                <div className="grid grid-cols-2 gap-4 lg:gap-6">
-                  <div className="space-y-4 lg:space-y-6">
-                    <div className="aspect-square rounded-2xl overflow-hidden shadow-xl bg-muted animate-pulse" />
-                    <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl bg-muted animate-pulse" />
-                  </div>
-                  <div className="space-y-4 lg:space-y-6 pt-8 lg:pt-12">
-                    <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl bg-muted animate-pulse" />
-                    <div className="aspect-square rounded-2xl overflow-hidden shadow-xl bg-muted animate-pulse" />
-                  </div>
-                </div>
-              }
-            >
-              <HeroImages />
-            </Suspense>
+            <div>
+              <h4 className="text-white font-bold mb-6">Services</h4>
+              <ul className="space-y-4">
+                <li><Link href="/services/false-ceilings" className="hover:text-white transition-colors">False Ceilings</Link></li>
+                <li><Link href="/services/pop-plaster" className="hover:text-white transition-colors">POP Wall Plaster</Link></li>
+                <li><Link href="/services/grid-ceiling" className="hover:text-white transition-colors">Grid Systems</Link></li>
+                <li><Link href="/services/wooden-ceiling" className="hover:text-white transition-colors">Wooden Design</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-6">Company</h4>
+              <ul className="space-y-4">
+                <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/projects" className="hover:text-white transition-colors">Our Projects</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-6">Contact</h4>
+              <ul className="space-y-4">
+                <li><a href="mailto:info@perfectceiling.com" className="hover:text-white transition-colors">info@perfectceiling.com</a></li>
+                <li>+91 98765 43210</li>
+                <li>123, Interiors Lane, Cityville</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-800 pt-8 text-center text-sm text-slate-500">
+            &copy; {new Date().getFullYear()} PerfectCeiling. All rights reserved.
           </div>
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 space-y-24">
-          {/* Services Section */}
-          <div className="space-y-12">
-            <div className="text-center max-w-4xl mx-auto">
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-                Our Expertise
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 leading-tight">
-                Our Popular
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600 mt-2">
-                  Services
-                </span>
-              </h2>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Discover our most requested ceiling solutions, crafted with precision and attention to detail that
-                exceeds expectations
-              </p>
-            </div>
-            <Suspense
-              fallback={
-                <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 ">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="bg-muted rounded-2xl h-80 animate-pulse" />
-                  ))}
-                </div>
-              }
-            >
-              <ServicesPreview />
-            </Suspense>
-            <div className="text-center">
-              <Link
-                href="/services"
-                className="group inline-flex items-center px-8 py-4 text-lg font-bold text-primary hover:text-primary/80 transition-colors bg-white/80 rounded-2xl shadow-lg hover:shadow-xl backdrop-blur-sm border border-primary/20"
-              >
-                View All Services
-                <svg
-                  className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-
-          {/* Contact CTA Section */}
-          <div className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
-            <Suspense fallback={<div className="bg-muted rounded-2xl h-48 animate-pulse" />}>
-              <BusinessCta />
-            </Suspense>
-          </div>
-
-          {/* Testimonials Section */}
-          <div className="space-y-12">
-            <div className="text-center max-w-4xl mx-auto">
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-                Client Stories
-              </div>
-              <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 leading-tight">
-                What Our
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600 mt-2">
-                  Clients Say
-                </span>
-              </h2>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Real experiences from satisfied customers who trusted us with their most important ceiling projects
-              </p>
-            </div>
-            <Suspense
-              fallback={
-                <div className="grid gap-6 md:grid-cols-2">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-muted rounded-2xl h-40 animate-pulse" />
-                  ))}
-                </div>
-              }
-            >
-              <Testimonials />
-            </Suspense>
-          </div>
-        </div>
-
-        <footer className="bg-gradient-to-r from-card/90 to-card/80 backdrop-blur-sm border-t border-border/50 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-              <div className="text-muted-foreground text-lg">
-                © {new Date().getFullYear()} Perfect Ceiling. All rights reserved.
-              </div>
-              <div className="flex flex-wrap gap-8">
-                <Link
-                  href="/services"
-                  className="text-muted-foreground hover:text-primary transition-colors font-semibold text-lg"
-                >
-                  Services
-                </Link>
-                <Link
-                  href="/contact"
-                  className="text-muted-foreground hover:text-primary transition-colors font-semibold text-lg"
-                >
-                  Contact
-                </Link>
-                <Link
-                  href="/profile"
-                  className="text-muted-foreground hover:text-primary transition-colors font-semibold text-lg"
-                >
-                  Profile
-                </Link>
-              </div>
-            </div>
-          </div>
-        </footer>
-      </div>
-    </div>
-  );
+      </footer>
+    </main>
+  )
 }
