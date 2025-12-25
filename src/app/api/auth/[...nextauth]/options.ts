@@ -82,11 +82,9 @@ export const authOptions: NextAuthOptions = {
       
       await connectToDatabase();
       const dbUser = await User.findOne({ email: token.email }).lean();
-      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
-      const email = token.email.toLowerCase();
-      const dbRole = dbUser?.role || "user";
+      const role = dbUser?.role || "user";
       
-      token.role = adminEmail && email === adminEmail ? "admin" : dbRole;
+      token.role = role;
       
       return token;
     },

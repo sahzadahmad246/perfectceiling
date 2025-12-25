@@ -13,6 +13,8 @@ export interface IBusinessSettings extends Document {
   name: string;
   primaryPhone: string;
   secondaryPhone?: string;
+  email?: string;
+  address?: string;
   status: BusinessStatus;
   terms: string[];
   logoUrl?: string;
@@ -27,6 +29,8 @@ const BusinessSettingsSchema = new Schema<IBusinessSettings>(
     name: { type: String, required: true },
     primaryPhone: { type: String, required: true },
     secondaryPhone: { type: String },
+    email: { type: String },
+    address: { type: String },
     status: {
       type: String,
       enum: [
@@ -52,5 +56,3 @@ const BusinessSettingsSchema = new Schema<IBusinessSettings>(
 export const BusinessSettings: Model<IBusinessSettings> =
   mongoose.models.BusinessSettings ||
   mongoose.model<IBusinessSettings>("BusinessSettings", BusinessSettingsSchema);
-
-
