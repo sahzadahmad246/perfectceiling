@@ -45,6 +45,13 @@ export default function Home() {
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-6 pb-10 text-foreground sm:px-8">
       <SiteHeader />
 
+      <div
+        className="-mx-6 border-b border-border-soft bg-surface-muted px-6 py-3 text-center text-sm text-muted sm:-mx-8 sm:px-8"
+        role="status"
+      >
+        This site is under development.
+      </div>
+
       <section className="animate-rise pt-14">
         <p className="text-sm text-muted">
           False ceiling contractor in {siteConfig.city}
