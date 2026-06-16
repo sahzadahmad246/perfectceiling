@@ -1,8 +1,23 @@
 import type { Metadata } from "next";
+import { Montserrat, Plus_Jakarta_Sans } from "next/font/google";
 
 import { AppProviders } from "@/components/app-providers";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
+
+const primaryFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-plus-jakarta",
+  fallback: [],
+});
+
+const secondaryFont = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-montserrat",
+  fallback: [],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -40,8 +55,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full bg-background text-foreground">
+    <html
+      lang="en"
+      className={`${primaryFont.variable} ${secondaryFont.variable} h-full antialiased`}
+    >
+      <body className="min-h-full bg-background font-secondary text-foreground">
         <AppProviders />
         {children}
       </body>

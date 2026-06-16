@@ -138,6 +138,7 @@ export async function updateBusinessSetting(
     }
 
     revalidatePath("/admin/settings");
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     return {
@@ -224,6 +225,7 @@ export async function uploadBusinessLogo(
     }
 
     revalidatePath("/admin/settings");
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     return {

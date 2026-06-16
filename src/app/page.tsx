@@ -1,22 +1,10 @@
-import {
-  ArrowUpRight,
-  FileText,
-  Hammer,
-  MessageCircle,
-  Phone,
-  ReceiptText,
-  Ruler,
-} from "lucide-react";
+import { ArrowUpRight, FileText, Hammer, ReceiptText, Ruler } from "lucide-react";
 import Link from "next/link";
 
+import { HeroSection } from "@/components/hero-section";
 import { SiteHeader } from "@/components/site-header";
+import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { services, siteConfig } from "@/lib/site";
-
-const stats = [
-  ["01", "Site visit and measurement"],
-  ["02", "Clear quotation with item rates"],
-  ["03", "Clean ceiling finish and handover"],
-];
 
 const adminTools = [
   {
@@ -36,10 +24,8 @@ const adminTools = [
   },
 ];
 
-export default function Home() {
-  const whatsappText = encodeURIComponent(
-    "Hi Perfect Ceiling, I want a quotation for ceiling work.",
-  );
+export default async function Home() {
+  const settings = await getPublicBusinessSettings();
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-6 pb-10 text-foreground sm:px-8">
@@ -52,48 +38,11 @@ export default function Home() {
         This site is under development.
       </div>
 
-      <section className="animate-rise pt-14">
-        <p className="text-sm text-muted">
-          False ceiling contractor in {siteConfig.city}
-        </p>
-        <h1 className="mt-5 text-[44px] font-medium leading-[0.98] tracking-normal text-foreground sm:text-5xl">
-          Quiet, clean ceiling work for homes, shops, and offices.
-        </h1>
-        <p className="mt-6 max-w-[34rem] text-[17px] leading-8 text-muted">
-          Perfect Ceiling handles POP false ceiling, PVC ceiling, wooden
-          ceiling, gypsum work, repairs, and finishing with measured pricing and
-          straightforward communication.
-        </p>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
-            href={`https://wa.me/${siteConfig.whatsapp}?text=${whatsappText}`}
-          >
-            <MessageCircle size={17} />
-            WhatsApp
-          </a>
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-border-strong px-5 text-sm font-medium text-foreground transition duration-200 hover:border-primary"
-            href={`tel:${siteConfig.phone}`}
-          >
-            <Phone size={17} />
-            Call now
-          </a>
-        </div>
-      </section>
-
-      <section className="animate-rise-delay mt-14 border-y border-border-soft">
-        {stats.map(([number, label]) => (
-          <div
-            className="grid grid-cols-[3rem_1fr] items-center border-b border-border-soft py-4 last:border-b-0"
-            key={number}
-          >
-            <span className="text-sm text-subtle">{number}</span>
-            <p className="text-[15px] text-foreground">{label}</p>
-          </div>
-        ))}
-      </section>
+      <HeroSection
+        city={settings.city}
+        phone={settings.phone}
+        whatsapp={settings.whatsapp}
+      />
 
       <section className="mt-14">
         <div className="flex items-center justify-between gap-6">

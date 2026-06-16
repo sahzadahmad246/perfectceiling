@@ -12,7 +12,7 @@ export default async function AdminLayout({
   const profile = await getAuthProfile(supabase, user);
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[760px] bg-surface px-6 pb-24 pt-5 text-foreground sm:px-8">
+    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-24 pt-2 text-foreground sm:px-8">
       <AdminHeader profile={profile} />
 
       {children}

@@ -57,13 +57,13 @@ export default async function SettingsPage() {
   return (
     <>
       <section className="mt-4">
-        <div className="mb-4 px-1">
+        <div className="mb-4">
           <h2 className="text-sm font-medium text-foreground">Basic info</h2>
           <p className="mt-1 text-sm text-muted">
             Logo, contact details, and business information.
           </p>
         </div>
-        <div className="rounded-md border border-border-soft bg-surface-raised/60 px-4">
+        <div className="rounded-md border border-border-soft bg-surface-raised/60 px-3 sm:px-4">
           <LogoFieldCard logoUrl={settings.logo_url} />
           {businessFields.map((item) => (
             <SettingsFieldCard
@@ -78,7 +78,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="mt-8">
-        <div className="mb-4 px-1">
+        <div className="mb-4">
           <h2 className="text-sm font-medium text-foreground">
             Payments &amp; terms
           </h2>
@@ -86,7 +86,7 @@ export default async function SettingsPage() {
             Bank details and default terms for quotations and invoices.
           </p>
         </div>
-        <div className="rounded-md border border-border-soft bg-surface-raised/60 px-4">
+        <div className="rounded-md border border-border-soft bg-surface-raised/60 px-3 sm:px-4">
           {documentFields.map((item) =>
             "type" in item && item.type === "terms" ? (
               <TermsFieldCard

@@ -30,7 +30,7 @@ const actions = [
     text: "Save customer name, phone, address, paid amount, and work history.",
   },
   {
-    href: "/admin/quotations/new",
+    href: "/admin/quotations?create=1",
     title: "Create quotation",
     text: "Start an itemized estimate with area, rate, and discount.",
   },
@@ -69,7 +69,9 @@ export default function AdminPage() {
                 <p className="text-sm text-muted">{metric.label}</p>
                 <Icon className="text-muted" size={18} />
               </div>
-              <p className="mt-4 text-3xl font-medium">{metric.value}</p>
+              <p className="font-primary mt-4 text-3xl font-medium">
+                {metric.value}
+              </p>
             </article>
           );
         })}

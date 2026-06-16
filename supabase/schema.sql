@@ -242,6 +242,13 @@ to authenticated
 using (true)
 with check (true);
 
+drop policy if exists "Public can read business settings" on public.business_settings;
+create policy "Public can read business settings"
+on public.business_settings
+for select
+to anon, authenticated
+using (true);
+
 drop policy if exists "Authenticated users can manage business settings" on public.business_settings;
 create policy "Authenticated users can manage business settings"
 on public.business_settings

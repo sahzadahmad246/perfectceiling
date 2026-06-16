@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageUp, Loader2, Pencil, Plus, X } from "lucide-react";
+import { Download, ImageUp, Loader2, Pencil, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -41,6 +41,29 @@ function getTermsPreview(value: string | null) {
   const preview = lines[0].slice(0, 42);
 
   return `${preview}...`;
+}
+
+const settingsModalOverlayClass =
+  "fixed inset-0 z-[9990] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
+
+const termsTextareaClass =
+  "mt-4 h-16 resize-none w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary";
+
+const logoViewerActionClass =
+  "flex size-10 items-center justify-center rounded-full border border-border-strong bg-surface-raised text-foreground shadow-sm transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-70";
+
+function getLogoFileName(url: string) {
+  try {
+    const segment = new URL(url).pathname.split("/").pop();
+
+    if (segment?.includes(".")) {
+      return segment;
+    }
+  } catch {
+    // Fall back to a default filename below.
+  }
+
+  return "business-logo.png";
 }
 
 function ModalSubmitButton({
@@ -121,7 +144,7 @@ export function SettingsFieldCard({
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[9990] flex items-end bg-primary/45 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
+        <div className={settingsModalOverlayClass}>
           <button
             aria-label="Close edit modal"
             className="absolute inset-0"
@@ -257,7 +280,7 @@ export function TermsFieldCard({ field, label, value }: TermsFieldCardProps) {
       </button>
 
       {viewOpen ? (
-        <div className="fixed inset-0 z-[9990] flex items-end bg-primary/45 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
+        <div className={settingsModalOverlayClass}>
           <button
             aria-label="Close terms view modal"
             className="absolute inset-0"
@@ -305,7 +328,7 @@ export function TermsFieldCard({ field, label, value }: TermsFieldCardProps) {
       ) : null}
 
       {editOpen ? (
-        <div className="fixed inset-0 z-[9990] flex items-end bg-primary/45 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
+        <div className={settingsModalOverlayClass}>
           <button
             aria-label="Close terms edit modal"
             className="absolute inset-0"
@@ -325,10 +348,11 @@ export function TermsFieldCard({ field, label, value }: TermsFieldCardProps) {
             />
             <p className="text-sm font-medium">{label}</p>
             <textarea
-              className="mt-4 min-h-32 w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary"
+              className={termsTextareaClass}
               disabled={isPending}
               onChange={(event) => setTermDraft(event.target.value)}
               placeholder="Write a term, then click Add"
+              rows={2}
               value={termDraft}
             />
             <div className="mt-3 flex justify-end">
@@ -392,12 +416,17 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [isDownloadingLogo, setIsDownloadingLogo] = useState(false);
+  const [hideExistingLogo, setHideExistingLogo] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [state, formAction, isPending] = useActionState<
     SettingsActionResult | null,
     FormData
   >(uploadBusinessLogo, null);
+  const displayImageUrl =
+    previewUrl ?? (hideExistingLogo ? null : logoUrl);
 
   useEffect(() => {
     return () => {
@@ -406,6 +435,23 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
       }
     };
   }, [previewUrl]);
+
+  useEffect(() => {
+    if (!viewerOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [viewerOpen]);
 
   const resetSelection = useCallback(() => {
     setPreviewUrl((currentPreviewUrl) => {
@@ -422,13 +468,28 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
     }
   }, []);
 
+  function openModal() {
+    setHideExistingLogo(false);
+    setOpen(true);
+  }
+
   function closeModal() {
     if (isPending) {
       return;
     }
 
     resetSelection();
+    setHideExistingLogo(false);
     setOpen(false);
+  }
+
+  function clearLogoPreview() {
+    if (selectedFile) {
+      resetSelection();
+      return;
+    }
+
+    setHideExistingLogo(true);
   }
 
   useEffect(() => {
@@ -440,6 +501,7 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
       if (state.success) {
         toast.success("Logo uploaded.");
         resetSelection();
+        setHideExistingLogo(false);
         setOpen(false);
         router.refresh();
         return;
@@ -452,6 +514,42 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
       window.clearTimeout(timer);
     };
   }, [resetSelection, router, state]);
+
+  async function downloadLogo() {
+    if (!logoUrl || isDownloadingLogo) {
+      return;
+    }
+
+    setIsDownloadingLogo(true);
+
+    const fileName = getLogoFileName(logoUrl);
+
+    try {
+      const response = await fetch(logoUrl);
+
+      if (!response.ok) {
+        throw new Error("Download failed");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      const link = document.createElement("a");
+      link.href = logoUrl;
+      link.download = fileName;
+      link.rel = "noopener noreferrer";
+      link.target = "_blank";
+      link.click();
+    } finally {
+      setIsDownloadingLogo(false);
+    }
+  }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -472,18 +570,25 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
   return (
     <article className="flex items-center justify-between gap-4 border-b border-border-soft py-4">
       <div className="flex min-w-0 items-center gap-4">
-        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-surface">
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {logoUrl ? (
+          <button
+            aria-label="View logo fullscreen"
+            className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-strong bg-surface transition hover:border-primary"
+            onClick={() => setViewerOpen(true)}
+            type="button"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="Business logo"
               className="size-full object-cover"
               src={logoUrl}
             />
-          ) : (
+          </button>
+        ) : (
+          <div className="flex size-14 shrink-0 items-center justify-center rounded-md border border-border-strong bg-surface">
             <ImageUp className="text-muted" size={20} />
-          )}
-        </div>
+          </div>
+        )}
         <div className="min-w-0">
           <p className="text-sm text-muted">Logo</p>
           <p className="mt-1 truncate text-sm text-foreground">
@@ -494,14 +599,58 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
       <button
         aria-label="Edit logo"
         className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-muted transition hover:border-primary hover:text-foreground"
-        onClick={() => setOpen(true)}
+        onClick={openModal}
         type="button"
       >
         <Pencil size={15} />
       </button>
 
+      {viewerOpen && logoUrl ? (
+        <div className="fixed inset-0 z-[9995] h-dvh w-full overflow-hidden bg-primary/92 backdrop-blur-md">
+          <button
+            aria-label="Close logo preview"
+            className="absolute inset-0"
+            onClick={() => setViewerOpen(false)}
+            type="button"
+          />
+          <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+            <button
+              aria-busy={isDownloadingLogo}
+              aria-label={isDownloadingLogo ? "Downloading logo" : "Download logo"}
+              className={logoViewerActionClass}
+              disabled={isDownloadingLogo}
+              onClick={downloadLogo}
+              type="button"
+            >
+              {isDownloadingLogo ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Download size={18} />
+              )}
+            </button>
+            <button
+              aria-label="Dismiss logo preview"
+              className={logoViewerActionClass}
+              disabled={isDownloadingLogo}
+              onClick={() => setViewerOpen(false)}
+              type="button"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div className="flex h-full w-full items-center justify-center p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt="Business logo fullscreen preview"
+              className="relative z-10 max-h-full max-w-full object-contain"
+              src={logoUrl}
+            />
+          </div>
+        </div>
+      ) : null}
+
       {open ? (
-        <div className="fixed inset-0 z-[9990] flex items-end bg-primary/45 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
+        <div className={settingsModalOverlayClass}>
           <button
             aria-label="Close logo modal"
             className="absolute inset-0"
@@ -511,9 +660,12 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
           />
           <form
             action={formAction}
-            className="relative z-10 w-full max-w-md rounded-lg border border-border-soft bg-surface-raised p-5 shadow-popover"
+            className="relative z-10 w-full max-w-sm rounded-lg border border-border-soft bg-surface-raised p-5 shadow-popover"
           >
             <p className="text-sm font-medium">Upload logo</p>
+            <p className="mt-1 text-xs text-muted">
+              Tap the square to choose an image.
+            </p>
 
             <input
               accept="image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg"
@@ -525,68 +677,58 @@ export function LogoFieldCard({ logoUrl }: { logoUrl: string | null }) {
               type="file"
             />
 
-            {selectedFile && previewUrl ? (
-              <div className="mt-4 rounded-md border border-border-strong bg-surface p-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-soft bg-surface-raised">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt="Selected logo preview"
-                      className="size-full object-cover"
-                      src={previewUrl}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {selectedFile.name}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      {(selectedFile.size / 1024).toFixed(1)} KB
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        className="h-8 rounded-full border border-border-strong px-3 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-70"
-                        disabled={isPending}
-                        onClick={resetSelection}
-                        type="button"
-                      >
-                        Remove
-                      </button>
-                      <button
-                        className="h-8 rounded-full border border-border-strong px-3 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-70"
-                        disabled={isPending}
-                        onClick={() => fileInputRef.current?.click()}
-                        type="button"
-                      >
-                        Reselect
-                      </button>
+            <div className="mt-5 flex justify-center">
+              <div className="relative size-36">
+                {displayImageUrl ? (
+                  <>
+                    <div className="size-full overflow-hidden rounded-xl border border-border-strong bg-surface">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt={
+                          selectedFile
+                            ? "Selected logo preview"
+                            : "Current business logo"
+                        }
+                        className="size-full object-cover"
+                        src={displayImageUrl}
+                      />
                     </div>
-                  </div>
+                    <button
+                      aria-label={
+                        selectedFile
+                          ? "Remove selected logo"
+                          : "Clear current logo preview"
+                      }
+                      className="absolute -right-2 -top-2 flex size-8 items-center justify-center rounded-full border border-border-strong bg-surface-raised text-muted shadow-sm transition hover:border-primary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
+                      disabled={isPending}
+                      onClick={clearLogoPreview}
+                      type="button"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                ) : (
                   <button
-                    aria-label="Remove selected logo"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border-strong text-muted transition hover:border-primary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
+                    className="flex size-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong bg-surface text-muted transition hover:border-primary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
                     disabled={isPending}
-                    onClick={resetSelection}
+                    onClick={() => fileInputRef.current?.click()}
                     type="button"
                   >
-                    <X size={14} />
+                    <ImageUp size={24} />
+                    <span className="text-xs">Select image</span>
                   </button>
-                </div>
+                )}
               </div>
-            ) : (
-              <button
-                className="mt-3 flex h-28 w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border-strong bg-surface text-sm text-muted transition hover:border-primary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={isPending}
-                onClick={() => fileInputRef.current?.click()}
-                type="button"
-              >
-                <ImageUp size={20} />
-                Select logo file
-              </button>
-            )}
+            </div>
 
-            <p className="mt-3 text-xs leading-5 text-muted">
-              Use PNG, JPG, WEBP, or SVG. Maximum size 5MB.
+            {selectedFile ? (
+              <p className="mt-4 text-center text-xs text-muted">
+                {selectedFile.name} · {(selectedFile.size / 1024).toFixed(1)} KB
+              </p>
+            ) : null}
+
+            <p className="mt-4 text-center text-xs leading-5 text-muted">
+              PNG, JPG, WEBP, or SVG. Max 5MB.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
