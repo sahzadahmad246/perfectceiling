@@ -1,13 +1,16 @@
 "use client";
 
-import { FileText, Search } from "lucide-react";
-import Link from "next/link";
+import { FileText, Loader2, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import type { QuotationDefaults } from "@/app/admin/quotations/actions";
+import {
+  getQuotationEditData,
+  type QuotationDefaults,
+} from "@/app/admin/quotations/actions";
+import { QuotationCard } from "@/components/quotation-card";
 import { QuotationCreateModal } from "@/components/quotation-create-modal";
-import { formatCurrency, type QuotationListItem } from "@/lib/quotations";
+import type { CreateQuotationInput, QuotationListItem } from "@/lib/quotations";
 
 type QuotationsPageClientProps = {
   quotations: QuotationListItem[];
@@ -21,7 +24,12 @@ export function QuotationsPageClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
+  const [editData, setEditData] = useState<CreateQuotationInput | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+
   const createOpen = searchParams.get("create") === "1";
+  const editId = searchParams.get("edit");
+  const modalOpen = createOpen || Boolean(editId);
 
   const filteredQuotations = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -45,8 +53,49 @@ export function QuotationsPageClient({
     });
   }, [query, quotations]);
 
-  function closeCreateModal() {
+  useEffect(() => {
+    if (!editId) {
+      setEditData(null);
+      setLoadingEdit(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    setLoadingEdit(true);
+    setEditData(null);
+
+    getQuotationEditData(editId)
+      .then((data) => {
+        if (cancelled) {
+          return;
+        }
+
+        setEditData(data);
+        setLoadingEdit(false);
+
+        if (!data) {
+          router.replace("/admin/quotations");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoadingEdit(false);
+          router.replace("/admin/quotations");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, router]);
+
+  function closeModal() {
     router.replace("/admin/quotations");
+  }
+
+  function handleEdit(id: string) {
+    router.push(`/admin/quotations?edit=${id}`);
   }
 
   return (
@@ -66,7 +115,7 @@ export function QuotationsPageClient({
       </div>
 
       {filteredQuotations.length === 0 ? (
-        <section className="mt-8 rounded-md border border-border-soft bg-surface-raised/60 p-6 text-center">
+        <section className="mt-8 rounded-xl border border-border-soft bg-surface-raised/60 p-6 text-center">
           <div className="mx-auto flex size-11 items-center justify-center rounded-full border border-border-strong text-muted">
             <FileText size={19} />
           </div>
@@ -82,45 +131,31 @@ export function QuotationsPageClient({
       ) : (
         <div className="mt-5 space-y-3">
           {filteredQuotations.map((quotation) => (
-            <Link
-              className="block rounded-md border border-border-soft bg-surface-raised/60 p-4 transition hover:border-border-strong"
-              href={`/admin/quotations/${quotation.id}`}
+            <QuotationCard
               key={quotation.id}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">
-                    {quotation.quotationNumber}
-                  </p>
-                  <p className="mt-1 truncate text-sm text-muted">
-                    {quotation.customerName}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full border border-border-soft px-2.5 py-1 text-[11px] font-medium capitalize text-muted">
-                  {quotation.status}
-                </span>
-              </div>
-              {quotation.workTitle ? (
-                <p className="mt-3 text-sm text-foreground">
-                  {quotation.workTitle}
-                </p>
-              ) : null}
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="text-muted">{quotation.date}</span>
-                <span className="font-medium">
-                  {formatCurrency(quotation.grandTotal)}
-                </span>
-              </div>
-            </Link>
+              onEdit={handleEdit}
+              quotation={quotation}
+            />
           ))}
         </div>
       )}
 
-      <QuotationCreateModal
-        defaults={defaults}
-        onClose={closeCreateModal}
-        open={createOpen}
-      />
+      {modalOpen && editId && (loadingEdit || !editData) ? (
+        <div className="fixed inset-0 z-[9990] flex justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex h-full w-full max-w-[560px] flex-col items-center justify-center border-x border-border-soft bg-surface">
+            <Loader2 className="animate-spin text-muted" size={28} />
+            <p className="mt-3 text-sm text-muted">Loading quotation...</p>
+          </div>
+        </div>
+      ) : (
+        <QuotationCreateModal
+          defaults={defaults}
+          initialData={editData ?? undefined}
+          onClose={closeModal}
+          open={modalOpen && (!editId || Boolean(editData))}
+          quotationId={editId ?? undefined}
+        />
+      )}
     </>
   );
 }

@@ -62,7 +62,7 @@ create table if not exists public.quotations (
   grand_total numeric(12, 2) not null default 0,
   terms text,
   status text not null default 'draft'
-    check (status in ('draft', 'sent', 'accepted', 'rejected', 'expired')),
+    check (status in ('draft', 'created', 'sent', 'accepted', 'rejected', 'expired')),
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
