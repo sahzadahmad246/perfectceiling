@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Download,
   Loader2,
   MoreVertical,
   Pencil,
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 
 import { deleteQuotation } from "@/app/admin/quotations/actions";
 import { QuotationStatusModal } from "@/components/quotation-status-modal";
+import { downloadQuotationPdf } from "@/lib/download-quotation-pdf";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
@@ -34,11 +36,16 @@ export function QuotationDetailHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isPending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
+      if (isDownloadingPdf) {
+        return;
+      }
+
       if (!menuRef.current?.contains(event.target as Node)) {
         setMenuOpen(false);
       }
@@ -49,11 +56,25 @@ export function QuotationDetailHeader({
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, []);
+  }, [isDownloadingPdf]);
 
   function handleEdit() {
     setMenuOpen(false);
     router.push(`/admin/quotations?edit=${quotationId}`);
+  }
+
+  async function handleDownloadPdf() {
+    setIsDownloadingPdf(true);
+
+    try {
+      await downloadQuotationPdf(quotationId);
+      toast.success("Quotation PDF downloaded.");
+    } catch {
+      toast.error("Could not download PDF.");
+    } finally {
+      setIsDownloadingPdf(false);
+      setMenuOpen(false);
+    }
   }
 
   function handleDelete() {
@@ -96,7 +117,7 @@ export function QuotationDetailHeader({
               aria-expanded={menuOpen}
               aria-label={`Actions for ${quotationNumber}`}
               className="inline-flex size-9 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground disabled:opacity-70"
-              disabled={isPending}
+              disabled={isPending || isDownloadingPdf}
               onClick={() => setMenuOpen((current) => !current)}
               type="button"
             >
@@ -106,7 +127,8 @@ export function QuotationDetailHeader({
             {menuOpen ? (
               <div className="animate-menu-pop absolute right-0 top-10 z-30 w-44 rounded-xl border border-border-soft bg-surface-raised p-1.5 shadow-popover">
                 <button
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                  disabled={isDownloadingPdf || isPending}
                   onClick={handleEdit}
                   type="button"
                 >
@@ -114,7 +136,8 @@ export function QuotationDetailHeader({
                   Edit
                 </button>
                 <button
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                  disabled={isDownloadingPdf || isPending}
                   onClick={() => {
                     setMenuOpen(false);
                     setStatusModalOpen(true);
@@ -125,8 +148,22 @@ export function QuotationDetailHeader({
                   Update status
                 </button>
                 <button
+                  aria-busy={isDownloadingPdf}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                  disabled={isDownloadingPdf || isPending}
+                  onClick={handleDownloadPdf}
+                  type="button"
+                >
+                  {isDownloadingPdf ? (
+                    <Loader2 className="animate-spin" size={15} />
+                  ) : (
+                    <Download size={15} />
+                  )}
+                  {isDownloadingPdf ? "Downloading..." : "Download"}
+                </button>
+                <button
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50 disabled:opacity-70"
-                  disabled={isPending}
+                  disabled={isPending || isDownloadingPdf}
                   onClick={() => {
                     setMenuOpen(false);
                     setConfirmOpen(true);

@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  Download,
   Loader2,
   MoreVertical,
   Pencil,
@@ -16,6 +17,7 @@ import { toast } from "sonner";
 
 import { deleteQuotation } from "@/app/admin/quotations/actions";
 import { QuotationStatusModal } from "@/components/quotation-status-modal";
+import { downloadQuotationPdf } from "@/lib/download-quotation-pdf";
 import {
   formatCurrency,
   formatQuotationDate,
@@ -47,6 +49,7 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isPending, startTransition] = useTransition();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -62,7 +65,7 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
     }
 
     const rect = button.getBoundingClientRect();
-    const menuHeight = 148;
+    const menuHeight = 188;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUpward = spaceBelow < menuHeight + 8;
 
@@ -94,6 +97,10 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
     }
 
     function onPointerDown(event: PointerEvent) {
+      if (isDownloadingPdf) {
+        return;
+      }
+
       const target = event.target as Node;
 
       if (
@@ -118,7 +125,22 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
       window.removeEventListener("resize", onLayoutChange);
       window.removeEventListener("scroll", onLayoutChange, true);
     };
-  }, [menuOpen]);
+  }, [isDownloadingPdf, menuOpen]);
+
+  async function handleDownloadPdf() {
+    setIsDownloadingPdf(true);
+
+    try {
+      await downloadQuotationPdf(quotation.id);
+      toast.success("Quotation PDF downloaded.");
+    } catch {
+      toast.error("Could not download PDF.");
+    } finally {
+      setIsDownloadingPdf(false);
+      setMenuOpen(false);
+      setMenuPosition(null);
+    }
+  }
 
   function handleDelete() {
     startTransition(async () => {
@@ -221,7 +243,8 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
               style={menuPosition}
             >
               <button
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                disabled={isDownloadingPdf}
                 onClick={() => {
                   setMenuOpen(false);
                   setMenuPosition(null);
@@ -233,7 +256,8 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
                 Edit
               </button>
               <button
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                disabled={isDownloadingPdf}
                 onClick={() => {
                   setMenuOpen(false);
                   setMenuPosition(null);
@@ -245,7 +269,22 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
                 Update status
               </button>
               <button
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50"
+                aria-busy={isDownloadingPdf}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                disabled={isDownloadingPdf}
+                onClick={handleDownloadPdf}
+                type="button"
+              >
+                {isDownloadingPdf ? (
+                  <Loader2 className="animate-spin" size={15} />
+                ) : (
+                  <Download size={15} />
+                )}
+                {isDownloadingPdf ? "Downloading..." : "Download"}
+              </button>
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50 disabled:opacity-70"
+                disabled={isDownloadingPdf}
                 onClick={() => {
                   setMenuOpen(false);
                   setMenuPosition(null);

@@ -27,3 +27,27 @@ export async function requireAdmin() {
 
   return { supabase, user };
 }
+
+export async function getAdminClient() {
+  if (!hasSupabaseEnv()) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return null;
+  }
+
+  const adminEmails = getAdminEmails();
+  const isAdmin = adminEmails.includes(user.email.toLowerCase());
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  return { supabase, user };
+}
