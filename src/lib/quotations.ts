@@ -1,5 +1,42 @@
 export type QuotationUnitType = "sq_ft" | "running_ft" | "piece" | "lump_sum";
 
+export const QUOTATION_STATUSES = [
+  "draft",
+  "created",
+  "rejected",
+  "expired",
+  "in_progress",
+  "completed",
+] as const;
+
+export type QuotationStatus = (typeof QUOTATION_STATUSES)[number];
+
+export const QUOTATION_ADMIN_STATUSES = [
+  "created",
+  "rejected",
+  "expired",
+  "in_progress",
+  "completed",
+] as const;
+
+export type QuotationAdminStatus = (typeof QUOTATION_ADMIN_STATUSES)[number];
+
+export const QUOTATION_AUTO_EXPIRE_DAYS = 7;
+
+export const QUOTATION_AUTO_EXPIRE_STATUSES: QuotationAdminStatus[] = [
+  "created",
+];
+
+export const MAX_QUOTATION_ITEM_IMAGES = 3;
+
+export type QuotationLineItemImageDraft = {
+  id: string;
+  url: string;
+  storagePath: string;
+  description: string;
+  fileName?: string;
+};
+
 export type QuotationLineItemDraft = {
   id: string;
   name: string;
@@ -10,6 +47,7 @@ export type QuotationLineItemDraft = {
   amount: string;
   notes: string;
   isLumpSum: boolean;
+  images: QuotationLineItemImageDraft[];
 };
 
 export type QuotationCustomerDraft = {
@@ -37,6 +75,29 @@ export type CreateQuotationInput = {
   work: QuotationWorkDraft;
 };
 
+export const QUOTATION_LIST_PAGE_SIZE = 20;
+
+export const QUOTATION_LIST_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "created", label: "Created" },
+  { id: "in_progress", label: "In progress" },
+  { id: "completed", label: "Completed" },
+  { id: "rejected", label: "Rejected" },
+  { id: "expired", label: "Expired" },
+  { id: "newest", label: "Newest" },
+  { id: "recent", label: "Recent" },
+] as const;
+
+export type QuotationListFilter = (typeof QUOTATION_LIST_FILTERS)[number]["id"];
+
+const QUOTATION_LIST_STATUS_FILTER_IDS = new Set([
+  "created",
+  "in_progress",
+  "completed",
+  "rejected",
+  "expired",
+]);
+
 export type QuotationListItem = {
   id: string;
   quotationNumber: string;
@@ -44,9 +105,58 @@ export type QuotationListItem = {
   grandTotal: number;
   status: string;
   date: string;
+  createdAt: string;
+  updatedAt: string;
   customerName: string;
   customerPhone: string;
+  customerAddress: string;
 };
+
+export function applyQuotationListFilter(
+  quotations: QuotationListItem[],
+  query: string,
+  filter: QuotationListFilter,
+) {
+  const normalized = query.trim().toLowerCase();
+  const statusFilter = QUOTATION_LIST_STATUS_FILTER_IDS.has(filter)
+    ? filter
+    : null;
+  const sortByUpdatedAt = filter === "recent";
+
+  const filtered = quotations.filter((quotation) => {
+    if (statusFilter && quotation.status !== statusFilter) {
+      return false;
+    }
+
+    if (!normalized) {
+      return true;
+    }
+
+    const haystack = [
+      quotation.quotationNumber,
+      quotation.customerName,
+      quotation.customerPhone,
+      quotation.customerAddress,
+      quotation.workTitle ?? "",
+      quotation.status,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(normalized);
+  });
+
+  return [...filtered].sort((left, right) => {
+    const leftTime = sortByUpdatedAt
+      ? new Date(left.updatedAt).getTime()
+      : new Date(left.createdAt).getTime();
+    const rightTime = sortByUpdatedAt
+      ? new Date(right.updatedAt).getTime()
+      : new Date(right.createdAt).getTime();
+
+    return rightTime - leftTime;
+  });
+}
 
 export type QuotationDraftListItem = {
   id: string;
@@ -87,6 +197,7 @@ export type QuotationDetail = {
     amount: number;
     notes: string | null;
     sortOrder: number;
+    images: QuotationLineItemImageDraft[];
   }>;
 };
 
@@ -101,6 +212,16 @@ export function createEmptyLineItem(): QuotationLineItemDraft {
     amount: "",
     notes: "",
     isLumpSum: false,
+    images: [],
+  };
+}
+
+export function createEmptyLineItemImage(): QuotationLineItemImageDraft {
+  return {
+    id: crypto.randomUUID(),
+    url: "",
+    storagePath: "",
+    description: "",
   };
 }
 
@@ -184,6 +305,30 @@ export function hasDraftContent(input: CreateQuotationInput) {
   );
 }
 
+export function normalizeQuotationDiscountType(
+  discountType: string | null | undefined,
+): QuotationDiscountType {
+  return discountType?.toLowerCase() === "percentage" ? "percentage" : "fixed";
+}
+
+export function getQuotationDiscountDisplay(quotation: {
+  subtotal: number;
+  grandTotal: number;
+  discountType: string;
+  discountValue: number;
+}) {
+  const discountType = normalizeQuotationDiscountType(quotation.discountType);
+  const discountInput = String(quotation.discountValue);
+  const discountAmount = Math.max(0, quotation.subtotal - quotation.grandTotal);
+
+  return {
+    discountType,
+    discountInput,
+    discountAmount,
+    hasDiscount: discountAmount > 0,
+  };
+}
+
 export function formatDiscountLabel(
   discountType: QuotationDiscountType,
   discountValue: string,
@@ -228,7 +373,7 @@ export function formatUnitType(unitType: QuotationUnitType, isLumpSum = false) {
   return getUnitLabel(unitType);
 }
 
-function parseStoredItemNotes(notes: string | null) {
+export function parseQuotationItemNotes(notes: string | null) {
   if (!notes?.trim()) {
     return { description: "", notes: "" };
   }
@@ -252,7 +397,7 @@ export function quotationDetailToDraft(
     detail.items.length > 0
       ? detail.items.map((item) => {
           const isLumpSum = item.unitType === "lump_sum";
-          const { description, notes } = parseStoredItemNotes(item.notes);
+          const { description, notes } = parseQuotationItemNotes(item.notes);
 
           return {
             id: item.id,
@@ -264,6 +409,7 @@ export function quotationDetailToDraft(
             amount: isLumpSum ? String(item.amount) : "",
             notes,
             isLumpSum,
+            images: item.images ?? [],
           } satisfies QuotationLineItemDraft;
         })
       : [];
@@ -346,37 +492,95 @@ export function formatRelativeTime(date: Date, now = Date.now()) {
   return formatQuotationDate(date.toISOString().slice(0, 10));
 }
 
-export function getQuotationStatusStyle(status: string) {
-  switch (status) {
-    case "sent":
-      return {
-        label: "Sent",
-        className: "border-sky-200 bg-sky-50 text-sky-700",
-      };
-    case "accepted":
-      return {
-        label: "Accepted",
-        className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-      };
-    case "rejected":
-      return {
-        label: "Rejected",
-        className: "border-rose-200 bg-rose-50 text-rose-700",
-      };
-    case "expired":
-      return {
-        label: "Expired",
-        className: "border-amber-200 bg-amber-50 text-amber-700",
-      };
-    case "created":
-      return {
-        label: "Created",
-        className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-      };
-    default:
-      return {
-        label: "Draft",
-        className: "border-border-soft bg-surface-muted text-muted",
-      };
+export function normalizeQuotationStatus(status: string): QuotationStatus | string {
+  if (status === "sent" || status === "accepted") {
+    return "created";
   }
+
+  if ((QUOTATION_STATUSES as readonly string[]).includes(status)) {
+    return status as QuotationStatus;
+  }
+
+  return status;
+}
+
+const QUOTATION_STATUS_THEMES = {
+  created: {
+    label: "Created",
+    className: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    glowCore: "rgba(99, 102, 241, 0.16)",
+    glowMid: "rgba(129, 140, 248, 0.06)",
+  },
+  in_progress: {
+    label: "In progress",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+    glowCore: "rgba(245, 158, 11, 0.17)",
+    glowMid: "rgba(251, 191, 36, 0.06)",
+  },
+  rejected: {
+    label: "Rejected",
+    className: "border-rose-200 bg-rose-50 text-rose-700",
+    glowCore: "rgba(244, 63, 94, 0.15)",
+    glowMid: "rgba(251, 113, 133, 0.05)",
+  },
+  expired: {
+    label: "Expired",
+    className: "border-zinc-300 bg-zinc-100 text-zinc-600",
+    glowCore: "rgba(113, 113, 122, 0.16)",
+    glowMid: "rgba(161, 161, 170, 0.06)",
+  },
+  completed: {
+    label: "Completed",
+    className: "border-green-200 bg-green-50 text-green-700",
+    glowCore: "rgba(34, 197, 94, 0.17)",
+    glowMid: "rgba(74, 222, 128, 0.06)",
+  },
+  draft: {
+    label: "Draft",
+    className: "border-border-soft bg-surface-muted text-muted",
+    glowCore: "rgba(161, 161, 170, 0.1)",
+    glowMid: "rgba(212, 212, 216, 0.04)",
+  },
+} as const;
+
+function getQuotationStatusTheme(status: string) {
+  const normalized = normalizeQuotationStatus(status);
+
+  if (normalized in QUOTATION_STATUS_THEMES) {
+    return QUOTATION_STATUS_THEMES[
+      normalized as keyof typeof QUOTATION_STATUS_THEMES
+    ];
+  }
+
+  return {
+    label:
+      typeof normalized === "string"
+        ? normalized.charAt(0).toUpperCase() +
+          normalized.slice(1).replace(/_/g, " ")
+        : "Unknown",
+    className: "border-border-soft bg-surface-muted text-muted",
+    glowCore: "rgba(161, 161, 170, 0.1)",
+    glowMid: "rgba(212, 212, 216, 0.04)",
+  };
+}
+
+export function getQuotationStatusStyle(status: string) {
+  const theme = getQuotationStatusTheme(status);
+
+  return {
+    label: theme.label,
+    className: theme.className,
+  };
+}
+
+function quotationStatusSunrise(core: string, mid: string) {
+  return {
+    backgroundImage: `radial-gradient(ellipse 150% 95% at 50% 108%, ${core} 0%, ${mid} 38%, transparent 68%)`,
+  };
+}
+
+export function getQuotationStatusCardGlow(status: string) {
+  const theme = getQuotationStatusTheme(status);
+
+  return quotationStatusSunrise(theme.glowCore, theme.glowMid);
 }

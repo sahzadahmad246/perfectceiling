@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { FormSelect } from "@/components/form-select";
+import { QuotationItemImagePicker } from "@/components/quotation-item-image-picker";
 import { QuotationFormField } from "@/components/quotation-form-field";
 import {
   calculateLineItemAmount,
@@ -63,7 +64,11 @@ export function QuotationItemModal({
       return;
     }
 
-    setItem(initialItem ? { ...initialItem } : createEmptyLineItem());
+    setItem(
+      initialItem
+        ? { ...initialItem, images: [...(initialItem.images ?? [])] }
+        : createEmptyLineItem(),
+    );
     setErrors({});
   }, [initialItem, open]);
 
@@ -148,7 +153,7 @@ export function QuotationItemModal({
         type="button"
       />
 
-      <div className="relative z-10 flex max-h-[min(78vh,640px)] w-full max-w-[400px] flex-col overflow-hidden rounded-2xl border border-border-soft bg-surface shadow-popover">
+      <div className="relative z-10 flex max-h-[min(88vh,720px)] w-full max-w-[400px] flex-col overflow-hidden rounded-2xl border border-border-soft bg-surface shadow-popover">
         <header className="flex items-center justify-between border-b border-border-soft px-4 py-2.5">
           <div>
             <p className="text-[11px] text-muted">Work item</p>
@@ -294,6 +299,12 @@ export function QuotationItemModal({
               />
             </QuotationFormField>
           )}
+
+          <QuotationItemImagePicker
+            images={item.images}
+            itemId={item.id}
+            onChange={(images) => updateItem({ images })}
+          />
 
           <div className="rounded-lg border border-border-soft bg-surface-muted/60 px-3 py-2.5 text-sm">
             <span className="text-xs text-muted">Line total</span>

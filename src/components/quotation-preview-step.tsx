@@ -1,19 +1,33 @@
 "use client";
 
-import { Briefcase, Landmark, Pencil, Receipt, UserRound } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import {
+  Briefcase,
+  Calendar,
+  Landmark,
+  Pencil,
+  Receipt,
+  ScrollText,
+  UserRound,
+} from "lucide-react";
 import { useState } from "react";
 
 import type { QuotationDefaults } from "@/app/admin/quotations/actions";
 import { DiscountModal } from "@/components/discount-modal";
+import { QuotationItemImageViewer } from "@/components/quotation-item-image-viewer";
 import { QuotationItemModal } from "@/components/quotation-item-modal";
 import { QuotationTermsPreview } from "@/components/quotation-terms-preview";
+import {
+  QuotationViewDivider,
+  QuotationViewLabelValue,
+  QuotationViewSection,
+} from "@/components/quotation-view-primitives";
 import {
   calculateLineItemAmount,
   formatCurrency,
   formatDiscountLabel,
+  formatQuotationDate,
   formatUnitType,
+  getQuotationStatusStyle,
   hasWorkDiscount,
   type QuotationCustomerDraft,
   type QuotationDiscountType,
@@ -36,64 +50,6 @@ type QuotationPreviewStepProps = {
   onItemsChange: (items: QuotationLineItemDraft[]) => void;
 };
 
-type PreviewSectionProps = {
-  icon: LucideIcon;
-  title: string;
-  onEdit?: () => void;
-  editLabel?: string;
-  children: ReactNode;
-};
-
-function PreviewSection({
-  icon: Icon,
-  title,
-  onEdit,
-  editLabel = "Edit",
-  children,
-}: PreviewSectionProps) {
-  return (
-    <section className="mb-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <Icon className="text-muted" size={16} />
-          <span>{title}</span>
-        </div>
-        {onEdit ? (
-          <button
-            aria-label={editLabel}
-            className="inline-flex size-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
-            onClick={onEdit}
-            type="button"
-          >
-            <Pencil size={15} />
-          </button>
-        ) : null}
-      </div>
-      <div className="mt-3">{children}</div>
-    </section>
-  );
-}
-
-type PreviewRowProps = {
-  label: string;
-  value: string;
-};
-
-function PreviewRow({ label, value }: PreviewRowProps) {
-  if (!value.trim()) {
-    return null;
-  }
-
-  return (
-    <div className="text-sm">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-0.5 whitespace-pre-wrap leading-6 text-foreground">
-        {value}
-      </p>
-    </div>
-  );
-}
-
 export function QuotationPreviewStep({
   customer,
   work,
@@ -110,9 +66,18 @@ export function QuotationPreviewStep({
   const [editingItem, setEditingItem] = useState<QuotationLineItemDraft | null>(
     null,
   );
+  const [previewImages, setPreviewImages] = useState<{
+    images: QuotationLineItemDraft["images"];
+    title: string;
+    initialIndex: number;
+  } | null>(null);
 
   const savedItems = work.items.filter((item) => item.name.trim());
-  const showItemNumbers = savedItems.length > 1;
+  const customerAddress = [customer.address, customer.city]
+    .filter((part) => part.trim())
+    .join(", ");
+  const draftStatus = getQuotationStatusStyle("draft");
+  const previewDate = formatQuotationDate(new Date().toISOString().slice(0, 10));
 
   function openEditItemModal(item: QuotationLineItemDraft) {
     setEditingItem(item);
@@ -151,112 +116,184 @@ export function QuotationPreviewStep({
 
   return (
     <>
-      <PreviewSection
+      <section className="mt-1">
+        <h2 className="font-primary text-xl font-medium text-foreground">
+          {work.workTitle.trim() || "Untitled work"}
+        </h2>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar size={14} />
+            {previewDate}
+          </span>
+          <span
+            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${draftStatus.className}`}
+          >
+            {draftStatus.label}
+          </span>
+        </div>
+      </section>
+
+      <QuotationViewSection
         editLabel="Edit customer"
         icon={UserRound}
         onEdit={() => onGoToStep(1)}
         title="Customer"
       >
-        <div className="space-y-3">
-          <PreviewRow label="Name" value={customer.name} />
-          <PreviewRow label="Mobile" value={customer.phone} />
-          <PreviewRow label="Address" value={customer.address} />
-          <PreviewRow label="Notes" value={customer.notes} />
-        </div>
-      </PreviewSection>
+        <QuotationViewLabelValue label="Name" value={customer.name} />
 
-      <PreviewSection
-        editLabel="Edit work details"
+        {customer.phone ? (
+          <>
+            <QuotationViewDivider />
+            <QuotationViewLabelValue label="Mobile" value={customer.phone} />
+          </>
+        ) : null}
+
+        {customerAddress ? (
+          <>
+            <QuotationViewDivider />
+            <QuotationViewLabelValue label="Address" value={customerAddress} />
+          </>
+        ) : null}
+
+        {customer.notes.trim() ? (
+          <>
+            <QuotationViewDivider />
+            <QuotationViewLabelValue label="Notes" value={customer.notes} />
+          </>
+        ) : null}
+      </QuotationViewSection>
+
+      <QuotationViewSection
+        editLabel="Edit work items"
         icon={Briefcase}
         onEdit={() => onGoToStep(2)}
-        title="Work & pricing"
+        title="Work items"
       >
         {savedItems.length > 0 ? (
-          <div>
-            {savedItems.map((item, index) => (
-              <div key={item.id}>
-                {index > 0 ? (
-                  <div
-                    aria-hidden
-                    className="my-3 border-t border-dashed border-border-strong"
-                  />
-                ) : null}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {showItemNumbers ? (
-                        <span className="text-muted">{index + 1}. </span>
-                      ) : null}
-                      {item.name}
-                    </p>
-                    {item.description ? (
-                      <p className="mt-1 line-clamp-2 text-xs text-muted">
-                        {item.description}
+          <ul>
+            {savedItems.map((item, index) => {
+              const isLumpSum = item.isLumpSum || item.unitType === "lump_sum";
+
+              return (
+                <li key={item.id}>
+                  {index > 0 ? <QuotationViewDivider /> : null}
+
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {item.name}
                       </p>
-                    ) : null}
-                    <p className="mt-2 text-xs text-muted">
-                      {item.isLumpSum
-                        ? "Lump sum"
-                        : `${item.quantity} ${formatUnitType(item.unitType)} × ${item.rate}`}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {formatCurrency(calculateLineItemAmount(item))}
-                    </p>
+
+                      {item.description ? (
+                        <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted">
+                          {item.description}
+                        </p>
+                      ) : null}
+
+                      <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted">
+                          {isLumpSum
+                            ? "Lump sum"
+                            : `${item.quantity} ${formatUnitType(item.unitType)} × ${formatCurrency(Number(item.rate) || 0)}`}
+                        </span>
+                        <span className="shrink-0 font-medium text-foreground">
+                          {formatCurrency(calculateLineItemAmount(item))}
+                        </span>
+                      </div>
+
+                      {item.images.length > 0 ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {item.images.map((image, imageIndex) => (
+                            <button
+                              className="group relative size-16 overflow-hidden rounded-lg border border-border-soft bg-surface-muted transition hover:border-border-strong"
+                              key={image.id}
+                              onClick={() =>
+                                setPreviewImages({
+                                  images: item.images,
+                                  title: item.name,
+                                  initialIndex: imageIndex,
+                                })
+                              }
+                              type="button"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                alt={image.description.trim() || "Item image"}
+                                className="size-full object-cover"
+                                src={image.url}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <button
+                      aria-label={`Edit ${item.name}`}
+                      className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
+                      onClick={() => openEditItemModal(item)}
+                      type="button"
+                    >
+                      <Pencil size={15} />
+                    </button>
                   </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted">No work items added.</p>
+        )}
+      </QuotationViewSection>
+
+      <QuotationViewSection icon={Receipt} title="Pricing summary">
+        <div className="text-sm">
+          <div className="flex items-center justify-between py-1">
+            <span className="text-muted">Subtotal</span>
+            <span className="font-medium">{formatCurrency(subtotal)}</span>
+          </div>
+
+          {hasWorkDiscount(work) ? (
+            <>
+              <QuotationViewDivider />
+              <div className="flex items-center justify-between gap-3 py-1">
+                <span className="text-muted">
+                  Discount ({formatDiscountLabel(work.discountType, work.discount)})
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-rose-600">
+                    -{formatCurrency(discountAmount)}
+                  </span>
                   <button
-                    aria-label={`Edit item ${index + 1}`}
+                    aria-label="Edit discount"
                     className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
-                    onClick={() => openEditItemModal(item)}
+                    onClick={() => setDiscountModalOpen(true)}
                     type="button"
                   >
                     <Pencil size={15} />
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : null}
+            </>
+          ) : (
+            <button
+              className="mt-2 text-xs font-medium text-foreground underline underline-offset-2 transition hover:text-primary"
+              onClick={() => setDiscountModalOpen(true)}
+              type="button"
+            >
+              Add discount
+            </button>
+          )}
 
-        <div className="mt-4 rounded-xl border border-border-soft bg-surface-muted/50 p-4 text-sm">
-          <p className="font-medium text-foreground">Pricing summary</p>
-
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Subtotal</span>
-              <span className="font-medium">{formatCurrency(subtotal)}</span>
-            </div>
-
-            {hasWorkDiscount(work) ? (
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted">
-                  Discount (
-                  {formatDiscountLabel(work.discountType, work.discount)})
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-rose-600">
-                    -{formatCurrency(discountAmount)}
-                  </span>
-                  <button
-                    aria-label="Edit discount"
-                    className="inline-flex size-7 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
-                    onClick={() => setDiscountModalOpen(true)}
-                    type="button"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="flex items-center justify-between border-t border-border-soft pt-3 font-medium">
-              <span>Grand total</span>
-              <span className="font-primary text-lg">
-                {formatCurrency(grandTotal)}
-              </span>
-            </div>
+          <QuotationViewDivider />
+          <div className="flex items-center justify-between py-1 font-medium">
+            <span>Grand total</span>
+            <span className="font-primary text-lg">
+              {formatCurrency(grandTotal)}
+            </span>
           </div>
         </div>
-      </PreviewSection>
+      </QuotationViewSection>
 
       <QuotationTermsPreview
         onChange={(value) => onWorkChange("quotationTerms", value)}
@@ -264,11 +301,11 @@ export function QuotationPreviewStep({
       />
 
       {defaults.bankDetails ? (
-        <PreviewSection icon={Landmark} title="Payment / bank details">
+        <QuotationViewSection icon={Landmark} title="Payment / bank details">
           <p className="whitespace-pre-wrap text-sm leading-6 text-muted">
             {defaults.bankDetails}
           </p>
-        </PreviewSection>
+        </QuotationViewSection>
       ) : null}
 
       <QuotationItemModal
@@ -276,6 +313,14 @@ export function QuotationPreviewStep({
         onClose={closeItemModal}
         onSave={handleSaveItem}
         open={itemModalOpen}
+      />
+
+      <QuotationItemImageViewer
+        images={previewImages?.images ?? []}
+        initialIndex={previewImages?.initialIndex ?? 0}
+        onClose={() => setPreviewImages(null)}
+        open={previewImages !== null}
+        title={previewImages?.title}
       />
 
       <DiscountModal

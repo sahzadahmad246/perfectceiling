@@ -62,7 +62,16 @@ create table if not exists public.quotations (
   grand_total numeric(12, 2) not null default 0,
   terms text,
   status text not null default 'draft'
-    check (status in ('draft', 'created', 'sent', 'accepted', 'rejected', 'expired')),
+    check (
+      status in (
+        'draft',
+        'created',
+        'rejected',
+        'expired',
+        'in_progress',
+        'completed'
+      )
+    ),
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -80,6 +89,19 @@ create table if not exists public.quotation_items (
   notes text,
   sort_order integer not null default 0
 );
+
+create table if not exists public.quotation_item_images (
+  id uuid primary key default gen_random_uuid(),
+  quotation_item_id uuid not null references public.quotation_items(id) on delete cascade,
+  image_url text not null,
+  storage_path text not null,
+  description text,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists quotation_item_images_item_id_idx
+  on public.quotation_item_images (quotation_item_id);
 
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
@@ -187,6 +209,7 @@ create table if not exists public.blog_posts (
 alter table public.customers enable row level security;
 alter table public.quotations enable row level security;
 alter table public.quotation_items enable row level security;
+alter table public.quotation_item_images enable row level security;
 alter table public.invoices enable row level security;
 alter table public.invoice_items enable row level security;
 alter table public.payments enable row level security;
@@ -213,6 +236,15 @@ with check (true);
 drop policy if exists "Authenticated users can manage quotation items" on public.quotation_items;
 create policy "Authenticated users can manage quotation items"
 on public.quotation_items
+for all
+to authenticated
+using (true)
+with check (true);
+
+drop policy if exists "Authenticated users can manage quotation item images"
+  on public.quotation_item_images;
+create policy "Authenticated users can manage quotation item images"
+on public.quotation_item_images
 for all
 to authenticated
 using (true)

@@ -14,6 +14,11 @@ type AdminHeaderProps = {
 export function AdminHeader({ profile }: AdminHeaderProps) {
   const pathname = usePathname();
   const isSettingsPage = pathname === "/admin/settings";
+  const isQuotationDetailPage = /^\/admin\/quotations\/[^/]+$/.test(pathname);
+
+  if (isQuotationDetailPage) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-20 -mx-4 flex items-center justify-between border-b border-border-soft bg-surface/90 px-4 py-2 backdrop-blur-xl sm:-mx-8 sm:px-8">

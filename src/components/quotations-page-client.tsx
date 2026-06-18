@@ -2,7 +2,7 @@
 
 import { FileText, Loader2, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getQuotationEditData,
@@ -10,12 +10,83 @@ import {
 } from "@/app/admin/quotations/actions";
 import { QuotationCard } from "@/components/quotation-card";
 import { QuotationCreateModal } from "@/components/quotation-create-modal";
-import type { CreateQuotationInput, QuotationListItem } from "@/lib/quotations";
+import {
+  applyQuotationListFilter,
+  QUOTATION_LIST_FILTERS,
+  QUOTATION_LIST_PAGE_SIZE,
+  type CreateQuotationInput,
+  type QuotationListFilter,
+  type QuotationListItem,
+} from "@/lib/quotations";
 
 type QuotationsPageClientProps = {
   quotations: QuotationListItem[];
   defaults: QuotationDefaults;
 };
+
+type QuotationsListParams = {
+  q?: string;
+  filter?: QuotationListFilter;
+  create?: string;
+  edit?: string;
+};
+
+function isListFilter(value: string | null): value is QuotationListFilter {
+  return QUOTATION_LIST_FILTERS.some((option) => option.id === value);
+}
+
+function buildQuotationsUrl({
+  q,
+  filter = "all",
+  create,
+  edit,
+}: QuotationsListParams) {
+  const params = new URLSearchParams();
+
+  if (q?.trim()) {
+    params.set("q", q.trim());
+  }
+
+  if (filter !== "all") {
+    params.set("filter", filter);
+  }
+
+  if (create) {
+    params.set("create", create);
+  }
+
+  if (edit) {
+    params.set("edit", edit);
+  }
+
+  const query = params.toString();
+
+  return query ? `/admin/quotations?${query}` : "/admin/quotations";
+}
+
+function resolveListFilter(
+  filterParam: string | null,
+  legacyStatusParam: string | null,
+  legacySortParam: string | null,
+): QuotationListFilter {
+  if (isListFilter(filterParam)) {
+    return filterParam;
+  }
+
+  if (legacySortParam === "recent") {
+    return "recent";
+  }
+
+  if (legacySortParam === "newest") {
+    return "newest";
+  }
+
+  if (isListFilter(legacyStatusParam)) {
+    return legacyStatusParam;
+  }
+
+  return "all";
+}
 
 export function QuotationsPageClient({
   quotations,
@@ -23,35 +94,115 @@ export function QuotationsPageClient({
 }: QuotationsPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState("");
-  const [editData, setEditData] = useState<CreateQuotationInput | null>(null);
-  const [loadingEdit, setLoadingEdit] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const urlQuery = searchParams.get("q") ?? "";
+  const listFilter = resolveListFilter(
+    searchParams.get("filter"),
+    searchParams.get("status"),
+    searchParams.get("sort"),
+  );
 
   const createOpen = searchParams.get("create") === "1";
   const editId = searchParams.get("edit");
   const modalOpen = createOpen || Boolean(editId);
 
-  const filteredQuotations = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+  const [searchInput, setSearchInput] = useState(urlQuery);
+  const [applyingFilter, setApplyingFilter] = useState<QuotationListFilter | null>(
+    null,
+  );
+  const [visibleCount, setVisibleCount] = useState(QUOTATION_LIST_PAGE_SIZE);
+  const [editData, setEditData] = useState<CreateQuotationInput | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
-    if (!normalized) {
-      return quotations;
+  const isSearchPending = searchInput.trim() !== urlQuery.trim();
+  const isFilterPending = applyingFilter !== null;
+
+  const updateListParams = useCallback(
+    (next: Partial<QuotationsListParams>) => {
+      router.replace(
+        buildQuotationsUrl({
+          q: next.q ?? urlQuery,
+          filter: next.filter ?? listFilter,
+          create: next.create,
+          edit: next.edit,
+        }),
+        { scroll: false },
+      );
+    },
+    [listFilter, router, urlQuery],
+  );
+
+  const filteredQuotations = useMemo(
+    () => applyQuotationListFilter(quotations, urlQuery, listFilter),
+    [listFilter, quotations, urlQuery],
+  );
+
+  const visibleQuotations = useMemo(
+    () => filteredQuotations.slice(0, visibleCount),
+    [filteredQuotations, visibleCount],
+  );
+
+  const hasMore = visibleCount < filteredQuotations.length;
+
+  useEffect(() => {
+    setSearchInput(urlQuery);
+  }, [urlQuery]);
+
+  useEffect(() => {
+    setVisibleCount(QUOTATION_LIST_PAGE_SIZE);
+  }, [urlQuery, listFilter]);
+
+  useEffect(() => {
+    if (applyingFilter === null || applyingFilter !== listFilter) {
+      return;
     }
 
-    return quotations.filter((quotation) => {
-      const haystack = [
-        quotation.quotationNumber,
-        quotation.customerName,
-        quotation.customerPhone,
-        quotation.workTitle ?? "",
-        quotation.status,
-      ]
-        .join(" ")
-        .toLowerCase();
+    const timeout = window.setTimeout(() => {
+      setApplyingFilter(null);
+    }, 250);
 
-      return haystack.includes(normalized);
-    });
-  }, [query, quotations]);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [applyingFilter, listFilter]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const trimmed = searchInput.trim();
+
+      if (trimmed === urlQuery.trim()) {
+        return;
+      }
+
+      updateListParams({ q: trimmed });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [searchInput, updateListParams, urlQuery]);
+
+  useEffect(() => {
+    if (!hasMore || !sentinelRef.current) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((current) => current + QUOTATION_LIST_PAGE_SIZE);
+        }
+      },
+      { rootMargin: "240px" },
+    );
+
+    observer.observe(sentinelRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, filteredQuotations.length]);
 
   useEffect(() => {
     if (!editId) {
@@ -75,27 +226,42 @@ export function QuotationsPageClient({
         setLoadingEdit(false);
 
         if (!data) {
-          router.replace("/admin/quotations");
+          router.replace(buildQuotationsUrl({ q: urlQuery, filter: listFilter }));
         }
       })
       .catch(() => {
         if (!cancelled) {
           setLoadingEdit(false);
-          router.replace("/admin/quotations");
+          router.replace(buildQuotationsUrl({ q: urlQuery, filter: listFilter }));
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [editId, router]);
+  }, [editId, listFilter, router, urlQuery]);
 
   function closeModal() {
-    router.replace("/admin/quotations");
+    router.replace(buildQuotationsUrl({ q: urlQuery, filter: listFilter }));
   }
 
   function handleEdit(id: string) {
-    router.push(`/admin/quotations?edit=${id}`);
+    router.push(
+      buildQuotationsUrl({
+        q: urlQuery,
+        filter: listFilter,
+        edit: id,
+      }),
+    );
+  }
+
+  function handleFilterSelect(filter: QuotationListFilter) {
+    if (filter === listFilter || isFilterPending) {
+      return;
+    }
+
+    setApplyingFilter(filter);
+    updateListParams({ filter });
   }
 
   return (
@@ -106,12 +272,48 @@ export function QuotationsPageClient({
           size={16}
         />
         <input
-          className="h-11 w-full rounded-full border border-border-strong bg-surface px-10 text-sm outline-none transition focus:border-primary"
-          onChange={(event) => setQuery(event.target.value)}
+          aria-busy={isSearchPending}
+          className="h-11 w-full rounded-full border border-border-strong bg-surface px-10 pr-10 text-sm outline-none transition focus:border-primary"
+          onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search quotations..."
           type="search"
-          value={query}
+          value={searchInput}
         />
+        {isSearchPending ? (
+          <Loader2
+            aria-hidden
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted"
+          />
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {QUOTATION_LIST_FILTERS.map((option) => {
+          const isActive = listFilter === option.id;
+          const isApplyingThisFilter = applyingFilter === option.id;
+
+          return (
+            <button
+              aria-busy={isApplyingThisFilter}
+              aria-label={option.label}
+              className={`inline-flex h-7 shrink-0 items-center justify-center rounded-full border px-3.5 text-xs font-medium leading-none transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                isActive
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border-strong bg-surface text-muted hover:border-border-soft hover:text-foreground"
+              }`}
+              disabled={isFilterPending}
+              key={option.id}
+              onClick={() => handleFilterSelect(option.id)}
+              type="button"
+            >
+              {isApplyingThisFilter ? (
+                <Loader2 className="size-2.5 animate-spin" strokeWidth={2.5} />
+              ) : (
+                option.label
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {filteredQuotations.length === 0 ? (
@@ -125,19 +327,31 @@ export function QuotationsPageClient({
           <p className="mt-3 text-sm leading-7 text-muted">
             {quotations.length === 0
               ? "Tap Create in the bottom nav to add your first quotation."
-              : "Try a different search term."}
+              : "Try a different search term or filter."}
           </p>
         </section>
       ) : (
-        <div className="mt-5 space-y-3">
-          {filteredQuotations.map((quotation) => (
-            <QuotationCard
-              key={quotation.id}
-              onEdit={handleEdit}
-              quotation={quotation}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-5 space-y-3">
+            {visibleQuotations.map((quotation) => (
+              <QuotationCard
+                key={quotation.id}
+                onEdit={handleEdit}
+                quotation={quotation}
+              />
+            ))}
+          </div>
+
+          {hasMore ? (
+            <div
+              aria-hidden
+              className="flex items-center justify-center py-6"
+              ref={sentinelRef}
+            >
+              <Loader2 className="animate-spin text-muted" size={20} />
+            </div>
+          ) : null}
+        </>
       )}
 
       {modalOpen && editId && (loadingEdit || !editData) ? (

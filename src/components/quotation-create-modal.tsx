@@ -89,6 +89,7 @@ export function QuotationCreateModal({
   const [draftChoiceMade, setDraftChoiceMade] = useState(false);
   const [drafts, setDrafts] = useState<QuotationDraftListItem[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [restoringDraftId, setRestoringDraftId] = useState<string | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftSaveStatus, setDraftSaveStatus] = useState<
     "idle" | "saving" | "saved"
@@ -273,30 +274,36 @@ export function QuotationCreateModal({
   }
 
   async function handleRestoreDraft(draftId: string) {
-    const data = await getQuotationEditData(draftId);
+    setRestoringDraftId(draftId);
 
-    if (!data) {
-      toast.error("Could not load draft.");
-      return;
-    }
+    try {
+      const data = await getQuotationEditData(draftId);
 
-    setCustomer(data.customer);
-    setWork({
-      ...data.work,
-      discountType: data.work.discountType ?? "fixed",
-    });
-    setActiveDraftId(draftId);
-    activeDraftIdRef.current = draftId;
-    setDraftPickerOpen(false);
-    setDraftChoiceMade(true);
+      if (!data) {
+        toast.error("Could not load draft.");
+        return;
+      }
 
-    const restoredDraft = drafts.find((draft) => draft.id === draftId);
+      setCustomer(data.customer);
+      setWork({
+        ...data.work,
+        discountType: data.work.discountType ?? "fixed",
+      });
+      setActiveDraftId(draftId);
+      activeDraftIdRef.current = draftId;
+      setDraftPickerOpen(false);
+      setDraftChoiceMade(true);
 
-    if (restoredDraft?.updatedAt) {
-      const restoredAt = new Date(restoredDraft.updatedAt);
-      setLastSavedAt(restoredAt);
-      setRelativeNow(restoredAt.getTime());
-      setDraftSaveStatus("saved");
+      const restoredDraft = drafts.find((draft) => draft.id === draftId);
+
+      if (restoredDraft?.updatedAt) {
+        const restoredAt = new Date(restoredDraft.updatedAt);
+        setLastSavedAt(restoredAt);
+        setRelativeNow(restoredAt.getTime());
+        setDraftSaveStatus("saved");
+      }
+    } finally {
+      setRestoringDraftId(null);
     }
   }
 
@@ -408,13 +415,13 @@ export function QuotationCreateModal({
       }
 
       toast.success(isEditing ? "Quotation updated." : "Quotation created.");
-      onClose();
-      router.push(`/admin/quotations/${result.id}`);
+      router.replace(`/admin/quotations/${result.id}`);
       router.refresh();
     });
   }
 
-  const isBusy = isPending || isSavingDraft || loadingDrafts;
+  const isBusy =
+    isPending || isSavingDraft || loadingDrafts || restoringDraftId !== null;
 
   return (
     <>
@@ -578,6 +585,7 @@ export function QuotationCreateModal({
           onRefresh={() => void refreshDrafts()}
           onRestore={(draftId) => void handleRestoreDraft(draftId)}
           onStartNew={handleStartNew}
+          restoringDraftId={restoringDraftId}
         />
       ) : null}
     </>

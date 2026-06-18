@@ -2,29 +2,39 @@
 
 import {
   Calendar,
-  ChevronRight,
   Loader2,
   MoreVertical,
   Pencil,
-  Phone,
+  RefreshCw,
   Trash2,
-  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { deleteQuotation } from "@/app/admin/quotations/actions";
+import { QuotationStatusModal } from "@/components/quotation-status-modal";
 import {
   formatCurrency,
   formatQuotationDate,
+  getQuotationStatusCardGlow,
   getQuotationStatusStyle,
   type QuotationListItem,
 } from "@/lib/quotations";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
+
+const menuDropdownClass =
+  "animate-menu-pop fixed z-[9990] w-44 rounded-xl border border-border-soft bg-surface-raised p-1.5 shadow-popover";
+
+type MenuPosition = {
+  top?: number;
+  bottom?: number;
+  right: number;
+};
 
 type QuotationCardProps = {
   quotation: QuotationListItem;
@@ -34,24 +44,81 @@ type QuotationCardProps = {
 export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const status = getQuotationStatusStyle(quotation.status);
+  const statusGlow = getQuotationStatusCardGlow(quotation.status);
+  const workTitle = quotation.workTitle?.trim() || "Untitled work";
+
+  function updateMenuPosition() {
+    const button = buttonRef.current;
+
+    if (!button) {
+      return;
+    }
+
+    const rect = button.getBoundingClientRect();
+    const menuHeight = 148;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < menuHeight + 8;
+
+    setMenuPosition({
+      right: window.innerWidth - rect.right,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }),
+    });
+  }
+
+  function toggleMenu() {
+    setMenuOpen((current) => {
+      const next = !current;
+
+      if (next) {
+        updateMenuPosition();
+      } else {
+        setMenuPosition(null);
+      }
+
+      return next;
+    });
+  }
 
   useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
     function onPointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+
+      if (
+        !buttonRef.current?.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
         setMenuOpen(false);
+        setMenuPosition(null);
       }
     }
 
+    function onLayoutChange() {
+      updateMenuPosition();
+    }
+
     document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("resize", onLayoutChange);
+    window.addEventListener("scroll", onLayoutChange, true);
 
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("resize", onLayoutChange);
+      window.removeEventListener("scroll", onLayoutChange, true);
     };
-  }, []);
+  }, [menuOpen]);
 
   function handleDelete() {
     startTransition(async () => {
@@ -65,112 +132,143 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
       toast.success("Quotation deleted.");
       setConfirmOpen(false);
       setMenuOpen(false);
+      setMenuPosition(null);
       router.refresh();
     });
   }
 
   return (
     <>
-      <article className="group relative overflow-hidden rounded-xl border border-border-soft bg-surface-raised shadow-[0_1px_0_rgba(24,24,27,0.04)] transition hover:border-border-strong hover:shadow-[0_8px_24px_rgba(24,24,27,0.06)]">
-        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/10 via-primary/40 to-primary/10 opacity-0 transition group-hover:opacity-100" />
+      <article className="relative overflow-hidden rounded-xl border border-border-soft bg-surface-raised transition hover:border-border-strong">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-xl"
+          style={statusGlow}
+        />
 
-        <div className="flex items-start gap-3 p-4">
-          <Link
-            className="flex min-w-0 flex-1 gap-3"
-            href={`/admin/quotations/${quotation.id}`}
-          >
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border-soft bg-surface-muted text-foreground transition group-hover:border-border-strong group-hover:bg-surface">
-              <span className="font-primary text-xs font-semibold tracking-wide">
-                {quotation.quotationNumber.replace(/^Q-/, "")}
-              </span>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-primary text-sm font-semibold text-foreground">
-                  {quotation.quotationNumber}
-                </p>
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${status.className}`}
-                >
-                  {status.label}
-                </span>
-              </div>
-
-              <div className="mt-2 flex items-center gap-1.5 text-sm text-foreground">
-                <User className="shrink-0 text-muted" size={14} />
-                <span className="truncate font-medium">{quotation.customerName}</span>
-              </div>
-
-              {quotation.customerPhone ? (
-                <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                  <Phone className="shrink-0" size={13} />
-                  <span>{quotation.customerPhone}</span>
-                </div>
-              ) : null}
-
-              {quotation.workTitle ? (
-                <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
-                  {quotation.workTitle}
-                </p>
-              ) : null}
-
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-border-soft pt-3">
-                <div className="flex items-center gap-1.5 text-xs text-muted">
-                  <Calendar size={13} />
-                  <span>{formatQuotationDate(quotation.date)}</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm font-semibold text-foreground">
-                  <span>{formatCurrency(quotation.grandTotal)}</span>
-                  <ChevronRight
-                    className="text-muted transition group-hover:translate-x-0.5 group-hover:text-foreground"
-                    size={15}
-                  />
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <div className="relative shrink-0" ref={menuRef}>
+        <div className="relative z-[1] p-4 pb-3">
+          <div className="absolute right-3 top-3 z-10">
             <button
+              ref={buttonRef}
               aria-expanded={menuOpen}
               aria-label={`Actions for ${quotation.quotationNumber}`}
               className="inline-flex size-9 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground"
-              onClick={() => setMenuOpen((current) => !current)}
+              onClick={toggleMenu}
               type="button"
             >
               <MoreVertical size={18} />
             </button>
-
-            {menuOpen ? (
-              <div className="animate-menu-pop absolute right-0 top-10 z-20 w-40 rounded-xl border border-border-soft bg-surface-raised p-1.5 shadow-popover">
-                <button
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onEdit(quotation.id);
-                  }}
-                  type="button"
-                >
-                  <Pencil size={15} />
-                  Edit
-                </button>
-                <button
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setConfirmOpen(true);
-                  }}
-                  type="button"
-                >
-                  <Trash2 size={15} />
-                  Delete
-                </button>
-              </div>
-            ) : null}
           </div>
+
+          <Link
+            className="block pr-11"
+            href={`/admin/quotations/${quotation.id}`}
+          >
+            <h3 className="font-primary text-sm font-semibold leading-6 text-foreground">
+              {workTitle}
+              <span className="font-normal text-muted">
+                {" "}
+                ({quotation.quotationNumber})
+              </span>
+            </h3>
+
+            <p className="mt-2 text-sm text-muted">
+              <span>{quotation.customerName}</span>
+              {quotation.customerPhone ? (
+                <span> · {quotation.customerPhone}</span>
+              ) : null}
+            </p>
+
+            {quotation.customerAddress ? (
+              <p className="mt-1 text-sm leading-5 text-muted">
+                {quotation.customerAddress}
+              </p>
+            ) : null}
+          </Link>
         </div>
+
+        <div
+          aria-hidden
+          className="relative z-[1] border-t border-dashed border-border-soft"
+        />
+
+        <Link
+          className="relative z-[1] flex items-center justify-between gap-3 px-4 py-3"
+          href={`/admin/quotations/${quotation.id}`}
+        >
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar size={13} />
+              {formatQuotationDate(quotation.date)}
+            </span>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${status.className}`}
+            >
+              {status.label}
+            </span>
+          </div>
+          <span className="shrink-0 text-sm font-semibold text-foreground">
+            {formatCurrency(quotation.grandTotal)}
+          </span>
+        </Link>
       </article>
+
+      {menuOpen && menuPosition
+        ? createPortal(
+            <div
+              className={menuDropdownClass}
+              ref={menuRef}
+              style={menuPosition}
+            >
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setMenuPosition(null);
+                  onEdit(quotation.id);
+                }}
+                type="button"
+              >
+                <Pencil size={15} />
+                Edit
+              </button>
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setMenuPosition(null);
+                  setStatusModalOpen(true);
+                }}
+                type="button"
+              >
+                <RefreshCw size={15} />
+                Update status
+              </button>
+              <button
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setMenuPosition(null);
+                  setConfirmOpen(true);
+                }}
+                type="button"
+              >
+                <Trash2 size={15} />
+                Delete
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      <QuotationStatusModal
+        currentStatus={quotation.status}
+        onClose={() => setStatusModalOpen(false)}
+        onUpdated={() => router.refresh()}
+        open={statusModalOpen}
+        quotationId={quotation.id}
+        quotationNumber={quotation.quotationNumber}
+      />
 
       {confirmOpen ? (
         <div className={confirmOverlayClass}>

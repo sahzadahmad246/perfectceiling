@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 
 import { DiscountModal } from "@/components/discount-modal";
+import { QuotationItemImageCountButton } from "@/components/quotation-item-image-count-button";
 import { QuotationFormField } from "@/components/quotation-form-field";
 import { QuotationItemModal } from "@/components/quotation-item-modal";
 import { QuotationTermsField } from "@/components/quotation-terms-field";
@@ -162,11 +163,17 @@ export function WorkPricingStep({
                         {item.description}
                       </p>
                     ) : null}
-                    <p className="mt-2 text-xs text-muted">
-                      {item.isLumpSum
-                        ? "Lump sum"
-                        : `${item.quantity} ${formatUnitType(item.unitType)} × ${item.rate}`}
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <p className="text-xs text-muted">
+                        {item.isLumpSum
+                          ? "Lump sum"
+                          : `${item.quantity} ${formatUnitType(item.unitType)} × ${item.rate}`}
+                      </p>
+                      <QuotationItemImageCountButton
+                        images={item.images}
+                        itemName={item.name}
+                      />
+                    </div>
                     <p className="mt-1 text-sm font-semibold text-foreground">
                       {formatCurrency(calculateLineItemAmount(item))}
                     </p>
