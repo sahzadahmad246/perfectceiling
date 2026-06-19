@@ -6,8 +6,7 @@ import {
   Loader2,
   MoreVertical,
   Pencil,
-  ReceiptText,
-  RefreshCw,
+  Plus,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -15,30 +14,28 @@ import { useAppRouter } from "@/hooks/use-app-router";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteQuotation } from "@/app/admin/quotations/actions";
+import { deleteInvoice } from "@/app/admin/invoices/actions";
 import { AdminDetailBreadcrumbBar } from "@/components/admin-detail-breadcrumb-bar";
-import { QuotationStatusModal } from "@/components/quotation-status-modal";
-import { downloadQuotationPdf } from "@/lib/download-quotation-pdf";
-import { getQuotationDetailBreadcrumb } from "@/lib/admin-nav";
+import { downloadInvoicePdf } from "@/lib/download-invoice-pdf";
+import { getInvoiceDetailBreadcrumb } from "@/lib/admin-nav";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
 
-type QuotationDetailHeaderProps = {
-  quotationId: string;
-  quotationNumber: string;
-  status: string;
+type InvoiceDetailHeaderProps = {
+  invoiceId: string;
+  invoiceNumber: string;
+  balanceAmount: number;
 };
 
-export function QuotationDetailHeader({
-  quotationId,
-  quotationNumber,
-  status,
-}: QuotationDetailHeaderProps) {
+export function InvoiceDetailHeader({
+  invoiceId,
+  invoiceNumber,
+  balanceAmount,
+}: InvoiceDetailHeaderProps) {
   const router = useAppRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isPending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -63,15 +60,20 @@ export function QuotationDetailHeader({
 
   function handleEdit() {
     setMenuOpen(false);
-    router.push(`/admin/quotations?edit=${quotationId}`);
+    router.push(`/admin/invoices?edit=${invoiceId}`);
+  }
+
+  function handleRecordPayment() {
+    setMenuOpen(false);
+    router.push(`/admin/invoices/${invoiceId}?recordPayment=1`);
   }
 
   async function handleDownloadPdf() {
     setIsDownloadingPdf(true);
 
     try {
-      await downloadQuotationPdf(quotationId);
-      toast.success("Quotation PDF downloaded.");
+      await downloadInvoicePdf(invoiceId);
+      toast.success("Invoice PDF downloaded.");
     } catch {
       toast.error("Could not download PDF.");
     } finally {
@@ -82,17 +84,17 @@ export function QuotationDetailHeader({
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteQuotation(quotationId);
+      const result = await deleteInvoice(invoiceId);
 
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Quotation deleted.");
+      toast.success("Invoice deleted.");
       setConfirmOpen(false);
       setMenuOpen(false);
-      router.push("/admin/quotations");
+      router.push("/admin/invoices");
       router.refresh();
     });
   }
@@ -104,22 +106,22 @@ export function QuotationDetailHeader({
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
           <div className="flex items-center">
             <Link
-              aria-label="Back to quotations"
+              aria-label="Back to invoices"
               className="inline-flex items-center justify-center text-foreground transition hover:text-primary"
-              href="/admin/quotations"
+              href="/admin/invoices"
             >
               <ArrowLeft size={20} strokeWidth={2.5} />
             </Link>
           </div>
 
           <h1 className="truncate text-center font-primary text-base font-medium">
-            {quotationNumber}
+            {invoiceNumber}
           </h1>
 
           <div className="relative flex justify-end" ref={menuRef}>
             <button
               aria-expanded={menuOpen}
-              aria-label={`Actions for ${quotationNumber}`}
+              aria-label={`Actions for ${invoiceNumber}`}
               className="inline-flex size-9 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground disabled:opacity-70"
               disabled={isPending || isDownloadingPdf}
               onClick={() => setMenuOpen((current) => !current)}
@@ -129,7 +131,18 @@ export function QuotationDetailHeader({
             </button>
 
             {menuOpen ? (
-              <div className="animate-menu-pop absolute right-0 top-10 z-30 w-44 rounded-xl border border-border-soft bg-surface-raised p-1.5 shadow-popover">
+              <div className="animate-menu-pop absolute right-0 top-10 z-30 w-48 rounded-xl border border-border-soft bg-surface-raised p-1.5 shadow-popover">
+                {balanceAmount > 0 ? (
+                  <button
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
+                    disabled={isDownloadingPdf || isPending}
+                    onClick={handleRecordPayment}
+                    type="button"
+                  >
+                    <Plus size={15} />
+                    Record payment
+                  </button>
+                ) : null}
                 <button
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
                   disabled={isDownloadingPdf || isPending}
@@ -138,30 +151,6 @@ export function QuotationDetailHeader({
                 >
                   <Pencil size={15} />
                   Edit
-                </button>
-                <button
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
-                  disabled={isDownloadingPdf || isPending}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push(`/admin/invoices?fromQuote=${quotationId}`);
-                  }}
-                  type="button"
-                >
-                  <ReceiptText size={15} />
-                  Make invoice
-                </button>
-                <button
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
-                  disabled={isDownloadingPdf || isPending}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setStatusModalOpen(true);
-                  }}
-                  type="button"
-                >
-                  <RefreshCw size={15} />
-                  Update status
                 </button>
                 <button
                   aria-busy={isDownloadingPdf}
@@ -196,18 +185,9 @@ export function QuotationDetailHeader({
         </header>
 
         <AdminDetailBreadcrumbBar
-          items={getQuotationDetailBreadcrumb(quotationNumber)}
+          items={getInvoiceDetailBreadcrumb(invoiceNumber)}
         />
       </div>
-
-      <QuotationStatusModal
-        currentStatus={status}
-        onClose={() => setStatusModalOpen(false)}
-        onUpdated={() => router.refresh()}
-        open={statusModalOpen}
-        quotationId={quotationId}
-        quotationNumber={quotationNumber}
-      />
 
       {confirmOpen ? (
         <div className={confirmOverlayClass}>
@@ -223,12 +203,12 @@ export function QuotationDetailHeader({
               <Trash2 size={18} />
             </div>
             <h3 className="mt-4 font-primary text-lg font-medium">
-              Delete quotation?
+              Delete invoice?
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted">
               This will permanently delete{" "}
               <span className="font-medium text-foreground">
-                {quotationNumber}
+                {invoiceNumber}
               </span>
               . This action cannot be undone.
             </p>

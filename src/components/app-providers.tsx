@@ -2,13 +2,15 @@
 
 import { Toaster } from "sonner";
 
-import { NavigationProgress } from "@/components/navigation-progress";
+import { NavigationProgressProvider } from "@/components/navigation-progress";
+import { PwaRegister } from "@/components/pwa-register";
 
-export function AppProviders() {
+export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <NavigationProgress />
+    <NavigationProgressProvider>
+      <PwaRegister />
       <Toaster closeButton position="top-center" richColors />
-    </>
+      {children}
+    </NavigationProgressProvider>
   );
 }

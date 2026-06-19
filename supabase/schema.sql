@@ -108,6 +108,7 @@ create table if not exists public.invoices (
   invoice_number text not null unique,
   quotation_id uuid references public.quotations(id) on delete set null,
   customer_id uuid references public.customers(id) on delete set null,
+  work_title text,
   invoice_date date not null default current_date,
   due_date date,
   subtotal numeric(12, 2) not null default 0,

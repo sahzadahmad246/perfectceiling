@@ -2,10 +2,12 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 
 import { signInWithGoogle } from "@/app/auth/actions";
+import { BrandLogo } from "@/components/brand-logo";
+import { UserMenu } from "@/components/user-menu";
+import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { getAuthProfile } from "@/lib/auth/profile";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
-import { UserMenu } from "@/components/user-menu";
 
 async function getCurrentProfile() {
   if (!hasSupabaseEnv()) {
@@ -25,18 +27,18 @@ async function getCurrentProfile() {
 }
 
 export async function SiteHeader() {
-  const profile = await getCurrentProfile();
+  const [profile, settings] = await Promise.all([
+    getCurrentProfile(),
+    getPublicBusinessSettings(),
+  ]);
 
   return (
     <header className="sticky top-0 z-20 -mx-6 border-b border-border-soft bg-surface/90 px-6 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
       <div className="mx-auto flex max-w-[560px] items-center justify-between">
-        <Link
-          aria-label="Perfect Ceiling home"
-          className="flex h-10 w-11 items-center justify-center rounded-md bg-primary text-sm font-bold tracking-normal text-primary-foreground transition hover:bg-primary-hover"
-          href="/"
-        >
-          PC
-        </Link>
+        <BrandLogo
+          businessName={settings.businessName}
+          logoUrl={settings.logoUrl}
+        />
 
         <div className="flex items-center">
           {profile ? (

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PublicBusinessSettings = {
   businessName: string;
+  logoUrl: string | null;
   phone: string;
   whatsapp: string;
   email: string;
@@ -15,6 +16,7 @@ export type PublicBusinessSettings = {
 
 const fallbackSettings: PublicBusinessSettings = {
   businessName: siteConfig.name,
+  logoUrl: null,
   phone: siteConfig.phone,
   whatsapp: siteConfig.whatsapp,
   email: siteConfig.email,
@@ -44,7 +46,7 @@ export const getPublicBusinessSettings = cache(
 
       const { data, error } = await client
         .from("business_settings")
-        .select("business_name, phone, whatsapp, email, city")
+        .select("business_name, logo_url, phone, whatsapp, email, city")
         .limit(1)
         .maybeSingle();
 
@@ -57,6 +59,7 @@ export const getPublicBusinessSettings = cache(
 
       return {
         businessName: data.business_name?.trim() || fallbackSettings.businessName,
+        logoUrl: data.logo_url?.trim() || null,
         phone,
         whatsapp,
         email: data.email?.trim() || fallbackSettings.email,

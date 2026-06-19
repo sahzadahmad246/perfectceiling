@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat, Plus_Jakarta_Sans } from "next/font/google";
 
 import { AppProviders } from "@/components/app-providers";
@@ -47,6 +47,24 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.webmanifest",
+  applicationName: siteConfig.name,
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.name,
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png", type: "image/png" }],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#18181b",
 };
 
 export default function RootLayout({
@@ -60,8 +78,7 @@ export default function RootLayout({
       className={`${primaryFont.variable} ${secondaryFont.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background font-secondary text-foreground">
-        <AppProviders />
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

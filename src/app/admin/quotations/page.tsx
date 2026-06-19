@@ -5,6 +5,7 @@ import {
   getQuotationDefaults,
   listQuotations,
 } from "@/app/admin/quotations/actions";
+import { PageSpinner } from "@/components/page-spinner";
 import { QuotationsPageClient } from "@/components/quotations-page-client";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default async function QuotationsPage() {
   ]);
 
   return (
-    <Suspense fallback={<div className="mt-3 text-sm text-muted">Loading...</div>}>
+    <Suspense fallback={<PageSpinner />}>
       <QuotationsPageClient defaults={defaults} quotations={quotations} />
     </Suspense>
   );

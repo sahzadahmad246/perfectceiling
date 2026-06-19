@@ -1,49 +1,52 @@
 "use client";
 
-import { FileText, Loader2, Search } from "lucide-react";
+import { Loader2, ReceiptText, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  getQuotationEditData,
-  type QuotationDefaults,
-} from "@/app/admin/quotations/actions";
+  getInvoiceDataFromQuotation,
+  getInvoiceEditData,
+  type InvoiceDefaults,
+} from "@/app/admin/invoices/actions";
+import { InvoiceCard } from "@/components/invoice-card";
+import { InvoiceCreateModal } from "@/components/invoice-create-modal";
 import { PageSpinner } from "@/components/page-spinner";
-import { QuotationCard } from "@/components/quotation-card";
-import { QuotationCreateModal } from "@/components/quotation-create-modal";
 import {
-  applyQuotationListFilter,
-  QUOTATION_LIST_FILTERS,
-  QUOTATION_LIST_PAGE_SIZE,
-  type CreateQuotationInput,
-  type QuotationListFilter,
-  type QuotationListItem,
-} from "@/lib/quotations";
+  applyInvoiceListFilter,
+  INVOICE_LIST_FILTERS,
+  INVOICE_LIST_PAGE_SIZE,
+  type CreateInvoiceInput,
+  type InvoiceListFilter,
+  type InvoiceListItem,
+} from "@/lib/invoices";
 
-type QuotationsPageClientProps = {
-  quotations: QuotationListItem[];
-  defaults: QuotationDefaults;
+type InvoicesPageClientProps = {
+  invoices: InvoiceListItem[];
+  defaults: InvoiceDefaults;
 };
 
-type QuotationsListParams = {
+type InvoicesListParams = {
   q?: string;
-  filter?: QuotationListFilter;
+  filter?: InvoiceListFilter;
   create?: string;
   edit?: string;
+  fromQuote?: string;
 };
 
-function isListFilter(value: string | null): value is QuotationListFilter {
-  return QUOTATION_LIST_FILTERS.some((option) => option.id === value);
+function isListFilter(value: string | null): value is InvoiceListFilter {
+  return INVOICE_LIST_FILTERS.some((option) => option.id === value);
 }
 
-function buildQuotationsUrl({
+function buildInvoicesUrl({
   q,
   filter = "all",
   create,
   edit,
-}: QuotationsListParams) {
+  fromQuote,
+}: InvoicesListParams) {
   const params = new URLSearchParams();
 
   if (q?.trim()) {
@@ -62,73 +65,59 @@ function buildQuotationsUrl({
     params.set("edit", edit);
   }
 
+  if (fromQuote) {
+    params.set("fromQuote", fromQuote);
+  }
+
   const query = params.toString();
 
-  return query ? `/admin/quotations?${query}` : "/admin/quotations";
+  return query ? `/admin/invoices?${query}` : "/admin/invoices";
 }
 
-function resolveListFilter(
-  filterParam: string | null,
-  legacyStatusParam: string | null,
-  legacySortParam: string | null,
-): QuotationListFilter {
-  if (isListFilter(filterParam)) {
-    return filterParam;
-  }
-
-  if (legacySortParam === "recent") {
-    return "recent";
-  }
-
-  if (legacySortParam === "newest") {
-    return "newest";
-  }
-
-  if (isListFilter(legacyStatusParam)) {
-    return legacyStatusParam;
-  }
-
-  return "all";
-}
-
-export function QuotationsPageClient({
-  quotations,
+export function InvoicesPageClient({
+  invoices,
   defaults,
-}: QuotationsPageClientProps) {
+}: InvoicesPageClientProps) {
   const router = useAppRouter();
   const searchParams = useSearchParams();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const urlQuery = searchParams.get("q") ?? "";
-  const listFilter = resolveListFilter(
-    searchParams.get("filter"),
-    searchParams.get("status"),
-    searchParams.get("sort"),
-  );
+  const filterParam = searchParams.get("filter");
+  const listFilter: InvoiceListFilter = isListFilter(filterParam)
+    ? filterParam
+    : searchParams.get("sort") === "recent"
+      ? "recent"
+      : "all";
 
   const createOpen = searchParams.get("create") === "1";
+  const fromQuoteId = searchParams.get("fromQuote");
   const editId = searchParams.get("edit");
-  const modalOpen = createOpen || Boolean(editId);
+  const modalOpen = createOpen || Boolean(editId) || Boolean(fromQuoteId);
 
   const [searchInput, setSearchInput] = useState(urlQuery);
-  const [applyingFilter, setApplyingFilter] = useState<QuotationListFilter | null>(
+  const [applyingFilter, setApplyingFilter] = useState<InvoiceListFilter | null>(
     null,
   );
-  const [visibleCount, setVisibleCount] = useState(QUOTATION_LIST_PAGE_SIZE);
-  const [editData, setEditData] = useState<CreateQuotationInput | null>(null);
-  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INVOICE_LIST_PAGE_SIZE);
+  const [editData, setEditData] = useState<CreateInvoiceInput | null>(null);
+  const [fromQuoteData, setFromQuoteData] = useState<CreateInvoiceInput | null>(
+    null,
+  );
+  const [loadingModalData, setLoadingModalData] = useState(false);
 
   const isSearchPending = searchInput.trim() !== urlQuery.trim();
   const isFilterPending = applyingFilter !== null;
 
   const updateListParams = useCallback(
-    (next: Partial<QuotationsListParams>) => {
+    (next: Partial<InvoicesListParams>) => {
       router.replace(
-        buildQuotationsUrl({
+        buildInvoicesUrl({
           q: next.q ?? urlQuery,
           filter: next.filter ?? listFilter,
           create: next.create,
           edit: next.edit,
+          fromQuote: next.fromQuote,
         }),
         { scroll: false },
       );
@@ -136,25 +125,25 @@ export function QuotationsPageClient({
     [listFilter, router, urlQuery],
   );
 
-  const filteredQuotations = useMemo(
-    () => applyQuotationListFilter(quotations, urlQuery, listFilter),
-    [listFilter, quotations, urlQuery],
+  const filteredInvoices = useMemo(
+    () => applyInvoiceListFilter(invoices, urlQuery, listFilter),
+    [invoices, listFilter, urlQuery],
   );
 
-  const visibleQuotations = useMemo(
-    () => filteredQuotations.slice(0, visibleCount),
-    [filteredQuotations, visibleCount],
+  const visibleInvoices = useMemo(
+    () => filteredInvoices.slice(0, visibleCount),
+    [filteredInvoices, visibleCount],
   );
 
-  const hasMore = visibleCount < filteredQuotations.length;
+  const hasMore = visibleCount < filteredInvoices.length;
 
   useEffect(() => {
     setSearchInput(urlQuery);
   }, [urlQuery]);
 
   useEffect(() => {
-    setVisibleCount(QUOTATION_LIST_PAGE_SIZE);
-  }, [urlQuery, listFilter]);
+    setVisibleCount(INVOICE_LIST_PAGE_SIZE);
+  }, [listFilter, urlQuery]);
 
   useEffect(() => {
     if (applyingFilter === null || applyingFilter !== listFilter) {
@@ -194,7 +183,7 @@ export function QuotationsPageClient({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((current) => current + QUOTATION_LIST_PAGE_SIZE);
+          setVisibleCount((current) => current + INVOICE_LIST_PAGE_SIZE);
         }
       },
       { rootMargin: "240px" },
@@ -205,52 +194,65 @@ export function QuotationsPageClient({
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, filteredQuotations.length]);
+  }, [filteredInvoices.length, hasMore]);
 
   useEffect(() => {
-    if (!editId) {
+    if (!editId && !fromQuoteId) {
       setEditData(null);
-      setLoadingEdit(false);
+      setFromQuoteData(null);
+      setLoadingModalData(false);
       return;
     }
 
     let cancelled = false;
 
-    setLoadingEdit(true);
+    setLoadingModalData(true);
     setEditData(null);
+    setFromQuoteData(null);
 
-    getQuotationEditData(editId)
+    const loadData = editId
+      ? getInvoiceEditData(editId)
+      : fromQuoteId
+        ? getInvoiceDataFromQuotation(fromQuoteId)
+        : Promise.resolve(null);
+
+    loadData
       .then((data) => {
         if (cancelled) {
           return;
         }
 
-        setEditData(data);
-        setLoadingEdit(false);
+        if (editId) {
+          setEditData(data);
+        } else {
+          setFromQuoteData(data);
+        }
+
+        setLoadingModalData(false);
 
         if (!data) {
-          router.replace(buildQuotationsUrl({ q: urlQuery, filter: listFilter }));
+          router.replace(buildInvoicesUrl({ q: urlQuery, filter: listFilter }));
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setLoadingEdit(false);
-          router.replace(buildQuotationsUrl({ q: urlQuery, filter: listFilter }));
+          setLoadingModalData(false);
+          router.replace(buildInvoicesUrl({ q: urlQuery, filter: listFilter }));
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [editId, listFilter, router, urlQuery]);
+  }, [editId, fromQuoteId, listFilter, router, urlQuery]);
 
   function closeModal() {
-    router.replace(buildQuotationsUrl({ q: urlQuery, filter: listFilter }));
+    router.replace(buildInvoicesUrl({ q: urlQuery, filter: listFilter }));
   }
 
   function handleEdit(id: string) {
     router.push(
-      buildQuotationsUrl({
+      buildInvoicesUrl({
         q: urlQuery,
         filter: listFilter,
         edit: id,
@@ -258,7 +260,7 @@ export function QuotationsPageClient({
     );
   }
 
-  function handleFilterSelect(filter: QuotationListFilter) {
+  function handleFilterSelect(filter: InvoiceListFilter) {
     if (filter === listFilter || isFilterPending) {
       return;
     }
@@ -266,6 +268,12 @@ export function QuotationsPageClient({
     setApplyingFilter(filter);
     updateListParams({ filter });
   }
+
+  const modalInitialData = editData ?? fromQuoteData ?? undefined;
+  const modalReady =
+    (createOpen && !editId && !fromQuoteId) ||
+    (Boolean(editId) && Boolean(editData)) ||
+    (Boolean(fromQuoteId) && Boolean(fromQuoteData));
 
   return (
     <>
@@ -278,7 +286,7 @@ export function QuotationsPageClient({
           aria-busy={isSearchPending}
           className="h-11 w-full rounded-full border border-border-strong bg-surface px-10 pr-10 text-sm outline-none transition focus:border-primary"
           onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Search quotations..."
+          placeholder="Search invoices..."
           type="search"
           value={searchInput}
         />
@@ -291,7 +299,7 @@ export function QuotationsPageClient({
       </div>
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {QUOTATION_LIST_FILTERS.map((option) => {
+        {INVOICE_LIST_FILTERS.map((option) => {
           const isActive = listFilter === option.id;
           const isApplyingThisFilter = applyingFilter === option.id;
 
@@ -319,28 +327,28 @@ export function QuotationsPageClient({
         })}
       </div>
 
-      {filteredQuotations.length === 0 ? (
+      {filteredInvoices.length === 0 ? (
         <section className="mt-8 rounded-xl border border-border-soft bg-surface-raised/60 p-6 text-center">
           <div className="mx-auto flex size-11 items-center justify-center rounded-full border border-border-strong text-muted">
-            <FileText size={19} />
+            <ReceiptText size={19} />
           </div>
           <h2 className="mt-5 text-xl font-medium">
-            {quotations.length === 0 ? "No quotations yet" : "No matches found"}
+            {invoices.length === 0 ? "No invoices yet" : "No matches found"}
           </h2>
           <p className="mt-3 text-sm leading-7 text-muted">
-            {quotations.length === 0
-              ? "Tap Create in the bottom nav to add your first quotation."
+            {invoices.length === 0
+              ? "Tap Create in the bottom nav to add your first invoice."
               : "Try a different search term or filter."}
           </p>
         </section>
       ) : (
         <>
           <div className="mt-5 space-y-3">
-            {visibleQuotations.map((quotation) => (
-              <QuotationCard
-                key={quotation.id}
+            {visibleInvoices.map((invoice) => (
+              <InvoiceCard
+                invoice={invoice}
+                key={invoice.id}
                 onEdit={handleEdit}
-                quotation={quotation}
               />
             ))}
           </div>
@@ -357,19 +365,21 @@ export function QuotationsPageClient({
         </>
       )}
 
-      {modalOpen && editId && (loadingEdit || !editData) ? (
+      {modalOpen && (editId || fromQuoteId) && loadingModalData ? (
         <div className="fixed inset-0 z-[9990] flex justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex h-full w-full max-w-[560px] flex-col items-center justify-center border-x border-border-soft bg-surface">
-            <PageSpinner label="Loading quotation..." />
+            <PageSpinner label="Loading invoice..." />
           </div>
         </div>
       ) : (
-        <QuotationCreateModal
+        <InvoiceCreateModal
           defaults={defaults}
-          initialData={editData ?? undefined}
+          initialData={modalInitialData}
+          initialStep={fromQuoteId ? 3 : 1}
+          invoiceId={editId ?? undefined}
           onClose={closeModal}
-          open={modalOpen && (!editId || Boolean(editData))}
-          quotationId={editId ?? undefined}
+          open={modalOpen && modalReady}
+          quotationId={fromQuoteId ?? undefined}
         />
       )}
     </>

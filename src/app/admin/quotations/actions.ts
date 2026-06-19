@@ -21,6 +21,7 @@ import {
   type QuotationLineItemImageDraft,
   type QuotationListItem,
 } from "@/lib/quotations";
+import { getNextDocumentNumber } from "@/lib/document-numbers";
 import { createServiceClient } from "@/lib/supabase/admin";
 
 const ASSETS_BUCKET = "business-assets";
@@ -50,35 +51,37 @@ export type QuotationDefaults = {
 async function generateQuotationNumber(
   supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
 ) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from("quotations")
-    .select("id", { count: "exact", head: true })
+    .select("quotation_number")
     .neq("status", "draft");
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const nextNumber = (count ?? 0) + 1;
-
-  return `Q-${String(nextNumber).padStart(4, "0")}`;
+  return getNextDocumentNumber(
+    (data ?? []).map((row) => row.quotation_number),
+    "Q",
+  );
 }
 
 async function generateDraftQuotationNumber(
   supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
 ) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from("quotations")
-    .select("id", { count: "exact", head: true })
+    .select("quotation_number")
     .eq("status", "draft");
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const nextNumber = (count ?? 0) + 1;
-
-  return `DRAFT-${String(nextNumber).padStart(4, "0")}`;
+  return getNextDocumentNumber(
+    (data ?? []).map((row) => row.quotation_number),
+    "DRAFT",
+  );
 }
 
 function normalizeFileName(name: string) {

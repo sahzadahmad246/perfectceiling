@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useAppRouter } from "@/hooks/use-app-router";
 import {
   useCallback,
   useEffect,
@@ -76,7 +76,7 @@ export function QuotationCreateModal({
   quotationId,
   initialData,
 }: QuotationCreateModalProps) {
-  const router = useRouter();
+  const router = useAppRouter();
   const isEditing = Boolean(quotationId && initialData);
   const [step, setStep] = useState(1);
   const [customer, setCustomer] = useState(emptyCustomer);

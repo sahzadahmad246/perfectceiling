@@ -2,7 +2,9 @@
 
 import { FileText, Home, Plus, ReceiptText, Users } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+
+import { useAppRouter } from "@/hooks/use-app-router";
 
 import { cn } from "@/lib/utils";
 
@@ -15,8 +17,9 @@ const navItems = [
 
 export function AdminBottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useAppRouter();
   const isQuotationsSection = pathname.startsWith("/admin/quotations");
+  const isInvoicesSection = pathname.startsWith("/admin/invoices");
 
   return (
     <nav
@@ -41,6 +44,24 @@ export function AdminBottomNav() {
                   )}
                   key={item.href}
                   onClick={() => router.push("/admin/quotations?create=1")}
+                  type="button"
+                >
+                  <span className="absolute top-1 h-0.5 w-5 rounded-full bg-primary" />
+                  <Plus size={18} />
+                  Create
+                </button>
+              );
+            }
+
+            if (item.href === "/admin/invoices" && isInvoicesSection) {
+              return (
+                <button
+                  className={cn(
+                    "relative flex h-14 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium transition",
+                    "text-foreground hover:bg-surface-muted",
+                  )}
+                  key={item.href}
+                  onClick={() => router.push("/admin/invoices?create=1")}
                   type="button"
                 >
                   <span className="absolute top-1 h-0.5 w-5 rounded-full bg-primary" />

@@ -6,8 +6,6 @@ import {
   Loader2,
   MoreVertical,
   Pencil,
-  ReceiptText,
-  RefreshCw,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,16 +14,15 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
-import { deleteQuotation } from "@/app/admin/quotations/actions";
-import { QuotationStatusModal } from "@/components/quotation-status-modal";
-import { downloadQuotationPdf } from "@/lib/download-quotation-pdf";
+import { deleteInvoice } from "@/app/admin/invoices/actions";
+import { downloadInvoicePdf } from "@/lib/download-invoice-pdf";
 import {
   formatCurrency,
   formatQuotationDate,
-  getQuotationStatusCardGlow,
-  getQuotationStatusStyle,
-  type QuotationListItem,
-} from "@/lib/quotations";
+  getInvoicePaymentStatusCardGlow,
+  getInvoicePaymentStatusStyle,
+  type InvoiceListItem,
+} from "@/lib/invoices";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
@@ -39,24 +36,23 @@ type MenuPosition = {
   right: number;
 };
 
-type QuotationCardProps = {
-  quotation: QuotationListItem;
+type InvoiceCardProps = {
+  invoice: InvoiceListItem;
   onEdit: (id: string) => void;
 };
 
-export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
+export function InvoiceCard({ invoice, onEdit }: InvoiceCardProps) {
   const router = useAppRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isPending, startTransition] = useTransition();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const status = getQuotationStatusStyle(quotation.status);
-  const statusGlow = getQuotationStatusCardGlow(quotation.status);
-  const workTitle = quotation.workTitle?.trim() || "Untitled work";
+  const status = getInvoicePaymentStatusStyle(invoice.paymentStatus);
+  const statusGlow = getInvoicePaymentStatusCardGlow(invoice.paymentStatus);
+  const workTitle = invoice.workTitle?.trim() || "Untitled work";
 
   function updateMenuPosition() {
     const button = buttonRef.current;
@@ -66,7 +62,7 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
     }
 
     const rect = button.getBoundingClientRect();
-    const menuHeight = 232;
+    const menuHeight = 148;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUpward = spaceBelow < menuHeight + 8;
 
@@ -132,8 +128,8 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
     setIsDownloadingPdf(true);
 
     try {
-      await downloadQuotationPdf(quotation.id);
-      toast.success("Quotation PDF downloaded.");
+      await downloadInvoicePdf(invoice.id);
+      toast.success("Invoice PDF downloaded.");
     } catch {
       toast.error("Could not download PDF.");
     } finally {
@@ -145,14 +141,14 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteQuotation(quotation.id);
+      const result = await deleteInvoice(invoice.id);
 
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Quotation deleted.");
+      toast.success("Invoice deleted.");
       setConfirmOpen(false);
       setMenuOpen(false);
       setMenuPosition(null);
@@ -174,7 +170,7 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
             <button
               ref={buttonRef}
               aria-expanded={menuOpen}
-              aria-label={`Actions for ${quotation.quotationNumber}`}
+              aria-label={`Actions for ${invoice.invoiceNumber}`}
               className="inline-flex size-9 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground"
               onClick={toggleMenu}
               type="button"
@@ -185,26 +181,26 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
 
           <Link
             className="block pr-11"
-            href={`/admin/quotations/${quotation.id}`}
+            href={`/admin/invoices/${invoice.id}`}
           >
             <h3 className="font-primary text-sm font-semibold leading-6 text-foreground">
               {workTitle}
               <span className="font-normal text-muted">
                 {" "}
-                ({quotation.quotationNumber})
+                ({invoice.invoiceNumber})
               </span>
             </h3>
 
             <p className="mt-2 text-sm text-muted">
-              <span>{quotation.customerName}</span>
-              {quotation.customerPhone ? (
-                <span> · {quotation.customerPhone}</span>
+              <span>{invoice.customerName}</span>
+              {invoice.customerPhone ? (
+                <span> · {invoice.customerPhone}</span>
               ) : null}
             </p>
 
-            {quotation.customerAddress ? (
+            {invoice.customerAddress ? (
               <p className="mt-1 text-sm leading-5 text-muted">
-                {quotation.customerAddress}
+                {invoice.customerAddress}
               </p>
             ) : null}
           </Link>
@@ -217,21 +213,26 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
 
         <Link
           className="relative z-[1] flex items-center justify-between gap-3 px-4 py-3"
-          href={`/admin/quotations/${quotation.id}`}
+          href={`/admin/invoices/${invoice.id}`}
         >
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
             <span className="inline-flex items-center gap-1.5">
               <Calendar size={13} />
-              {formatQuotationDate(quotation.date)}
+              {formatQuotationDate(invoice.invoiceDate)}
             </span>
             <span
               className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${status.className}`}
             >
               {status.label}
             </span>
+            {invoice.balanceAmount > 0 ? (
+              <span className="text-rose-600">
+                Due {formatCurrency(invoice.balanceAmount)}
+              </span>
+            ) : null}
           </div>
           <span className="shrink-0 text-sm font-semibold text-foreground">
-            {formatCurrency(quotation.grandTotal)}
+            {formatCurrency(invoice.grandTotal)}
           </span>
         </Link>
       </article>
@@ -249,38 +250,12 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
                 onClick={() => {
                   setMenuOpen(false);
                   setMenuPosition(null);
-                  onEdit(quotation.id);
+                  onEdit(invoice.id);
                 }}
                 type="button"
               >
                 <Pencil size={15} />
                 Edit
-              </button>
-              <button
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
-                disabled={isDownloadingPdf}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setMenuPosition(null);
-                  router.push(`/admin/invoices?fromQuote=${quotation.id}`);
-                }}
-                type="button"
-              >
-                <ReceiptText size={15} />
-                Make invoice
-              </button>
-              <button
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition hover:bg-surface-muted disabled:opacity-70"
-                disabled={isDownloadingPdf}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setMenuPosition(null);
-                  setStatusModalOpen(true);
-                }}
-                type="button"
-              >
-                <RefreshCw size={15} />
-                Update status
               </button>
               <button
                 aria-busy={isDownloadingPdf}
@@ -314,15 +289,6 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
           )
         : null}
 
-      <QuotationStatusModal
-        currentStatus={quotation.status}
-        onClose={() => setStatusModalOpen(false)}
-        onUpdated={() => router.refresh()}
-        open={statusModalOpen}
-        quotationId={quotation.id}
-        quotationNumber={quotation.quotationNumber}
-      />
-
       {confirmOpen ? (
         <div className={confirmOverlayClass}>
           <button
@@ -337,14 +303,14 @@ export function QuotationCard({ quotation, onEdit }: QuotationCardProps) {
               <Trash2 size={18} />
             </div>
             <h3 className="mt-4 font-primary text-lg font-medium">
-              Delete quotation?
+              Delete invoice?
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted">
               This will permanently delete{" "}
               <span className="font-medium text-foreground">
-                {quotation.quotationNumber}
+                {invoice.invoiceNumber}
               </span>{" "}
-              for {quotation.customerName}. This action cannot be undone.
+              for {invoice.customerName}. This action cannot be undone.
             </p>
             <div className="mt-5 flex gap-2">
               <button
