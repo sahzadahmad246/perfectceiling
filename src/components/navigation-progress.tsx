@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -55,12 +56,65 @@ function isInternalNavigationLink(anchor: HTMLAnchorElement) {
   return true;
 }
 
-export function NavigationProgressProvider({ children }: { children: ReactNode }) {
+function NavigationProgressBar({
+  visible,
+  width,
+}: {
+  visible: boolean;
+  width: number;
+}) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-[3px] overflow-hidden bg-sky-100/70"
+    >
+      <div
+        className="relative h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 shadow-[0_0_10px_rgba(59,130,246,0.55)] transition-[width] duration-200 ease-out"
+        style={{ width: `${width}%` }}
+      >
+        <span className="absolute inset-y-0 right-0 w-16 bg-gradient-to-r from-transparent to-white/45" />
+      </div>
+    </div>
+  );
+}
+
+function NavigationProgressRouteWatcher({
+  active,
+  hasReachedDestination,
+  onArrived,
+}: {
+  active: boolean;
+  hasReachedDestination: () => boolean;
+  onArrived: () => void;
+}) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const routeKey = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname;
+
+  useEffect(() => {
+    if (!active || !hasReachedDestination()) {
+      return;
+    }
+
+    onArrived();
+  }, [active, hasReachedDestination, onArrived, routeKey]);
+
+  return null;
+}
+
+export function NavigationProgressProvider({ children }: { children: ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [width, setWidth] = useState(0);
 
   const startRouteRef = useRef<string | null>(null);
+  const targetRouteRef = useRef<string | null>(null);
   const trickleTimerRef = useRef<number | null>(null);
   const hideTimerRef = useRef<number | null>(null);
 
@@ -84,8 +138,21 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
       setVisible(false);
       setWidth(0);
       startRouteRef.current = null;
-    }, 280);
+      targetRouteRef.current = null;
+    }, 320);
   }, [clearTimers]);
+
+  const hasReachedDestination = useCallback(() => {
+    const current = currentRouteKey();
+
+    if (targetRouteRef.current) {
+      return current === targetRouteRef.current;
+    }
+
+    return (
+      startRouteRef.current !== null && current !== startRouteRef.current
+    );
+  }, []);
 
   const begin = useCallback(
     (href?: string) => {
@@ -95,45 +162,42 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
 
       clearTimers();
       startRouteRef.current = currentRouteKey();
+      targetRouteRef.current = href ? hrefToRouteKey(href) : null;
       setVisible(true);
-      setWidth(12);
+      setWidth(0);
+
+      window.requestAnimationFrame(() => {
+        setWidth(8);
+      });
 
       trickleTimerRef.current = window.setInterval(() => {
         setWidth((value) => {
-          if (value >= 88) {
+          if (value >= 92) {
             return value;
           }
 
-          return value + Math.max(0.8, (88 - value) * 0.12);
+          return value + Math.max(0.6, (92 - value) * 0.11);
         });
-      }, 100);
+      }, 90);
     },
     [clearTimers],
   );
 
   useEffect(() => {
-    if (!visible || !startRouteRef.current) {
-      return;
-    }
-
-    if (currentRouteKey() !== startRouteRef.current) {
-      finish();
+    if (!visible) {
       return;
     }
 
     const poll = window.setInterval(() => {
-      if (
-        startRouteRef.current &&
-        currentRouteKey() !== startRouteRef.current
-      ) {
+      if (hasReachedDestination()) {
         finish();
       }
-    }, 50);
+    }, 40);
 
     return () => {
       window.clearInterval(poll);
     };
-  }, [finish, pathname, visible]);
+  }, [finish, hasReachedDestination, visible]);
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -165,17 +229,14 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
 
   return (
     <NavigationProgressContext.Provider value={{ begin }}>
-      {visible ? (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-0.5 overflow-hidden bg-sky-200/80"
-        >
-          <div
-            className="h-full bg-sky-500 transition-[width] duration-200 ease-out"
-            style={{ width: `${width}%` }}
-          />
-        </div>
-      ) : null}
+      <NavigationProgressBar visible={visible} width={width} />
+      <Suspense fallback={null}>
+        <NavigationProgressRouteWatcher
+          active={visible}
+          hasReachedDestination={hasReachedDestination}
+          onArrived={finish}
+        />
+      </Suspense>
       {children}
     </NavigationProgressContext.Provider>
   );

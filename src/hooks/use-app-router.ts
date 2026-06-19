@@ -20,12 +20,12 @@ export function useAppRouter() {
         router.forward();
       },
       push: (href: string, options?: Parameters<typeof router.push>[1]) => {
-        router.push(href, options);
         begin(href);
+        router.push(href, options);
       },
       replace: (href: string, options?: Parameters<typeof router.replace>[1]) => {
-        router.replace(href, options);
         begin(href);
+        router.replace(href, options);
       },
       refresh: () => router.refresh(),
       prefetch: router.prefetch,
