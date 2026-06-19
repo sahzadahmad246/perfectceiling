@@ -1,9 +1,8 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   createContext,
-  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -11,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 type NavigationProgressContextValue = {
   begin: (href?: string) => void;
@@ -18,6 +18,8 @@ type NavigationProgressContextValue = {
 
 const NavigationProgressContext =
   createContext<NavigationProgressContextValue | null>(null);
+
+const MIN_VISIBLE_MS = 280;
 
 function currentRouteKey() {
   const search = window.location.search.replace(/^\?/, "");
@@ -53,70 +55,78 @@ function isInternalNavigationLink(anchor: HTMLAnchorElement) {
     return false;
   }
 
-  return true;
+  try {
+    const url = new URL(href, window.location.origin);
+    return url.origin === window.location.origin;
+  } catch {
+    return false;
+  }
 }
 
 function NavigationProgressBar({
+  mounted,
   visible,
   width,
 }: {
+  mounted: boolean;
   visible: boolean;
   width: number;
 }) {
-  if (!visible) {
+  if (!mounted || !visible) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-[3px] overflow-hidden bg-sky-100/70"
+      style={{
+        position: "fixed",
+        inset: "0 0 auto 0",
+        zIndex: 99999,
+        height: 4,
+        overflow: "hidden",
+        pointerEvents: "none",
+        backgroundColor: "rgba(186, 230, 253, 0.65)",
+      }}
     >
       <div
-        className="relative h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 shadow-[0_0_10px_rgba(59,130,246,0.55)] transition-[width] duration-200 ease-out"
-        style={{ width: `${width}%` }}
+        style={{
+          position: "relative",
+          height: "100%",
+          width: `${width}%`,
+          background: "linear-gradient(90deg, #38bdf8 0%, #3b82f6 50%, #38bdf8 100%)",
+          boxShadow: "0 0 12px rgba(59, 130, 246, 0.65)",
+          transition: "width 180ms ease-out",
+        }}
       >
-        <span className="absolute inset-y-0 right-0 w-16 bg-gradient-to-r from-transparent to-white/45" />
+        <span
+          style={{
+            position: "absolute",
+            insetBlock: 0,
+            right: 0,
+            width: 64,
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 100%)",
+          }}
+        />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
-function NavigationProgressRouteWatcher({
-  active,
-  hasReachedDestination,
-  onArrived,
-}: {
-  active: boolean;
-  hasReachedDestination: () => boolean;
-  onArrived: () => void;
-}) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const routeKey = searchParams.toString()
-    ? `${pathname}?${searchParams.toString()}`
-    : pathname;
-
-  useEffect(() => {
-    if (!active || !hasReachedDestination()) {
-      return;
-    }
-
-    onArrived();
-  }, [active, hasReachedDestination, onArrived, routeKey]);
-
-  return null;
-}
-
 export function NavigationProgressProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [width, setWidth] = useState(0);
 
   const startRouteRef = useRef<string | null>(null);
   const targetRouteRef = useRef<string | null>(null);
+  const startedAtRef = useRef(0);
   const trickleTimerRef = useRef<number | null>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const finishingRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     if (trickleTimerRef.current) {
@@ -131,15 +141,27 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
   }, []);
 
   const finish = useCallback(() => {
+    if (finishingRef.current) {
+      return;
+    }
+
+    finishingRef.current = true;
     clearTimers();
-    setWidth(100);
+
+    const elapsed = Date.now() - startedAtRef.current;
+    const wait = Math.max(0, MIN_VISIBLE_MS - elapsed);
 
     hideTimerRef.current = window.setTimeout(() => {
-      setVisible(false);
-      setWidth(0);
-      startRouteRef.current = null;
-      targetRouteRef.current = null;
-    }, 320);
+      setWidth(100);
+
+      hideTimerRef.current = window.setTimeout(() => {
+        setVisible(false);
+        setWidth(0);
+        startRouteRef.current = null;
+        targetRouteRef.current = null;
+        finishingRef.current = false;
+      }, 240);
+    }, wait);
   }, [clearTimers]);
 
   const hasReachedDestination = useCallback(() => {
@@ -156,32 +178,46 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
 
   const begin = useCallback(
     (href?: string) => {
-      if (href && hrefToRouteKey(href) === currentRouteKey()) {
+      const destination = href ? hrefToRouteKey(href) : null;
+
+      if (destination && destination === currentRouteKey()) {
         return;
       }
 
       clearTimers();
+      finishingRef.current = false;
+      startedAtRef.current = Date.now();
       startRouteRef.current = currentRouteKey();
-      targetRouteRef.current = href ? hrefToRouteKey(href) : null;
+      targetRouteRef.current = destination;
       setVisible(true);
-      setWidth(0);
-
-      window.requestAnimationFrame(() => {
-        setWidth(8);
-      });
+      setWidth(4);
 
       trickleTimerRef.current = window.setInterval(() => {
         setWidth((value) => {
-          if (value >= 92) {
+          if (value >= 90) {
             return value;
           }
 
-          return value + Math.max(0.6, (92 - value) * 0.11);
+          return value + Math.max(0.8, (90 - value) * 0.12);
         });
-      }, 90);
+      }, 80);
     },
     [clearTimers],
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    if (hasReachedDestination()) {
+      finish();
+    }
+  }, [finish, hasReachedDestination, pathname, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -192,7 +228,7 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
       if (hasReachedDestination()) {
         finish();
       }
-    }, 40);
+    }, 30);
 
     return () => {
       window.clearInterval(poll);
@@ -218,10 +254,10 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
       begin(anchor.getAttribute("href") ?? undefined);
     }
 
-    document.addEventListener("click", handleDocumentClick);
+    document.addEventListener("click", handleDocumentClick, true);
 
     return () => {
-      document.removeEventListener("click", handleDocumentClick);
+      document.removeEventListener("click", handleDocumentClick, true);
     };
   }, [begin]);
 
@@ -229,14 +265,7 @@ export function NavigationProgressProvider({ children }: { children: ReactNode }
 
   return (
     <NavigationProgressContext.Provider value={{ begin }}>
-      <NavigationProgressBar visible={visible} width={width} />
-      <Suspense fallback={null}>
-        <NavigationProgressRouteWatcher
-          active={visible}
-          hasReachedDestination={hasReachedDestination}
-          onArrived={finish}
-        />
-      </Suspense>
+      <NavigationProgressBar mounted={mounted} visible={visible} width={width} />
       {children}
     </NavigationProgressContext.Provider>
   );
