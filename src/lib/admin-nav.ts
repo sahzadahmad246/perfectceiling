@@ -65,6 +65,16 @@ export function getInvoiceDetailBreadcrumb(
   ];
 }
 
+export function getCustomerDetailBreadcrumb(
+  customerName: string,
+): AdminBreadcrumbItem[] {
+  return [
+    { label: "Admin", href: "/admin" },
+    { label: "Customer", href: "/admin/customers" },
+    { label: customerName },
+  ];
+}
+
 export function isAdminDocumentDetailPage(pathname: string) {
-  return /^\/admin\/(?:quotations|invoices)\/[^/]+$/.test(pathname);
+  return /^\/admin\/(?:quotations|invoices|customers)\/[^/]+$/.test(pathname);
 }
