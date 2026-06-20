@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Hammer, Link2, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
@@ -179,48 +180,67 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
 
   return (
     <>
-      <article className="rounded-xl border border-border-soft bg-surface-raised/70 p-4 transition hover:border-border-strong">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-primary text-[17px] font-medium">
+      <article className="flex overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80 transition hover:border-border-strong">
+        <div className="relative w-[6.25rem] shrink-0 self-stretch bg-surface-muted">
+          {service.imageUrl ? (
+            <Image
+              alt={service.title}
+              className="object-cover"
+              fill
+              sizes="100px"
+              src={service.imageUrl}
+              unoptimized={service.imageUrl.startsWith("http")}
+            />
+          ) : (
+            <div className="flex h-full min-h-[6.25rem] items-center justify-center text-muted">
+              <Hammer size={22} strokeWidth={1.75} />
+            </div>
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="min-w-0 flex-1 truncate font-primary text-base font-medium text-foreground">
                 {service.title}
               </h3>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                  service.published
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-border-strong bg-surface-muted text-muted"
-                }`}
+
+              <button
+                aria-expanded={menuOpen}
+                aria-label={`Actions for ${service.title}`}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
+                onClick={() => setMenuOpen((current) => !current)}
+                ref={buttonRef}
+                type="button"
               >
-                {service.published ? "Published" : "Draft"}
-              </span>
+                <MoreVertical size={17} />
+              </button>
             </div>
-            <p className="mt-2 text-sm leading-6 text-muted">
+
+            <p className="mt-1 line-clamp-1 text-sm leading-5 text-muted">
               {service.shortDescription}
+            </p>
+
+            <p className="mt-2 text-sm font-medium text-foreground">
+              {formatServiceRate(service.startingPrice, service.rateUnit)}
             </p>
           </div>
 
-          <button
-            aria-expanded={menuOpen}
-            aria-label={`Actions for ${service.title}`}
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground"
-            onClick={() => setMenuOpen((current) => !current)}
-            ref={buttonRef}
-            type="button"
-          >
-            <MoreVertical size={18} />
-          </button>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span className="font-medium text-foreground">
-            {formatServiceRate(service.startingPrice, service.rateUnit)}
-          </span>
-          <span className="inline-flex items-center gap-1 text-muted">
-            <Globe size={14} />
-            {getServicePublicPath(service.slug)}
-          </span>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="inline-flex min-w-0 flex-1 items-center gap-1 text-xs text-muted">
+              <Link2 className="shrink-0" size={12} />
+              <span className="truncate">{getServicePublicPath(service.slug)}</span>
+            </p>
+            <span
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                service.published
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-border-strong bg-surface-muted text-muted"
+              }`}
+            >
+              {service.published ? "Live" : "Draft"}
+            </span>
+          </div>
         </div>
       </article>
 

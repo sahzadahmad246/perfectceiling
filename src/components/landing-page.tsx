@@ -18,8 +18,10 @@ import {
   getPublicHeroSlides,
   getPublicProjectCount,
   getPublicProjects,
+  getPublicServices,
 } from "@/lib/public-content";
-import { services, siteConfig } from "@/lib/site";
+import { formatServiceRate, getServicePublicPath } from "@/lib/services";
+import { siteConfig } from "@/lib/site";
 
 const serviceHighlights = [
   ["01", "POP false ceiling for homes, shops, offices & halls"],
@@ -43,11 +45,12 @@ const processSteps = [
 ] as const;
 
 export async function LandingPage() {
-  const [settings, slides, projects, projectCount] = await Promise.all([
+  const [settings, slides, projects, projectCount, services] = await Promise.all([
     getPublicBusinessSettings(),
     getPublicHeroSlides(),
     getPublicProjects(6),
     getPublicProjectCount(),
+    getPublicServices(),
   ]);
 
   const whatsappHref = toWhatsAppLink(
@@ -132,22 +135,60 @@ export async function LandingPage() {
         >
           <div aria-hidden className="landing-section-bg" />
           <div className="landing-section-content">
-            <p className="text-sm text-muted">Services</p>
-            <h2 className="mt-2 text-2xl font-medium">What we do</h2>
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-sm text-muted">Services</p>
+                <h2 className="mt-2 text-2xl font-medium">What we do</h2>
+              </div>
+              <Link
+                className="minimal-link inline-flex items-center gap-1 text-sm"
+                href="/services"
+              >
+                View all
+                <ArrowUpRight size={14} />
+              </Link>
+            </div>
 
-            <div className="mt-6 divide-y divide-border-soft border-y border-border-soft">
-              {services.map((service) => (
-                <article className="group flex gap-4 py-5" key={service.title}>
-                  <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-muted transition duration-200 group-hover:border-primary group-hover:text-foreground">
-                    <Hammer size={17} />
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-medium">{service.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted">
-                      {service.description}
-                    </p>
-                  </div>
-                </article>
+            <div className="mt-6 space-y-4">
+              {services.slice(0, 4).map((service) => (
+                <Link
+                  className="group block overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/70 transition duration-200 hover:border-border-strong"
+                  href={getServicePublicPath(service.slug)}
+                  key={service.id}
+                >
+                  {service.imageUrl ? (
+                    <div className="relative aspect-[16/10] overflow-hidden bg-surface-muted">
+                      <Image
+                        alt={service.title}
+                        className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                        fill
+                        sizes="560px"
+                        src={service.imageUrl}
+                        unoptimized={service.imageUrl.startsWith("http")}
+                      />
+                    </div>
+                  ) : null}
+                  <article className="flex gap-4 p-4">
+                    {!service.imageUrl ? (
+                      <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-muted transition duration-200 group-hover:border-primary group-hover:text-foreground">
+                        <Hammer size={17} />
+                      </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[17px] font-medium">{service.title}</h3>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {formatServiceRate(service.startingPrice, service.rateUnit)}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-muted">
+                        {service.shortDescription}
+                      </p>
+                    </div>
+                    <ArrowUpRight
+                      className="mt-1 shrink-0 text-muted transition group-hover:text-foreground"
+                      size={16}
+                    />
+                  </article>
+                </Link>
               ))}
             </div>
           </div>

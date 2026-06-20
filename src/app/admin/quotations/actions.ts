@@ -726,7 +726,13 @@ export async function saveQuotationDraft(
   draftId: string | null,
   input: CreateQuotationInput,
 ): Promise<QuotationActionResult> {
-  if (!hasDraftContent(input)) {
+  const defaults = await getQuotationDefaults();
+
+  if (
+    !hasDraftContent(input, {
+      defaultQuotationTerms: defaults.quotationTerms,
+    })
+  ) {
     return { success: false, error: "Nothing to save yet." };
   }
 

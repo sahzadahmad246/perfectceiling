@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/admin";
 import {
+  resolveServiceCardImageUrl,
   slugifyServiceTitle,
   type ServiceDetail,
   type ServiceFormInput,
@@ -89,6 +90,10 @@ function mapServiceListItem(row: ServiceRow): ServiceListItem {
     published: row.published,
     sortOrder: row.sort_order,
     seoTitle: row.seo_title,
+    imageUrl: resolveServiceCardImageUrl(
+      row.featured_image_url,
+      row.content,
+    ),
   };
 }
 
@@ -172,7 +177,7 @@ export async function listServices(): Promise<ServiceListItem[]> {
   const { data, error } = await supabase
     .from(SERVICES_TABLE)
     .select(
-      "id, title, slug, short_description, starting_price, rate_unit, published, sort_order, seo_title",
+      "id, title, slug, short_description, content, starting_price, rate_unit, featured_image_url, published, sort_order, seo_title",
     )
     .order("sort_order", { ascending: true })
     .order("title", { ascending: true });
@@ -236,6 +241,8 @@ export async function createService(
 
     revalidatePath("/admin/services");
     revalidatePath("/");
+    revalidatePath("/services");
+    revalidatePath(`/services/${validated.data.slug}`);
 
     return { success: true, id: data.id };
   } catch (error) {
@@ -281,6 +288,8 @@ export async function updateService(
 
     revalidatePath("/admin/services");
     revalidatePath("/");
+    revalidatePath("/services");
+    revalidatePath(`/services/${validated.data.slug}`);
 
     return { success: true, id: data.id };
   } catch (error) {
@@ -302,6 +311,7 @@ export async function deleteService(id: string): Promise<ServiceActionResult> {
 
   revalidatePath("/admin/services");
   revalidatePath("/");
+  revalidatePath("/services");
 
   return { success: true, id };
 }

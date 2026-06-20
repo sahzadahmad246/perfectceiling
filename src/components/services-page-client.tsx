@@ -1,10 +1,11 @@
 "use client";
 
-import { Hammer, Loader2, Plus, Search } from "lucide-react";
+import { Hammer, Loader2, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getServiceById } from "@/app/admin/services/actions";
+import { ServicesPageHeader } from "@/components/services-page-header";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { PageSpinner } from "@/components/page-spinner";
 import { ServiceCard } from "@/components/service-card";
@@ -138,25 +139,9 @@ export function ServicesPageClient({ services }: ServicesPageClientProps) {
 
   return (
     <>
-      <section className="mt-3 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted">Services</p>
-          <h2 className="mt-2 text-2xl font-medium">Manage service pages</h2>
-          <p className="mt-3 text-sm leading-7 text-muted">
-            Add SEO-ready services with pricing guidance. Public pages will use
-            these later.
-          </p>
-        </div>
-        <button
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary-hover"
-          onClick={openCreateModal}
-          type="button"
-        >
-          <Plus size={18} />
-        </button>
-      </section>
+      <ServicesPageHeader onAddService={openCreateModal} />
 
-      <div className="relative mt-5">
+      <div className="relative mt-3">
         <Search
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
           size={16}
@@ -211,6 +196,7 @@ export function ServicesPageClient({ services }: ServicesPageClientProps) {
         </div>
       ) : (
         <ServiceFormModal
+          existingSlugs={services.map((service) => service.slug)}
           initialData={editData ?? undefined}
           onClose={closeModal}
           onSaved={() => router.refresh()}

@@ -177,7 +177,11 @@ export function QuotationCreateModal({
 
     const input = { customer, work };
 
-    if (!hasDraftContent(input)) {
+    if (
+      !hasDraftContent(input, {
+        defaultQuotationTerms: defaults.quotationTerms,
+      })
+    ) {
       return;
     }
 
@@ -196,7 +200,7 @@ export function QuotationCreateModal({
     }
 
     setDraftSaveStatus(lastSavedAtRef.current ? "saved" : "idle");
-  }, [customer, draftChoiceMade, isEditing, work]);
+  }, [customer, defaults.quotationTerms, draftChoiceMade, isEditing, work]);
 
   useEffect(() => {
     if (!open || isEditing || !draftChoiceMade) {
@@ -205,7 +209,11 @@ export function QuotationCreateModal({
 
     const input = { customer, work };
 
-    if (!hasDraftContent(input)) {
+    if (
+      !hasDraftContent(input, {
+        defaultQuotationTerms: defaults.quotationTerms,
+      })
+    ) {
       return;
     }
 
@@ -214,7 +222,15 @@ export function QuotationCreateModal({
     }, 1500);
 
     return () => window.clearTimeout(timer);
-  }, [customer, draftChoiceMade, isEditing, open, persistDraft, work]);
+  }, [
+    customer,
+    defaults.quotationTerms,
+    draftChoiceMade,
+    isEditing,
+    open,
+    persistDraft,
+    work,
+  ]);
 
   useEffect(() => {
     if (!open || isEditing || !draftChoiceMade) {
@@ -247,7 +263,12 @@ export function QuotationCreateModal({
   }, [lastSavedAt]);
 
   const showDraftSaveStatus =
-    !isEditing && draftChoiceMade && hasDraftContent({ customer, work });
+    !isEditing &&
+    draftChoiceMade &&
+    hasDraftContent(
+      { customer, work },
+      { defaultQuotationTerms: defaults.quotationTerms },
+    );
 
   const subtotal = useMemo(() => calculateSubtotal(work.items), [work.items]);
   const discountAmount = useMemo(
@@ -319,7 +340,14 @@ export function QuotationCreateModal({
   }
 
   async function handleClose() {
-    if (!isEditing && draftChoiceMade && hasDraftContent({ customer, work })) {
+    if (
+      !isEditing &&
+      draftChoiceMade &&
+      hasDraftContent(
+        { customer, work },
+        { defaultQuotationTerms: defaults.quotationTerms },
+      )
+    ) {
       setIsSavingDraft(true);
       await persistDraft();
       setIsSavingDraft(false);

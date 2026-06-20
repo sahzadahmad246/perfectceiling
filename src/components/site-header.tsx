@@ -1,8 +1,5 @@
-import { LogIn } from "lucide-react";
-import Link from "next/link";
-
-import { signInWithGoogle } from "@/app/auth/actions";
 import { BrandLogo } from "@/components/brand-logo";
+import { SiteMenuDrawer } from "@/components/site-menu-drawer";
 import { UserMenu } from "@/components/user-menu";
 import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { getAuthProfile } from "@/lib/auth/profile";
@@ -41,20 +38,7 @@ export async function SiteHeader() {
         />
 
         <div className="flex items-center">
-          {profile ? (
-            <UserMenu profile={profile} />
-          ) : (
-            <form action={signInWithGoogle}>
-              <input name="next" type="hidden" value="/" />
-              <button
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-border-strong bg-surface px-5 text-sm font-medium text-foreground transition duration-200 hover:border-primary"
-                type="submit"
-              >
-                <LogIn size={16} />
-                Login
-              </button>
-            </form>
-          )}
+          {profile ? <UserMenu profile={profile} /> : <SiteMenuDrawer />}
         </div>
       </div>
     </header>

@@ -1,7 +1,11 @@
 import { cache } from "react";
 
 import { hasSupabaseEnv } from "@/lib/env";
-import { services } from "@/lib/site";
+import {
+  resolveServiceCardImageUrl,
+  type ServiceRateUnit,
+} from "@/lib/services";
+import { services as fallbackServices, siteConfig } from "@/lib/site";
 import { createPublicClient } from "@/lib/supabase/public";
 
 const fallbackHeroSlides: HeroSlide[] = [
@@ -58,6 +62,61 @@ export type PublicProject = {
   imageUrl: string | null;
   completedAt: string | null;
 };
+
+export type PublicService = {
+  id: string;
+  title: string;
+  slug: string;
+  shortDescription: string;
+  content: string | null;
+  startingPrice: number | null;
+  rateUnit: ServiceRateUnit | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  featuredImageUrl: string | null;
+  imageUrl: string | null;
+  updatedAt: string | null;
+};
+
+type ServiceRow = {
+  id: string;
+  title: string;
+  slug: string;
+  short_description: string;
+  content: string | null;
+  starting_price: number | string | null;
+  rate_unit: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  featured_image_url: string | null;
+  updated_at: string | null;
+};
+
+function isServiceRateUnit(value: string | null): value is ServiceRateUnit {
+  return ["sq_ft", "running_ft", "piece", "lump_sum"].includes(value ?? "");
+}
+
+function mapPublicService(row: ServiceRow): PublicService {
+  const startingPrice =
+    row.starting_price === null || row.starting_price === ""
+      ? null
+      : Number(row.starting_price);
+
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    shortDescription: row.short_description,
+    content: row.content,
+    startingPrice: Number.isFinite(startingPrice) ? startingPrice : null,
+    rateUnit: isServiceRateUnit(row.rate_unit) ? row.rate_unit : null,
+    seoTitle: row.seo_title,
+    seoDescription: row.seo_description,
+    featuredImageUrl: row.featured_image_url,
+    imageUrl: resolveServiceCardImageUrl(row.featured_image_url, row.content),
+    updatedAt: row.updated_at,
+  };
+}
 
 type HeroSlideRow = {
   id: string;
@@ -248,6 +307,127 @@ export const getPublicProjectCount = cache(async (): Promise<number> => {
   }
 });
 
-export function getPublicServices() {
-  return services;
+async function fetchPublishedServices(): Promise<PublicService[]> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("services")
+    .select(
+      "id, title, slug, short_description, content, starting_price, rate_unit, seo_title, seo_description, featured_image_url, updated_at",
+    )
+    .eq("published", true)
+    .order("sort_order", { ascending: true })
+    .order("title", { ascending: true });
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  return data.map((row) => mapPublicService(row as ServiceRow));
+}
+
+async function fetchPublishedServiceBySlug(
+  slug: string,
+): Promise<PublicService | null> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("services")
+    .select(
+      "id, title, slug, short_description, content, starting_price, rate_unit, seo_title, seo_description, featured_image_url, updated_at",
+    )
+    .eq("published", true)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapPublicService(data as ServiceRow);
+}
+
+export const getPublicServices = cache(async (): Promise<PublicService[]> => {
+  if (!hasSupabaseEnv()) {
+    return fallbackServices.map((service, index) => ({
+      id: `fallback-${index}`,
+      title: service.title,
+      slug: service.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-"),
+      shortDescription: service.description,
+      content: null,
+      startingPrice: null,
+      rateUnit: null,
+      seoTitle: service.title,
+      seoDescription: service.description,
+      featuredImageUrl: null,
+      imageUrl: null,
+      updatedAt: null,
+    }));
+  }
+
+  try {
+    const services = await fetchPublishedServices();
+
+    if (services.length > 0) {
+      return services;
+    }
+
+    return fallbackServices.map((service, index) => ({
+      id: `fallback-${index}`,
+      title: service.title,
+      slug: service.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-"),
+      shortDescription: service.description,
+      content: null,
+      startingPrice: null,
+      rateUnit: null,
+      seoTitle: service.title,
+      seoDescription: service.description,
+      featuredImageUrl: null,
+      imageUrl: null,
+      updatedAt: null,
+    }));
+  } catch {
+    return [];
+  }
+});
+
+export const getPublicServiceBySlug = cache(
+  async (slug: string): Promise<PublicService | null> => {
+    if (!hasSupabaseEnv()) {
+      const services = await getPublicServices();
+      return services.find((service) => service.slug === slug) ?? null;
+    }
+
+    try {
+      return await fetchPublishedServiceBySlug(slug);
+    } catch {
+      return null;
+    }
+  },
+);
+
+export async function getPublicServiceSlugs() {
+  const services = await getPublicServices();
+
+  return services
+    .filter((service) => !service.id.startsWith("fallback-"))
+    .map((service) => service.slug);
+}
+
+export function getPublicServicePageUrl(slug: string) {
+  return `${siteConfig.url}/services/${slug}`;
 }

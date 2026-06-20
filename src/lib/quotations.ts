@@ -275,23 +275,36 @@ export function hasWorkDiscount(work: QuotationWorkDraft) {
   return parseNumber(work.discount) > 0;
 }
 
-export function hasDraftContent(input: CreateQuotationInput) {
+export type HasDraftContentOptions = {
+  defaultQuotationTerms?: string;
+};
+
+export function hasDraftContent(
+  input: CreateQuotationInput,
+  options?: HasDraftContentOptions,
+) {
   const { customer, work } = input;
+  const defaultTerms = options?.defaultQuotationTerms?.trim() ?? "";
 
   if (
     customer.name.trim() ||
     customer.phone.trim() ||
+    customer.whatsapp.trim() ||
+    customer.email.trim() ||
     customer.address.trim() ||
+    customer.city.trim() ||
     customer.notes.trim()
   ) {
     return true;
   }
 
-  if (
-    work.workTitle.trim() ||
-    work.quotationTerms.trim() ||
-    work.discount.trim()
-  ) {
+  if (work.workTitle.trim() || work.discount.trim()) {
+    return true;
+  }
+
+  const terms = work.quotationTerms.trim();
+
+  if (terms && terms !== defaultTerms) {
     return true;
   }
 
@@ -301,7 +314,8 @@ export function hasDraftContent(input: CreateQuotationInput) {
       item.description.trim() ||
       item.quantity.trim() ||
       item.rate.trim() ||
-      item.amount.trim(),
+      item.amount.trim() ||
+      item.images.length > 0,
   );
 }
 

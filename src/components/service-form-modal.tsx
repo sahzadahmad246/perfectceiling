@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, X } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -9,9 +9,12 @@ import {
   updateService,
   type ServiceActionResult,
 } from "@/app/admin/services/actions";
+import { ServiceContentStep } from "@/components/service-content-step";
+import { ServicePreviewStep } from "@/components/service-preview-step";
+import { ServiceSeoStep } from "@/components/service-seo-step";
 import {
   emptyServiceForm,
-  SERVICE_RATE_UNITS,
+  ensureUniqueServiceSlug,
   slugifyServiceTitle,
   type ServiceFormInput,
 } from "@/lib/services";
@@ -21,41 +24,34 @@ type ServiceFormModalProps = {
   onClose: () => void;
   serviceId?: string;
   initialData?: ServiceFormInput;
+  existingSlugs: string[];
   onSaved?: () => void;
 };
 
-const fieldClass =
-  "mt-2 h-11 w-full rounded-md border border-border-strong bg-surface px-3 text-sm outline-none transition focus:border-primary";
-
-const textareaClass =
-  "mt-2 min-h-[7rem] w-full resize-y rounded-md border border-border-strong bg-surface px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary";
-
-function FieldLabel({
-  children,
-  hint,
-}: {
-  children: React.ReactNode;
-  hint?: string;
-}) {
-  return (
-    <label className="block text-sm font-medium text-foreground">
-      {children}
-      {hint ? <span className="mt-1 block text-xs font-normal text-muted">{hint}</span> : null}
-    </label>
-  );
-}
+type ServiceFieldErrors = {
+  title?: string;
+  shortDescription?: string;
+};
 
 export function ServiceFormModal({
   open,
   onClose,
   serviceId,
   initialData,
+  existingSlugs,
   onSaved,
 }: ServiceFormModalProps) {
   const isEditing = Boolean(serviceId && initialData);
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState<ServiceFormInput>(emptyServiceForm());
   const [slugTouched, setSlugTouched] = useState(false);
+  const [errors, setErrors] = useState<ServiceFieldErrors>({});
   const [isPending, startTransition] = useTransition();
+
+  const originalSlug = useMemo(
+    () => (initialData?.slug ? slugifyServiceTitle(initialData.slug) : undefined),
+    [initialData?.slug],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -76,9 +72,27 @@ export function ServiceFormModal({
       return;
     }
 
+    setStep(1);
+    setErrors({});
     setForm(initialData ?? emptyServiceForm());
     setSlugTouched(Boolean(initialData?.slug));
   }, [initialData, open]);
+
+  useEffect(() => {
+    if (!open || slugTouched) {
+      return;
+    }
+
+    const nextSlug = ensureUniqueServiceSlug(
+      form.title,
+      existingSlugs,
+      originalSlug,
+    );
+
+    if (nextSlug !== form.slug) {
+      setForm((current) => ({ ...current, slug: nextSlug }));
+    }
+  }, [existingSlugs, form.slug, form.title, open, originalSlug, slugTouched]);
 
   if (!open) {
     return null;
@@ -92,11 +106,62 @@ export function ServiceFormModal({
       const next = { ...current, [key]: value };
 
       if (key === "title" && !slugTouched) {
-        next.slug = slugifyServiceTitle(String(value));
+        next.slug = ensureUniqueServiceSlug(
+          String(value),
+          existingSlugs,
+          originalSlug,
+        );
       }
 
       return next;
     });
+
+    if (key === "title") {
+      setErrors((current) => ({ ...current, title: undefined }));
+    }
+
+    if (key === "shortDescription") {
+      setErrors((current) => ({ ...current, shortDescription: undefined }));
+    }
+  }
+
+  function validateStep(currentStep: number) {
+    if (currentStep === 1) {
+      const nextErrors: ServiceFieldErrors = {};
+
+      if (!form.title.trim()) {
+        nextErrors.title = "Service title is required.";
+      }
+
+      if (!form.shortDescription.trim()) {
+        nextErrors.shortDescription = "Short description is required.";
+      }
+
+      if (!form.slug.trim()) {
+        toast.error("Enter a valid service title to generate a slug.");
+        return false;
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return false;
+      }
+
+      setErrors({});
+    }
+
+    if (currentStep === 2) {
+      if (form.startingPrice.trim()) {
+        const parsed = Number.parseFloat(form.startingPrice.replace(/,/g, ""));
+
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          toast.error("Enter a valid starting price or leave it empty.");
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   function handleSubmit() {
@@ -120,17 +185,26 @@ export function ServiceFormModal({
     });
   }
 
+  const stepTitle =
+    step === 1
+      ? isEditing
+        ? "Edit service content"
+        : "Service content"
+      : step === 2
+        ? isEditing
+          ? "Edit SEO data"
+          : "SEO data"
+        : isEditing
+          ? "Review changes"
+          : "Preview";
+
   return (
     <div className="fixed inset-0 z-[9990] flex justify-center bg-background/80 backdrop-blur-sm">
       <div className="flex h-full w-full max-w-[560px] flex-col border-x border-border-soft bg-surface shadow-popover">
         <header className="flex items-center justify-between border-b border-border-soft px-4 py-3 sm:px-8">
           <div>
-            <p className="text-xs text-muted">
-              {isEditing ? "Edit service" : "New service"}
-            </p>
-            <h2 className="font-primary text-lg font-medium">
-              {isEditing ? "Update service details" : "Add a service"}
-            </h2>
+            <div className="text-xs text-muted">Step {step} of 3</div>
+            <h2 className="font-primary text-lg font-medium">{stepTitle}</h2>
           </div>
           <button
             aria-label="Close service form"
@@ -144,166 +218,79 @@ export function ServiceFormModal({
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-          <div className="space-y-5">
-            <section>
-              <FieldLabel>Title</FieldLabel>
-              <input
-                className={fieldClass}
-                onChange={(event) => updateField("title", event.target.value)}
-                placeholder="POP false ceiling"
-                value={form.title}
-              />
-            </section>
+          {step === 1 ? (
+            <ServiceContentStep
+              errors={errors}
+              form={form}
+              onChange={updateField}
+              onSlugTouchedChange={setSlugTouched}
+              slugTouched={slugTouched}
+            />
+          ) : null}
 
-            <section>
-              <FieldLabel hint="Used in the public URL, e.g. /services/pop-false-ceiling">
-                Slug
-              </FieldLabel>
-              <input
-                className={fieldClass}
-                onChange={(event) => {
-                  setSlugTouched(true);
-                  updateField("slug", slugifyServiceTitle(event.target.value));
-                }}
-                placeholder="pop-false-ceiling"
-                value={form.slug}
-              />
-            </section>
+          {step === 2 ? <ServiceSeoStep form={form} onChange={updateField} /> : null}
 
-            <section>
-              <FieldLabel hint="Shown on cards and search snippets">
-                Short description
-              </FieldLabel>
-              <textarea
-                className={textareaClass}
-                onChange={(event) =>
-                  updateField("shortDescription", event.target.value)
-                }
-                placeholder="Custom POP false ceiling designs for homes, shops, and offices."
-                value={form.shortDescription}
-              />
-            </section>
-
-            <section className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel hint="Optional">Starting price</FieldLabel>
-                <input
-                  className={fieldClass}
-                  inputMode="decimal"
-                  onChange={(event) =>
-                    updateField("startingPrice", event.target.value)
-                  }
-                  placeholder="80"
-                  value={form.startingPrice}
-                />
-              </div>
-              <div>
-                <FieldLabel hint="Optional">Rate unit</FieldLabel>
-                <select
-                  className={fieldClass}
-                  onChange={(event) =>
-                    updateField(
-                      "rateUnit",
-                      event.target.value as ServiceFormInput["rateUnit"],
-                    )
-                  }
-                  value={form.rateUnit}
-                >
-                  <option value="">Select unit</option>
-                  {SERVICE_RATE_UNITS.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </section>
-
-            <section>
-              <FieldLabel hint="Full page content for the public SEO page later">
-                Page content
-              </FieldLabel>
-              <textarea
-                className={`${textareaClass} min-h-[10rem]`}
-                onChange={(event) => updateField("content", event.target.value)}
-                placeholder="Explain the service, benefits, process, and what customers can expect."
-                value={form.content}
-              />
-            </section>
-
-            <section className="rounded-xl border border-border-soft bg-surface-muted/70 p-4">
-              <p className="text-sm font-medium text-foreground">SEO</p>
-              <p className="mt-1 text-xs leading-5 text-muted">
-                These fields help the public service page rank on Google.
-              </p>
-
-              <div className="mt-4 space-y-4">
-                <div>
-                  <FieldLabel hint="Defaults to title if empty">SEO title</FieldLabel>
-                  <input
-                    className={fieldClass}
-                    onChange={(event) =>
-                      updateField("seoTitle", event.target.value)
-                    }
-                    placeholder="POP False Ceiling Contractor in Your City"
-                    value={form.seoTitle}
-                  />
-                </div>
-                <div>
-                  <FieldLabel hint="Defaults to short description if empty">
-                    Meta description
-                  </FieldLabel>
-                  <textarea
-                    className={textareaClass}
-                    onChange={(event) =>
-                      updateField("seoDescription", event.target.value)
-                    }
-                    placeholder="Measured POP false ceiling work for homes, shops, offices, and halls."
-                    value={form.seoDescription}
-                  />
-                </div>
-              </div>
-            </section>
-
-            <section className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel hint="Lower shows first">Sort order</FieldLabel>
-                <input
-                  className={fieldClass}
-                  inputMode="numeric"
-                  onChange={(event) =>
-                    updateField("sortOrder", event.target.value)
-                  }
-                  value={form.sortOrder}
-                />
-              </div>
-              <div className="flex items-end">
-                <label className="flex h-11 w-full items-center gap-3 rounded-md border border-border-strong bg-surface px-3 text-sm">
-                  <input
-                    checked={form.published}
-                    className="size-4 accent-primary"
-                    onChange={(event) =>
-                      updateField("published", event.target.checked)
-                    }
-                    type="checkbox"
-                  />
-                  Published on website
-                </label>
-              </div>
-            </section>
-          </div>
+          {step === 3 ? (
+            <ServicePreviewStep form={form} onGoToStep={setStep} />
+          ) : null}
         </div>
 
-        <footer className="border-t border-border-soft px-4 py-4 sm:px-8">
-          <button
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary-hover disabled:opacity-70"
-            disabled={isPending}
-            onClick={handleSubmit}
-            type="button"
-          >
-            {isPending ? <Loader2 className="animate-spin" size={16} /> : null}
-            {isEditing ? "Save service" : "Create service"}
-          </button>
+        <footer className="border-t border-border-soft px-4 py-3 sm:px-8">
+          <div className="flex gap-2">
+            {step > 1 ? (
+              <button
+                className="h-11 flex-1 rounded-full border border-border-strong text-sm font-medium disabled:opacity-70"
+                disabled={isPending}
+                onClick={() => setStep((current) => current - 1)}
+                type="button"
+              >
+                Back
+              </button>
+            ) : (
+              <button
+                className="h-11 flex-1 rounded-full border border-border-strong text-sm font-medium"
+                disabled={isPending}
+                onClick={onClose}
+                type="button"
+              >
+                Cancel
+              </button>
+            )}
+
+            {step < 3 ? (
+              <button
+                className="h-11 flex-1 rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-70"
+                disabled={isPending}
+                onClick={() => {
+                  if (validateStep(step)) {
+                    setStep((current) => current + 1);
+                  }
+                }}
+                type="button"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                aria-busy={isPending}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-70"
+                disabled={isPending}
+                onClick={handleSubmit}
+                type="button"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    {isEditing ? "Saving..." : "Creating..."}
+                  </>
+                ) : isEditing ? (
+                  "Save service"
+                ) : (
+                  "Create service"
+                )}
+              </button>
+            )}
+          </div>
         </footer>
       </div>
     </div>
