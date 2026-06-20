@@ -2,8 +2,7 @@ import { cache } from "react";
 
 import { hasSupabaseEnv } from "@/lib/env";
 import { siteConfig } from "@/lib/site";
-import { createServiceClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export type PublicBusinessSettings = {
   businessName: string;
@@ -41,8 +40,11 @@ export const getPublicBusinessSettings = cache(
     }
 
     try {
-      const serviceClient = createServiceClient();
-      const client = serviceClient ?? (await createClient());
+      const client = createPublicClient();
+
+      if (!client) {
+        return fallbackSettings;
+      }
 
       const { data, error } = await client
         .from("business_settings")

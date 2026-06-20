@@ -33,8 +33,8 @@ export async function SiteHeader() {
   ]);
 
   return (
-    <header className="sticky top-0 z-20 -mx-6 border-b border-border-soft bg-surface/90 px-6 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
-      <div className="mx-auto flex max-w-[560px] items-center justify-between">
+    <header className="sticky top-0 z-20 -mx-4 border-b border-border-soft bg-surface/90 px-4 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
+      <div className="flex items-center justify-between">
         <BrandLogo
           businessName={settings.businessName}
           logoUrl={settings.logoUrl}

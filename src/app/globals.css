@@ -213,6 +213,188 @@ a {
   }
 }
 
+@keyframes hero-ken-burns {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+.animate-hero-ken-burns {
+  animation: hero-ken-burns 8s ease-out forwards;
+  transform-origin: center;
+}
+
+.hero-slide-theme {
+  overflow: hidden;
+}
+
+.hero-slide-theme::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  border-radius: 9999px;
+  opacity: 0.55;
+  filter: blur(40px);
+  animation: hero-theme-glow 8s ease-in-out infinite alternate;
+}
+
+.hero-slide-theme-homes::before {
+  background: radial-gradient(circle, #f59e0b 0%, transparent 70%);
+}
+
+.hero-slide-theme-shops::before {
+  background: radial-gradient(circle, #14b8a6 0%, transparent 70%);
+}
+
+.hero-slide-theme-offices::before {
+  background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+}
+
+@keyframes hero-theme-glow {
+  from {
+    transform: translate(-8%, -6%) scale(0.95);
+  }
+  to {
+    transform: translate(8%, 6%) scale(1.08);
+  }
+}
+
+.animate-hero-theme-drift {
+  animation: hero-theme-drift 10s ease-in-out infinite alternate;
+}
+
+.landing-flow > .landing-section + .landing-section {
+  margin-top: -1.5rem;
+}
+
+.landing-section {
+  position: relative;
+  isolation: isolate;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.landing-section-content {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-section-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 22%,
+    #000 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 22%,
+    #000 78%,
+    transparent 100%
+  );
+}
+
+.hero-carousel-shell {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 72%,
+    transparent 100%
+  );
+}
+
+.landing-bg-shade .landing-section-bg {
+  background:
+    radial-gradient(
+      ellipse 95% 70% at 50% 0%,
+      color-mix(in srgb, var(--surface-muted) 88%, transparent),
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 100% 85%,
+      color-mix(in srgb, var(--border-soft) 45%, transparent),
+      transparent 38%
+    ),
+    var(--surface);
+}
+
+.landing-bg-grid .landing-section-bg {
+  background-color: var(--surface-muted);
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--border-soft) 38%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--border-soft) 38%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 44px 44px;
+}
+
+.landing-bg-shade-warm .landing-section-bg {
+  background:
+    radial-gradient(
+      ellipse 80% 55% at 12% 22%,
+      color-mix(in srgb, #f59e0b 9%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 88% 78%,
+      color-mix(in srgb, var(--surface-muted) 92%, transparent),
+      transparent 58%
+    ),
+    var(--surface);
+}
+
+.landing-bg-shade-cool .landing-section-bg {
+  background:
+    radial-gradient(
+      ellipse 75% 55% at 88% 18%,
+      color-mix(in srgb, #6366f1 8%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--surface-muted) 70%, var(--surface)),
+      var(--surface)
+    );
+}
+
+.landing-bg-plain .landing-section-bg {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-muted) 35%, var(--surface)) 0%,
+    var(--surface) 48%,
+    color-mix(in srgb, var(--surface-muted) 28%, var(--surface)) 100%
+  );
+}
+
+@keyframes hero-theme-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.03);
+  }
+}
+
 .hero-grid::after {
   content: "";
   position: absolute;
