@@ -1,5 +1,5 @@
-import { PageSpinner } from "@/components/page-spinner";
+import { CustomersPageSkeleton } from "@/components/admin-skeletons";
 
 export default function CustomersLoading() {
-  return <PageSpinner label="Loading customers..." />;
+  return <CustomersPageSkeleton />;
 }

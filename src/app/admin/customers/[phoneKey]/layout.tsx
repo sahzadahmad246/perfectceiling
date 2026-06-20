@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { getCustomerByPhoneKey } from "@/app/admin/customers/actions";
+import { CustomerDetailHeaderSkeleton } from "@/components/admin-skeletons";
 import { CustomerDetailHeader } from "@/components/customer-detail-header";
 import { customerPhoneKeyFromParam } from "@/lib/customers";
 
@@ -11,10 +13,11 @@ type CustomerDetailLayoutProps = {
   }>;
 };
 
-export default async function CustomerDetailLayout({
-  children,
+async function CustomerDetailHeaderSlot({
   params,
-}: CustomerDetailLayoutProps) {
+}: {
+  params: CustomerDetailLayoutProps["params"];
+}) {
   const { phoneKey } = await params;
   const customer = await getCustomerByPhoneKey(
     customerPhoneKeyFromParam(phoneKey),
@@ -24,9 +27,18 @@ export default async function CustomerDetailLayout({
     notFound();
   }
 
+  return <CustomerDetailHeader customerName={customer.name} />;
+}
+
+export default function CustomerDetailLayout({
+  children,
+  params,
+}: CustomerDetailLayoutProps) {
   return (
     <>
-      <CustomerDetailHeader customerName={customer.name} />
+      <Suspense fallback={<CustomerDetailHeaderSkeleton />}>
+        <CustomerDetailHeaderSlot params={params} />
+      </Suspense>
       {children}
     </>
   );

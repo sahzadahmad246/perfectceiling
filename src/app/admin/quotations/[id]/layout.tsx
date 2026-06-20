@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { getQuotationById } from "@/app/admin/quotations/actions";
+import { QuotationDetailHeaderSkeleton } from "@/components/admin-skeletons";
 import { QuotationDetailHeader } from "@/components/quotation-detail-header";
 
 type QuotationDetailLayoutProps = {
@@ -10,10 +12,11 @@ type QuotationDetailLayoutProps = {
   }>;
 };
 
-export default async function QuotationDetailLayout({
-  children,
+async function QuotationDetailHeaderSlot({
   params,
-}: QuotationDetailLayoutProps) {
+}: {
+  params: QuotationDetailLayoutProps["params"];
+}) {
   const { id } = await params;
   const quotation = await getQuotationById(id);
 
@@ -22,12 +25,23 @@ export default async function QuotationDetailLayout({
   }
 
   return (
+    <QuotationDetailHeader
+      quotationId={quotation.id}
+      quotationNumber={quotation.quotationNumber}
+      status={quotation.status}
+    />
+  );
+}
+
+export default function QuotationDetailLayout({
+  children,
+  params,
+}: QuotationDetailLayoutProps) {
+  return (
     <>
-      <QuotationDetailHeader
-        quotationId={quotation.id}
-        quotationNumber={quotation.quotationNumber}
-        status={quotation.status}
-      />
+      <Suspense fallback={<QuotationDetailHeaderSkeleton />}>
+        <QuotationDetailHeaderSlot params={params} />
+      </Suspense>
       {children}
     </>
   );

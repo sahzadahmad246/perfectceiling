@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { getInvoiceById } from "@/app/admin/invoices/actions";
+import { InvoiceDetailHeaderSkeleton } from "@/components/admin-skeletons";
 import { InvoiceDetailHeader } from "@/components/invoice-detail-header";
 
 type InvoiceDetailLayoutProps = {
@@ -10,10 +12,11 @@ type InvoiceDetailLayoutProps = {
   }>;
 };
 
-export default async function InvoiceDetailLayout({
-  children,
+async function InvoiceDetailHeaderSlot({
   params,
-}: InvoiceDetailLayoutProps) {
+}: {
+  params: InvoiceDetailLayoutProps["params"];
+}) {
   const { id } = await params;
   const invoice = await getInvoiceById(id);
 
@@ -22,12 +25,23 @@ export default async function InvoiceDetailLayout({
   }
 
   return (
+    <InvoiceDetailHeader
+      balanceAmount={invoice.balanceAmount}
+      invoiceId={invoice.id}
+      invoiceNumber={invoice.invoiceNumber}
+    />
+  );
+}
+
+export default function InvoiceDetailLayout({
+  children,
+  params,
+}: InvoiceDetailLayoutProps) {
+  return (
     <>
-      <InvoiceDetailHeader
-        balanceAmount={invoice.balanceAmount}
-        invoiceId={invoice.id}
-        invoiceNumber={invoice.invoiceNumber}
-      />
+      <Suspense fallback={<InvoiceDetailHeaderSkeleton />}>
+        <InvoiceDetailHeaderSlot params={params} />
+      </Suspense>
       {children}
     </>
   );

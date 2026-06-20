@@ -1,5 +1,5 @@
-import { PageSpinner } from "@/components/page-spinner";
+import { InvoicesPageSkeleton } from "@/components/admin-skeletons";
 
 export default function InvoicesLoading() {
-  return <PageSpinner label="Loading invoices..." />;
+  return <InvoicesPageSkeleton />;
 }

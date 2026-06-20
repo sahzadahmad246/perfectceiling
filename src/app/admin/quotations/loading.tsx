@@ -1,5 +1,5 @@
-import { PageSpinner } from "@/components/page-spinner";
+import { QuotationsPageSkeleton } from "@/components/admin-skeletons";
 
 export default function QuotationsLoading() {
-  return <PageSpinner label="Loading quotations..." />;
+  return <QuotationsPageSkeleton />;
 }
