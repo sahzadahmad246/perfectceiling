@@ -204,6 +204,24 @@ create table if not exists public.hero_slides (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.services (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  slug text not null unique,
+  short_description text not null,
+  content text,
+  starting_price numeric(12,2),
+  rate_unit text,
+  seo_title text,
+  seo_description text,
+  featured_image_url text,
+  published boolean not null default false,
+  sort_order int not null default 0,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.blog_posts (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -231,6 +249,7 @@ alter table public.payments enable row level security;
 alter table public.business_settings enable row level security;
 alter table public.projects enable row level security;
 alter table public.hero_slides enable row level security;
+alter table public.services enable row level security;
 alter table public.blog_posts enable row level security;
 
 drop policy if exists "Authenticated users can manage customers" on public.customers;
@@ -320,6 +339,21 @@ for select
 to anon, authenticated
 using (published = true);
 
+drop policy if exists "Anyone can read published services" on public.services;
+create policy "Anyone can read published services"
+on public.services
+for select
+to anon, authenticated
+using (published = true);
+
+drop policy if exists "Authenticated users can manage services" on public.services;
+create policy "Authenticated users can manage services"
+on public.services
+for all
+to authenticated
+using (true)
+with check (true);
+
 drop policy if exists "Anyone can read published hero slides" on public.hero_slides;
 create policy "Anyone can read published hero slides"
 on public.hero_slides
@@ -354,6 +388,7 @@ grant usage on schema public to anon, authenticated;
 grant select on table public.business_settings to anon, authenticated;
 grant select on table public.projects to anon, authenticated;
 grant select on table public.hero_slides to anon, authenticated;
+grant select on table public.services to anon, authenticated;
 grant select on table public.blog_posts to anon, authenticated;
 
 insert into storage.buckets (

@@ -3,6 +3,7 @@
 import {
   BookOpenText,
   FolderKanban,
+  Hammer,
   Home,
   LogOut,
   PanelRightClose,
@@ -18,6 +19,7 @@ import type { AuthProfile } from "@/lib/auth/profile";
 
 const drawerItems = [
   { href: "/", label: "Back to website", icon: Home },
+  { href: "/admin/services", label: "Services", icon: Hammer },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/blog", label: "Blogs", icon: BookOpenText },
   { href: "/admin/settings", label: "Settings", icon: Settings },

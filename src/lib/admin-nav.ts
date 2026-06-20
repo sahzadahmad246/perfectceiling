@@ -25,6 +25,10 @@ export function getAdminNavPage(pathname: string): AdminNavPage | null {
     return { label: "Customer", href: "/admin/customers" };
   }
 
+  if (pathname.startsWith("/admin/services")) {
+    return { label: "Services", href: "/admin/services" };
+  }
+
   if (pathname === "/admin/settings") {
     return { label: "Settings", href: "/admin/settings" };
   }
