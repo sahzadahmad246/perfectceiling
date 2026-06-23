@@ -1,35 +1,35 @@
 import { MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 
-import { PublicServiceCard } from "@/components/public-service-card";
+import { JsonLd } from "@/components/json-ld";
+import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
   toTelLink,
   toWhatsAppLink,
 } from "@/lib/business-settings";
-import { JsonLd } from "@/components/json-ld";
-import { getPublicServices } from "@/lib/public-content";
-import { buildServicesListJsonLd } from "@/lib/service-seo";
+import { getAllPublicProjects } from "@/lib/public-content";
+import { buildProjectsListJsonLd } from "@/lib/project-seo";
 import { siteConfig } from "@/lib/site";
 
-export async function PublicServicesPage() {
-  const [settings, services] = await Promise.all([
+export async function PublicProjectsPage() {
+  const [settings, projects] = await Promise.all([
     getPublicBusinessSettings(),
-    getPublicServices(),
+    getAllPublicProjects(),
   ]);
 
   const whatsappHref = toWhatsAppLink(
     settings.whatsapp,
-    "Hi Perfect Ceiling, I want a quotation for ceiling work.",
+    "Hi Perfect Ceiling, I saw your completed projects and want a similar quotation.",
   );
   const telHref = toTelLink(settings.phone);
 
-  const listDescription = `Browse POP, PVC, gypsum, wooden, and repair services from ${settings.businessName} in ${settings.city}.`;
+  const listDescription = `Browse completed POP, PVC, gypsum, and false ceiling projects from ${settings.businessName} in ${settings.city}.`;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
-      <JsonLd data={buildServicesListJsonLd(services, settings)} />
+      <JsonLd data={buildProjectsListJsonLd(projects, settings)} />
 
       <SiteHeader />
 
@@ -41,37 +41,37 @@ export async function PublicServicesPage() {
             </Link>
           </li>
           <li aria-hidden>/</li>
-          <li className="text-foreground">Services</li>
+          <li className="text-foreground">Projects</li>
         </ol>
       </nav>
 
       <section className="mt-6">
-        <p className="text-sm text-muted">Services</p>
+        <p className="text-sm text-muted">Projects</p>
         <h1 className="mt-2 font-primary text-3xl font-medium">
-          Ceiling services in {settings.city}
+          Completed ceiling projects in {settings.city}
         </h1>
         <p className="mt-4 text-sm leading-7 text-muted">{listDescription}</p>
       </section>
 
-      {services.length > 0 ? (
-        <section aria-label="Service list" className="mt-8 space-y-4">
-          {services.map((service) => (
-            <PublicServiceCard key={service.id} service={service} />
+      {projects.length > 0 ? (
+        <section aria-label="Project list" className="mt-8 space-y-4">
+          {projects.map((project) => (
+            <PublicProjectPreviewCard key={project.id} project={project} />
           ))}
         </section>
       ) : (
         <section className="mt-8 rounded-2xl border border-border-soft bg-surface-muted/70 p-5 text-center">
-          <p className="text-sm font-medium text-foreground">Services coming soon</p>
+          <p className="text-sm font-medium text-foreground">Projects coming soon</p>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Published services from admin will appear here automatically.
+            Published projects from admin will appear here automatically.
           </p>
         </section>
       )}
 
       <section className="mt-10 rounded-2xl bg-surface-muted/80 px-4 py-5">
-        <p className="text-sm text-muted">Need a quote?</p>
+        <p className="text-sm text-muted">Want similar work?</p>
         <h2 className="mt-2 text-2xl font-medium">
-          Tell us about your space and we will price it clearly.
+          Tell us about your space and we will quote it clearly.
         </h2>
         <div className="mt-6 flex flex-wrap gap-3">
           <a

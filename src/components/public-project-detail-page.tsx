@@ -2,6 +2,7 @@ import { ArrowLeft, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { JsonLd } from "@/components/json-ld";
 import { SiteHeader } from "@/components/site-header";
 import { ServiceImageCarousel } from "@/components/service-image-carousel";
 import {
@@ -11,10 +12,14 @@ import {
 } from "@/lib/business-settings";
 import { getPublicProjectBySlug } from "@/lib/public-content";
 import {
-  getProjectPublicPath,
   getProjectStatusLabel,
   prepareProjectArticleContent,
 } from "@/lib/projects";
+import {
+  buildProjectDetailJsonLd,
+  getProjectPageUrl,
+  getProjectSeoDescription,
+} from "@/lib/project-seo";
 
 type PublicProjectDetailPageProps = {
   slug: string;
@@ -61,21 +66,36 @@ export async function PublicProjectDetailPage({
   );
   const completedLabel = formatCompletedDate(project.completedAt);
 
+  const seoDescription = getProjectSeoDescription(project, settings);
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
+      <JsonLd data={buildProjectDetailJsonLd(project, settings)} />
+
       <SiteHeader />
 
-      <div className="mt-4">
-        <Link
-          className="inline-flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground"
-          href="/#projects"
-        >
-          <ArrowLeft size={16} />
-          All projects
-        </Link>
-      </div>
+      <nav aria-label="Breadcrumb" className="mt-4 text-sm text-muted">
+        <ol className="flex flex-wrap items-center gap-2">
+          <li>
+            <Link className="minimal-link" href="/">
+              Home
+            </Link>
+          </li>
+          <li aria-hidden>/</li>
+          <li>
+            <Link className="minimal-link" href="/projects">
+              Projects
+            </Link>
+          </li>
+          <li aria-hidden>/</li>
+          <li className="line-clamp-1 text-foreground">{project.title}</li>
+        </ol>
+      </nav>
 
-      <article>
+      <article itemScope itemType="https://schema.org/Article">
+        <meta content={project.title} itemProp="headline" />
+        <meta content={seoDescription} itemProp="description" />
+        <meta content={getProjectPageUrl(project.slug)} itemProp="url" />
         <header className="mt-5">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted">
@@ -149,7 +169,9 @@ export async function PublicProjectDetailPage({
       </section>
 
       <footer className="mt-8 border-t border-border-soft pt-5 text-sm text-muted">
-        <p>{getProjectPublicPath(project.slug)}</p>
+        <Link className="minimal-link" href="/projects">
+          Back to all projects
+        </Link>
       </footer>
     </main>
   );

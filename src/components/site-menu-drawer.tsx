@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   { href: "/services", label: "Services", icon: Hammer },
-  { href: "/#projects", label: "Projects", icon: FolderKanban },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/", label: "About", icon: BookOpen },
   { href: "/#contact", label: "Contact", icon: Phone },
 ] as const;

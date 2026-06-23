@@ -72,6 +72,7 @@ export type PublicProject = {
   imageUrl: string | null;
   galleryImages: ProjectGalleryImage[];
   completedAt: string | null;
+  updatedAt: string | null;
 };
 
 export type PublicService = {
@@ -158,6 +159,7 @@ type ProjectRow = {
   completed_at: string | null;
   show_on_homepage: boolean | null;
   sort_order: number | null;
+  updated_at: string | null;
 };
 
 function mapHeroSlide(row: HeroSlideRow): HeroSlide {
@@ -197,6 +199,7 @@ function mapProject(row: ProjectRow): PublicProject {
     imageUrl: galleryImages[0]?.url ?? null,
     galleryImages,
     completedAt: row.completed_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -266,7 +269,7 @@ async function fetchPublishedProjects(
   let query = supabase
     .from("projects")
     .select(
-      "id, title, slug, location, service_type, description, short_description, images, featured_image_url, before_image_url, after_image_url, status, completed_at, show_on_homepage, sort_order",
+      "id, title, slug, location, service_type, description, short_description, images, featured_image_url, before_image_url, after_image_url, status, completed_at, show_on_homepage, sort_order, updated_at",
     )
     .eq("published", true);
 
@@ -324,6 +327,18 @@ export const getPublicProjects = cache(
     }
   },
 );
+
+export const getAllPublicProjects = cache(async (): Promise<PublicProject[]> => {
+  if (!hasSupabaseEnv()) {
+    return [];
+  }
+
+  try {
+    return await fetchPublishedProjects(100);
+  } catch {
+    return [];
+  }
+});
 
 export const getPublicProjectCount = cache(async (): Promise<number> => {
   if (!hasSupabaseEnv()) {
@@ -491,7 +506,7 @@ async function fetchPublishedProjectBySlug(
   const { data, error } = await supabase
     .from("projects")
     .select(
-      "id, title, slug, location, service_type, description, short_description, images, featured_image_url, before_image_url, after_image_url, status, completed_at, show_on_homepage, sort_order",
+      "id, title, slug, location, service_type, description, short_description, images, featured_image_url, before_image_url, after_image_url, status, completed_at, show_on_homepage, sort_order, updated_at",
     )
     .eq("published", true)
     .eq("slug", slug)

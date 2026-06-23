@@ -1,4 +1,4 @@
-import { ArrowLeft, MessageCircle, Phone } from "lucide-react";
+import { MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -14,7 +14,6 @@ import { getPublicServiceBySlug } from "@/lib/public-content";
 import {
   formatServiceRate,
   getServiceGalleryImages,
-  getServicePublicPath,
   prepareServicePageContent,
 } from "@/lib/services";
 import { buildServiceDetailJsonLd, getServicePageUrl } from "@/lib/service-seo";
@@ -58,15 +57,23 @@ export async function PublicServiceDetailPage({
 
       <SiteHeader />
 
-      <div className="mt-4">
-        <Link
-          className="inline-flex items-center gap-2 text-sm font-medium text-muted transition hover:text-foreground"
-          href="/services"
-        >
-          <ArrowLeft size={16} />
-          All services
-        </Link>
-      </div>
+      <nav aria-label="Breadcrumb" className="mt-4 text-sm text-muted">
+        <ol className="flex flex-wrap items-center gap-2">
+          <li>
+            <Link className="minimal-link" href="/">
+              Home
+            </Link>
+          </li>
+          <li aria-hidden>/</li>
+          <li>
+            <Link className="minimal-link" href="/services">
+              Services
+            </Link>
+          </li>
+          <li aria-hidden>/</li>
+          <li className="line-clamp-1 text-foreground">{service.title}</li>
+        </ol>
+      </nav>
 
       <article itemScope itemType="https://schema.org/Service">
         <meta content={service.title} itemProp="name" />
@@ -130,7 +137,9 @@ export async function PublicServiceDetailPage({
       </section>
 
       <footer className="mt-8 border-t border-border-soft pt-5 text-sm text-muted">
-        <p>{getServicePublicPath(service.slug)}</p>
+        <Link className="minimal-link" href="/services">
+          Back to all services
+        </Link>
       </footer>
     </main>
   );

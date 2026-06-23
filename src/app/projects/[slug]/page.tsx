@@ -6,6 +6,7 @@ import {
   getPublicProjectBySlug,
   getPublicProjectSlugs,
 } from "@/lib/public-content";
+import { buildProjectDetailMetadata } from "@/lib/project-seo";
 
 type ProjectDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -36,18 +37,7 @@ export async function generateMetadata({
     };
   }
 
-  const description =
-    project.shortDescription?.trim() || `${project.title} by ${settings.businessName}`;
-
-  return {
-    title: `${project.title} | ${settings.businessName}`,
-    description,
-    openGraph: {
-      title: project.title,
-      description,
-      images: project.imageUrl ? [{ url: project.imageUrl }] : undefined,
-    },
-  };
+  return buildProjectDetailMetadata(project, settings);
 }
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {

@@ -170,8 +170,21 @@ export async function LandingPage() {
         >
           <div aria-hidden className="landing-section-bg" />
           <div className="landing-section-content">
-            <p className="text-sm text-muted">Recent work</p>
-            <h2 className="mt-2 text-2xl font-medium">Completed projects</h2>
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-sm text-muted">Recent work</p>
+                <h2 className="mt-2 text-2xl font-medium">Completed projects</h2>
+              </div>
+              {projectCount > 0 ? (
+                <Link
+                  className="minimal-link inline-flex items-center gap-1 text-sm"
+                  href="/projects"
+                >
+                  View all
+                  <ArrowUpRight size={14} />
+                </Link>
+              ) : null}
+            </div>
             <p className="mt-4 text-sm leading-7 text-muted">
               Published projects from admin appear here automatically once photos
               are added.
