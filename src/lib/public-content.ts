@@ -2,7 +2,9 @@ import { cache } from "react";
 
 import { hasSupabaseEnv } from "@/lib/env";
 import {
+  getServiceGalleryImages,
   resolveServiceCardImageUrl,
+  type ServiceGalleryImage,
   type ServiceRateUnit,
 } from "@/lib/services";
 import { services as fallbackServices, siteConfig } from "@/lib/site";
@@ -75,6 +77,7 @@ export type PublicService = {
   seoDescription: string | null;
   featuredImageUrl: string | null;
   imageUrl: string | null;
+  galleryImages: ServiceGalleryImage[];
   updatedAt: string | null;
 };
 
@@ -114,6 +117,7 @@ function mapPublicService(row: ServiceRow): PublicService {
     seoDescription: row.seo_description,
     featuredImageUrl: row.featured_image_url,
     imageUrl: resolveServiceCardImageUrl(row.featured_image_url, row.content),
+    galleryImages: getServiceGalleryImages(row.featured_image_url, row.content),
     updatedAt: row.updated_at,
   };
 }
@@ -372,6 +376,7 @@ export const getPublicServices = cache(async (): Promise<PublicService[]> => {
       seoDescription: service.description,
       featuredImageUrl: null,
       imageUrl: null,
+      galleryImages: [],
       updatedAt: null,
     }));
   }
@@ -398,6 +403,7 @@ export const getPublicServices = cache(async (): Promise<PublicService[]> => {
       seoDescription: service.description,
       featuredImageUrl: null,
       imageUrl: null,
+      galleryImages: [],
       updatedAt: null,
     }));
   } catch {

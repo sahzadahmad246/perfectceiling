@@ -51,7 +51,7 @@ export function ServiceContentEditorModal({
   return (
     <div className="fixed inset-0 z-[10000] flex justify-center bg-background/80 backdrop-blur-sm">
       <div className="flex h-full w-full max-w-[560px] flex-col border-x border-border-soft bg-surface shadow-popover">
-        <header className="flex items-center justify-between border-b border-border-soft px-4 py-3 sm:px-8">
+        <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-border-soft bg-surface px-4 py-3 sm:px-8">
           <div>
             <p className="text-xs text-muted">Page content</p>
             <h2 className="font-primary text-lg font-medium">
@@ -68,17 +68,17 @@ export function ServiceContentEditorModal({
           </button>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-8">
+        <div className="service-content-editor-scroll min-h-0 flex-1 overflow-y-auto px-1.5 py-3 sm:px-2">
           <ArticleEditor
             key={editorKey}
-            className="min-h-0 flex-1"
+            className="min-h-[320px]"
             initialValue={initialContent}
             onChange={setContent}
             placeholder="Write the full service page — benefits, process, materials, and what customers can expect. Type / for headings, lists, images, tables, and more."
           />
         </div>
 
-        <footer className="border-t border-border-soft px-4 py-3 sm:px-8">
+        <footer className="shrink-0 border-t border-border-soft bg-surface px-4 py-3 sm:px-8">
           <div className="flex gap-2">
             <button
               className="h-11 flex-1 rounded-full border border-border-strong text-sm font-medium"

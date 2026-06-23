@@ -125,7 +125,11 @@ export function buildServiceDetailMetadata(
   const title = getServiceSeoTitle(service);
   const description = getServiceSeoDescription(service);
   const pageUrl = getServicePageUrl(service.slug);
-  const images = getServiceGalleryImages(service.featuredImageUrl, service.content);
+  const galleryImages = getServiceGalleryImages(
+    service.featuredImageUrl,
+    service.content,
+  );
+  const images = galleryImages.map((image) => image.url);
   const ogImages = buildOpenGraphImages(
     images.length > 0 ? images : service.imageUrl ? [service.imageUrl] : [],
     title,
@@ -251,7 +255,11 @@ export function buildServiceDetailJsonLd(
   const pageUrl = getServicePageUrl(service.slug);
   const title = getServiceSeoTitle(service);
   const description = getServiceSeoDescription(service);
-  const images = getServiceGalleryImages(service.featuredImageUrl, service.content);
+  const galleryImages = getServiceGalleryImages(
+    service.featuredImageUrl,
+    service.content,
+  );
+  const images = galleryImages.map((image) => image.url);
   const absoluteImages = (images.length > 0 ? images : service.imageUrl ? [service.imageUrl] : [])
     .map((url) => toAbsoluteUrl(url));
 

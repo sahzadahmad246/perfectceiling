@@ -3,6 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 
+import { ArticleEditorBlockToolbar } from "@/components/article-editor-block-toolbar";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useCreateBlockNote } from "@blocknote/react";
 import { Loader2 } from "lucide-react";
@@ -109,17 +110,15 @@ export function BlockNoteArticleEditor({
   }
 
   return (
-    <div className={cn("article-editor-shell flex min-h-0 flex-1 flex-col", className)}>
+    <div className={cn("article-editor-shell flex flex-col", className)}>
       {!ready ? (
         <div className="flex min-h-[320px] flex-1 items-center justify-center">
           <Loader2 className="animate-spin text-muted" size={24} />
         </div>
       ) : (
-        <BlockNoteView
-          editor={editor}
-          onChange={handleChange}
-          theme="light"
-        />
+        <BlockNoteView editor={editor} onChange={handleChange} sideMenu={false} theme="light">
+          <ArticleEditorBlockToolbar />
+        </BlockNoteView>
       )}
     </div>
   );

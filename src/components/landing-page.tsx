@@ -1,6 +1,5 @@
 import {
   ArrowUpRight,
-  Hammer,
   MessageCircle,
   Phone,
 } from "lucide-react";
@@ -8,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { HeroMediaCarousel } from "@/components/hero-media-carousel";
+import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
@@ -20,7 +20,7 @@ import {
   getPublicProjects,
   getPublicServices,
 } from "@/lib/public-content";
-import { formatServiceRate, getServicePublicPath } from "@/lib/services";
+
 import { siteConfig } from "@/lib/site";
 
 const serviceHighlights = [
@@ -96,8 +96,8 @@ export async function LandingPage() {
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
                   Service area
                 </p>
-                <p className="mt-2 font-primary text-2xl font-semibold leading-none text-foreground">
-                  {settings.city}
+                <p className="mt-2 font-primary text-lg font-semibold leading-snug text-foreground whitespace-pre-line line-clamp-3 sm:text-xl">
+                  {settings.serviceAreas}
                 </p>
               </div>
               <div className="rounded-2xl bg-surface-muted px-3 py-4">
@@ -151,44 +151,7 @@ export async function LandingPage() {
 
             <div className="mt-6 space-y-4">
               {services.slice(0, 4).map((service) => (
-                <Link
-                  className="group block overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/70 transition duration-200 hover:border-border-strong"
-                  href={getServicePublicPath(service.slug)}
-                  key={service.id}
-                >
-                  {service.imageUrl ? (
-                    <div className="relative aspect-[16/10] overflow-hidden bg-surface-muted">
-                      <Image
-                        alt={service.title}
-                        className="object-cover transition duration-300 group-hover:scale-[1.02]"
-                        fill
-                        sizes="560px"
-                        src={service.imageUrl}
-                        unoptimized={service.imageUrl.startsWith("http")}
-                      />
-                    </div>
-                  ) : null}
-                  <article className="flex gap-4 p-4">
-                    {!service.imageUrl ? (
-                      <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-muted transition duration-200 group-hover:border-primary group-hover:text-foreground">
-                        <Hammer size={17} />
-                      </div>
-                    ) : null}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[17px] font-medium">{service.title}</h3>
-                      <p className="mt-2 text-sm font-medium text-foreground">
-                        {formatServiceRate(service.startingPrice, service.rateUnit)}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-muted">
-                        {service.shortDescription}
-                      </p>
-                    </div>
-                    <ArrowUpRight
-                      className="mt-1 shrink-0 text-muted transition group-hover:text-foreground"
-                      size={16}
-                    />
-                  </article>
-                </Link>
+                <PublicServicePreviewCard key={service.id} service={service} />
               ))}
             </div>
           </div>

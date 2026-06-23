@@ -506,17 +506,99 @@ a {
   --bn-font-family: var(--font-montserrat);
 }
 
-.article-editor-shell .bn-container {
-  height: 100%;
+.article-editor-shell .bn-container,
+.article-editor-shell .bn-mantine {
+  position: relative;
+  width: 100%;
   max-width: none;
   margin: 0;
   padding: 0;
 }
 
 .article-editor-shell .bn-editor {
-  height: 100%;
+  box-sizing: border-box;
+  width: 100%;
   min-height: 320px;
-  padding-inline: 0;
+  /* Left gutter for vertical block toolbar; small padding on other sides. */
+  padding: 0.375rem 0.3125rem 0.625rem 2.375rem !important;
+}
+
+.article-editor-shell .bn-block-content {
+  width: 100%;
+}
+
+.article-editor-block-toolbar,
+.article-editor-block-toolbar-inner,
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu,
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu,
+.article-editor-shell .article-editor-block-toolbar .mantine-Group-root,
+.article-editor-shell .article-editor-block-toolbar-inner .mantine-Group-root,
+.article-editor-shell .article-editor-block-toolbar .mantine-ActionIcon-root,
+.article-editor-shell .article-editor-block-toolbar-inner .mantine-ActionIcon-root,
+.article-editor-shell .article-editor-block-toolbar [class*="mantine-Menu-target"],
+.article-editor-shell .article-editor-block-toolbar-inner [class*="mantine-Menu-target"],
+.article-editor-shell .article-editor-block-toolbar .mantine-UnstyledButton-root:not(.mantine-Menu-item),
+.article-editor-shell .article-editor-block-toolbar-inner .mantine-UnstyledButton-root:not(.mantine-Menu-item) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.article-editor-block-toolbar {
+  z-index: 10;
+  display: flex;
+  pointer-events: auto;
+  padding-left: 0.625rem;
+  /* Bridge toward the field so moving right to click does not drop hover. */
+  padding-right: 0.75rem;
+  margin-right: -0.75rem;
+  background: transparent;
+}
+
+.article-editor-block-toolbar-inner {
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  padding: 0.25rem;
+  background: transparent;
+}
+
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu,
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu,
+.article-editor-shell .article-editor-block-toolbar .mantine-Group-root,
+.article-editor-shell .article-editor-block-toolbar-inner .mantine-Group-root {
+  flex-direction: column !important;
+  align-items: center !important;
+  height: auto !important;
+  width: auto !important;
+  gap: 2px !important;
+  padding: 0.25rem;
+  background: transparent;
+}
+
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu[data-block-type="heading"][data-level="1"],
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu[data-block-type="heading"][data-level="2"],
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu[data-block-type="heading"][data-level="3"],
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu[data-block-type="file"],
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu[data-block-type="audio"],
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu[data-block-type="heading"][data-level="1"],
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu[data-block-type="heading"][data-level="2"],
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu[data-block-type="heading"][data-level="3"],
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu[data-block-type="file"],
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu[data-block-type="audio"] {
+  height: auto !important;
+}
+
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu .mantine-UnstyledButton-root:not(.mantine-Menu-item),
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu .mantine-UnstyledButton-root:not(.mantine-Menu-item) {
+  width: 28px;
+  height: 28px;
+}
+
+.article-editor-shell .article-editor-block-toolbar .bn-side-menu .mantine-UnstyledButton-root:not(.mantine-Menu-item) svg,
+.article-editor-shell .article-editor-block-toolbar-inner .bn-side-menu .mantine-UnstyledButton-root:not(.mantine-Menu-item) svg {
+  height: 18px;
+  width: 18px;
 }
 
 .article-editor-preview img,

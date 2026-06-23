@@ -11,6 +11,7 @@ export type PublicBusinessSettings = {
   whatsapp: string;
   email: string;
   city: string;
+  serviceAreas: string;
 };
 
 const fallbackSettings: PublicBusinessSettings = {
@@ -20,6 +21,7 @@ const fallbackSettings: PublicBusinessSettings = {
   whatsapp: siteConfig.whatsapp,
   email: siteConfig.email,
   city: siteConfig.city,
+  serviceAreas: siteConfig.serviceAreas.join(", "),
 };
 
 export function toTelLink(phone: string) {
@@ -48,7 +50,9 @@ export const getPublicBusinessSettings = cache(
 
       const { data, error } = await client
         .from("business_settings")
-        .select("business_name, logo_url, phone, whatsapp, email, city")
+        .select(
+          "business_name, logo_url, phone, whatsapp, email, city, service_areas",
+        )
         .limit(1)
         .maybeSingle();
 
@@ -59,13 +63,18 @@ export const getPublicBusinessSettings = cache(
       const phone = data.phone?.trim() || fallbackSettings.phone;
       const whatsapp = data.whatsapp?.trim() || phone;
 
+      const city = data.city?.trim() || fallbackSettings.city;
+      const serviceAreas =
+        data.service_areas?.trim() || city || fallbackSettings.serviceAreas;
+
       return {
         businessName: data.business_name?.trim() || fallbackSettings.businessName,
         logoUrl: data.logo_url?.trim() || null,
         phone,
         whatsapp,
         email: data.email?.trim() || fallbackSettings.email,
-        city: data.city?.trim() || fallbackSettings.city,
+        city,
+        serviceAreas,
       };
     } catch {
       return fallbackSettings;
