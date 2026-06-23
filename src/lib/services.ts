@@ -371,6 +371,23 @@ export function emptyServiceForm(): ServiceFormInput {
   };
 }
 
+export function hasServiceDraftContent(form: ServiceFormInput) {
+  const empty = emptyServiceForm();
+
+  return (
+    form.title.trim() !== empty.title ||
+    form.slug.trim() !== empty.slug ||
+    form.shortDescription.trim() !== empty.shortDescription ||
+    form.content.trim() !== empty.content ||
+    form.startingPrice.trim() !== empty.startingPrice ||
+    form.rateUnit !== empty.rateUnit ||
+    form.seoTitle.trim() !== empty.seoTitle ||
+    form.seoDescription.trim() !== empty.seoDescription ||
+    form.published !== empty.published ||
+    form.sortOrder.trim() !== empty.sortOrder
+  );
+}
+
 export function serviceDetailToForm(service: ServiceDetail): ServiceFormInput {
   return {
     title: service.title,

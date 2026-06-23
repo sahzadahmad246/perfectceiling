@@ -3,10 +3,10 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { HeroMediaCarousel } from "@/components/hero-media-carousel";
+import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
 import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
 import { SiteHeader } from "@/components/site-header";
 import {
@@ -61,12 +61,13 @@ export async function LandingPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
-      <SiteHeader />
-
-      <HeroMediaCarousel
-        badge={`False ceiling contractor in ${settings.city}`}
-        slides={slides}
-      >
+      <div className="grid -mx-4 sm:-mx-8">
+        <HeroMediaCarousel
+          badge={`False ceiling contractor in ${settings.city}`}
+          className="col-start-1 row-start-1"
+          extendUnderHeader
+          slides={slides}
+        >
         <div className="flex flex-wrap gap-3">
           <a
             className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
@@ -85,7 +86,13 @@ export async function LandingPage() {
             Call now
           </a>
         </div>
-      </HeroMediaCarousel>
+        </HeroMediaCarousel>
+
+        <SiteHeader
+          className="col-start-1 row-start-1 self-start"
+          overlay
+        />
+      </div>
 
       <div className="landing-flow -mx-4 sm:-mx-8">
         <section className="landing-section landing-bg-shade -mt-3 px-4 sm:px-8">
@@ -171,42 +178,11 @@ export async function LandingPage() {
             </p>
 
             {projects.length > 0 ? (
-              <ul className="mt-6 divide-y divide-border-soft border-y border-border-soft">
+              <div className="mt-6 space-y-4">
                 {projects.map((project) => (
-                  <li key={project.id}>
-                    <article className="py-4">
-                      {project.imageUrl ? (
-                        <div className="relative mb-3 aspect-[16/10] overflow-hidden rounded-xl border border-border-soft bg-surface-muted">
-                          <Image
-                            alt={project.title}
-                            className="object-cover"
-                            fill
-                            sizes="560px"
-                            src={project.imageUrl}
-                            unoptimized={project.imageUrl.startsWith("http")}
-                          />
-                        </div>
-                      ) : null}
-                      <p className="text-xs text-muted">
-                        {project.serviceType ?? "Ceiling work"}
-                      </p>
-                      <h3 className="mt-1 text-[17px] font-medium">
-                        {project.title}
-                      </h3>
-                      {project.location ? (
-                        <p className="mt-1 text-sm text-muted">
-                          {project.location}
-                        </p>
-                      ) : null}
-                      {project.description ? (
-                        <p className="mt-2 text-sm leading-6 text-muted">
-                          {project.description}
-                        </p>
-                      ) : null}
-                    </article>
-                  </li>
+                  <PublicProjectPreviewCard key={project.id} project={project} />
                 ))}
-              </ul>
+              </div>
             ) : (
               <div className="mt-6 rounded-2xl bg-surface-muted px-4 py-5">
                 <p className="text-sm font-medium text-foreground">

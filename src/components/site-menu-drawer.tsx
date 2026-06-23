@@ -4,16 +4,21 @@ import {
   BookOpen,
   FolderKanban,
   Hammer,
+  LayoutDashboard,
   LogIn,
+  LogOut,
   Menu,
   PanelRightClose,
   Phone,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { signInWithGoogle } from "@/app/auth/actions";
+import { signInWithGoogle, signOut } from "@/app/auth/actions";
+import type { AuthProfile } from "@/lib/auth/profile";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
   { href: "/services", label: "Services", icon: Hammer },
@@ -22,9 +27,33 @@ const menuItems = [
   { href: "/#contact", label: "Contact", icon: Phone },
 ] as const;
 
-export function SiteMenuDrawer() {
+type SiteMenuDrawerProps = {
+  profile?: AuthProfile | null;
+  isAdmin?: boolean;
+  overlay?: boolean;
+};
+
+function getInitials(profile: AuthProfile) {
+  const source = profile.fullName || profile.email || "PC";
+
+  return source
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export function SiteMenuDrawer({
+  profile = null,
+  isAdmin = false,
+  overlay = false,
+}: SiteMenuDrawerProps) {
   const [open, setOpen] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const shouldShowAvatar =
+    Boolean(profile?.avatarUrl) && profile?.avatarUrl !== failedAvatarUrl;
 
   useEffect(() => {
     if (!open) {
@@ -58,6 +87,11 @@ export function SiteMenuDrawer() {
               Menu
             </p>
             <p className="mt-2 font-primary text-lg font-medium">Perfect Ceiling</p>
+            {profile ? (
+              <p className="mt-1 truncate text-sm text-muted">
+                {profile.fullName || profile.email}
+              </p>
+            ) : null}
           </div>
           <button
             aria-label="Close menu"
@@ -86,18 +120,44 @@ export function SiteMenuDrawer() {
               </Link>
             );
           })}
+
+          {profile && isAdmin ? (
+            <Link
+              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-foreground transition hover:bg-surface-muted"
+              href="/admin"
+              onClick={() => setOpen(false)}
+            >
+              <LayoutDashboard className="text-muted" size={18} />
+              Admin dashboard
+            </Link>
+          ) : null}
         </nav>
 
-        <form action={signInWithGoogle} className="border-t border-border-soft pt-5">
-          <input name="next" type="hidden" value="/" />
-          <button
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary-hover"
-            type="submit"
-          >
-            <LogIn size={16} />
-            Login
-          </button>
-        </form>
+        <div className="border-t border-border-soft pt-5">
+          {profile ? (
+            <form action={signOut}>
+              <input name="next" type="hidden" value="/" />
+              <button
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border-strong px-5 text-sm font-medium text-foreground transition hover:border-primary"
+                type="submit"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </form>
+          ) : (
+            <form action={signInWithGoogle}>
+              <input name="next" type="hidden" value="/" />
+              <button
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary-hover"
+                type="submit"
+              >
+                <LogIn size={16} />
+                Login
+              </button>
+            </form>
+          )}
+        </div>
       </aside>
     </div>
   ) : null;
@@ -106,12 +166,34 @@ export function SiteMenuDrawer() {
     <>
       <button
         aria-expanded={open}
-        aria-label="Open menu"
-        className="inline-flex size-10 items-center justify-center rounded-full border border-border-strong bg-surface text-foreground transition duration-200 hover:border-primary"
+        aria-label={profile ? "Open account menu" : "Open menu"}
+        className={cn(
+          "inline-flex size-10 items-center justify-center overflow-hidden rounded-full border transition duration-200",
+          overlay
+            ? "border-white/30 bg-black/30 text-white backdrop-blur-sm hover:border-white/60"
+            : "border-border-strong bg-surface text-foreground hover:border-primary",
+        )}
         onClick={() => setOpen(true)}
         type="button"
       >
-        <Menu size={18} />
+        {profile ? (
+          shouldShowAvatar && profile.avatarUrl ? (
+            <Image
+              alt={profile.fullName || profile.email || "User profile"}
+              className="size-full rounded-full object-cover"
+              height={40}
+              onError={() => setFailedAvatarUrl(profile.avatarUrl)}
+              referrerPolicy="no-referrer"
+              src={profile.avatarUrl}
+              unoptimized
+              width={40}
+            />
+          ) : (
+            <span className="text-sm font-medium">{getInitials(profile)}</span>
+          )
+        ) : (
+          <Menu size={18} />
+        )}
       </button>
 
       {typeof document !== "undefined"

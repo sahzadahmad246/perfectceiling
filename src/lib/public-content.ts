@@ -2,6 +2,11 @@ import { cache } from "react";
 
 import { hasSupabaseEnv } from "@/lib/env";
 import {
+  getProjectGalleryImages,
+  getProjectPublicPath,
+  type ProjectGalleryImage,
+} from "@/lib/projects";
+import {
   getServiceGalleryImages,
   resolveServiceCardImageUrl,
   type ServiceGalleryImage,
@@ -52,6 +57,7 @@ export type HeroSlide = {
   overlayTitle: string;
   overlaySubtitle: string | null;
   durationMs: number;
+  href?: string | null;
 };
 
 export type PublicProject = {
@@ -60,8 +66,11 @@ export type PublicProject = {
   slug: string;
   location: string | null;
   serviceType: string | null;
+  shortDescription: string | null;
   description: string | null;
+  status: "ongoing" | "completed" | "on_hold";
   imageUrl: string | null;
+  galleryImages: ProjectGalleryImage[];
   completedAt: string | null;
 };
 
@@ -140,10 +149,15 @@ type ProjectRow = {
   location: string | null;
   service_type: string | null;
   description: string | null;
+  short_description: string | null;
   images: string[] | null;
+  featured_image_url: string | null;
   before_image_url: string | null;
   after_image_url: string | null;
+  status: string | null;
   completed_at: string | null;
+  show_on_homepage: boolean | null;
+  sort_order: number | null;
 };
 
 function mapHeroSlide(row: HeroSlideRow): HeroSlide {
@@ -159,45 +173,62 @@ function mapHeroSlide(row: HeroSlideRow): HeroSlide {
   };
 }
 
-function projectImageUrl(row: ProjectRow) {
-  const images = row.images?.filter(Boolean) ?? [];
-
-  return (
-    row.after_image_url ??
-    images[0] ??
-    row.before_image_url ??
-    null
-  );
-}
-
 function mapProject(row: ProjectRow): PublicProject {
+  const status =
+    row.status === "ongoing" || row.status === "on_hold"
+      ? row.status
+      : "completed";
+  const galleryImages = getProjectGalleryImages(
+    row.featured_image_url,
+    row.images,
+    row.after_image_url,
+    row.before_image_url,
+  );
+
   return {
     id: row.id,
     title: row.title,
     slug: row.slug,
     location: row.location,
     serviceType: row.service_type,
+    shortDescription: row.short_description ?? row.description,
     description: row.description,
-    imageUrl: projectImageUrl(row),
+    status,
+    imageUrl: galleryImages[0]?.url ?? null,
+    galleryImages,
     completedAt: row.completed_at,
   };
 }
 
 function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
-  return projects
-    .filter((project) => project.imageUrl)
-    .map((project) => ({
-      id: `project-${project.id}`,
-      mediaType: "image" as const,
-      mediaUrl: project.imageUrl!,
-      posterUrl: null,
-      theme: undefined,
-      overlayTitle: project.title,
-      overlaySubtitle:
-        [project.serviceType, project.location].filter(Boolean).join(" · ") ||
-        null,
-      durationMs: 8000,
-    }));
+  const slides: HeroSlide[] = [];
+
+  for (const project of projects) {
+    const images =
+      project.galleryImages.length > 0
+        ? project.galleryImages
+        : project.imageUrl
+          ? [{ url: project.imageUrl, caption: "" }]
+          : [];
+
+    for (const [index, image] of images.entries()) {
+      slides.push({
+        id: `project-${project.id}-${index}`,
+        mediaType: "image",
+        mediaUrl: image.url,
+        posterUrl: null,
+        theme: undefined,
+        overlayTitle: project.title,
+        overlaySubtitle:
+          [project.serviceType, project.location].filter(Boolean).join(" · ") ||
+          null,
+        durationMs: 8000,
+        href: getProjectPublicPath(project.slug),
+      });
+    }
+  }
+
+  return slides;
 }
 
 async function fetchPublishedHeroSlides(): Promise<HeroSlide[]> {
@@ -222,19 +253,29 @@ async function fetchPublishedHeroSlides(): Promise<HeroSlide[]> {
   return data.map((row) => mapHeroSlide(row as HeroSlideRow));
 }
 
-async function fetchPublishedProjects(limit = 8): Promise<PublicProject[]> {
+async function fetchPublishedProjects(
+  limit = 8,
+  options?: { homepageOnly?: boolean },
+): Promise<PublicProject[]> {
   const supabase = createPublicClient();
 
   if (!supabase) {
     return [];
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("projects")
     .select(
-      "id, title, slug, location, service_type, description, images, before_image_url, after_image_url, completed_at",
+      "id, title, slug, location, service_type, description, short_description, images, featured_image_url, before_image_url, after_image_url, status, completed_at, show_on_homepage, sort_order",
     )
-    .eq("published", true)
+    .eq("published", true);
+
+  if (options?.homepageOnly) {
+    query = query.eq("show_on_homepage", true);
+  }
+
+  const { data, error } = await query
+    .order("sort_order", { ascending: true })
     .order("completed_at", { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -257,7 +298,7 @@ export const getPublicHeroSlides = cache(async (): Promise<HeroSlide[]> => {
       return slides;
     }
 
-    const projects = await fetchPublishedProjects(6);
+    const projects = await fetchPublishedProjects(8);
     const projectSlides = projectsToHeroSlides(projects);
 
     if (projectSlides.length > 0) {
@@ -277,7 +318,7 @@ export const getPublicProjects = cache(
     }
 
     try {
-      return await fetchPublishedProjects(limit);
+      return await fetchPublishedProjects(limit, { homepageOnly: true });
     } catch {
       return [];
     }
@@ -436,4 +477,74 @@ export async function getPublicServiceSlugs() {
 
 export function getPublicServicePageUrl(slug: string) {
   return `${siteConfig.url}/services/${slug}`;
+}
+
+async function fetchPublishedProjectBySlug(
+  slug: string,
+): Promise<PublicProject | null> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .select(
+      "id, title, slug, location, service_type, description, short_description, images, featured_image_url, before_image_url, after_image_url, status, completed_at, show_on_homepage, sort_order",
+    )
+    .eq("published", true)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapProject(data as ProjectRow);
+}
+
+export const getPublicProjectBySlug = cache(
+  async (slug: string): Promise<PublicProject | null> => {
+    if (!hasSupabaseEnv()) {
+      return null;
+    }
+
+    try {
+      return await fetchPublishedProjectBySlug(slug);
+    } catch {
+      return null;
+    }
+  },
+);
+
+export async function getPublicProjectSlugs() {
+  if (!hasSupabaseEnv()) {
+    return [];
+  }
+
+  try {
+    const supabase = createPublicClient();
+
+    if (!supabase) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .select("slug")
+      .eq("published", true);
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data.map((row) => row.slug as string);
+  } catch {
+    return [];
+  }
+}
+
+export function getPublicProjectPageUrl(slug: string) {
+  return `${siteConfig.url}${getProjectPublicPath(slug)}`;
 }

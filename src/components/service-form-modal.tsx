@@ -9,12 +9,21 @@ import {
   updateService,
   type ServiceActionResult,
 } from "@/app/admin/services/actions";
+import { AdminFormDraftPrompt } from "@/components/admin-form-draft-prompt";
 import { ServiceContentStep } from "@/components/service-content-step";
 import { ServicePreviewStep } from "@/components/service-preview-step";
 import { ServiceSeoStep } from "@/components/service-seo-step";
 import {
+  clearAdminFormDraft,
+  getAdminFormDraftKey,
+  loadAdminFormDraft,
+  saveAdminFormDraft,
+  type AdminFormDraft,
+} from "@/lib/admin-form-drafts";
+import {
   emptyServiceForm,
   ensureUniqueServiceSlug,
+  hasServiceDraftContent,
   slugifyServiceTitle,
   type ServiceFormInput,
 } from "@/lib/services";
@@ -46,7 +55,19 @@ export function ServiceFormModal({
   const [form, setForm] = useState<ServiceFormInput>(emptyServiceForm());
   const [slugTouched, setSlugTouched] = useState(false);
   const [errors, setErrors] = useState<ServiceFieldErrors>({});
+  const [pendingDraft, setPendingDraft] =
+    useState<AdminFormDraft<ServiceFormInput> | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const draftKey = useMemo(
+    () =>
+      getAdminFormDraftKey(
+        "service",
+        isEditing ? "edit" : "create",
+        serviceId,
+      ),
+    [isEditing, serviceId],
+  );
 
   const originalSlug = useMemo(
     () => (initialData?.slug ? slugifyServiceTitle(initialData.slug) : undefined),
@@ -69,14 +90,43 @@ export function ServiceFormModal({
 
   useEffect(() => {
     if (!open) {
+      setPendingDraft(null);
       return;
     }
 
+    const draft = loadAdminFormDraft<ServiceFormInput>(draftKey);
+
     setStep(1);
     setErrors({});
+
+    if (draft && hasServiceDraftContent(draft.form)) {
+      setPendingDraft(draft);
+      setForm(emptyServiceForm());
+      setSlugTouched(false);
+      return;
+    }
+
+    setPendingDraft(null);
     setForm(initialData ?? emptyServiceForm());
     setSlugTouched(Boolean(initialData?.slug));
-  }, [initialData, open]);
+  }, [draftKey, initialData, open]);
+
+  useEffect(() => {
+    if (!open || pendingDraft) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      if (hasServiceDraftContent(form)) {
+        saveAdminFormDraft(draftKey, form, {
+          step,
+          slugTouched,
+        });
+      }
+    }, 700);
+
+    return () => window.clearTimeout(timeout);
+  }, [draftKey, form, open, pendingDraft, slugTouched, step]);
 
   useEffect(() => {
     if (!open || slugTouched) {
@@ -96,6 +146,36 @@ export function ServiceFormModal({
 
   if (!open) {
     return null;
+  }
+
+  function handleClose() {
+    if (!pendingDraft && hasServiceDraftContent(form)) {
+      saveAdminFormDraft(draftKey, form, {
+        step,
+        slugTouched,
+      });
+    }
+
+    onClose();
+  }
+
+  function handleRestoreDraft() {
+    if (!pendingDraft) {
+      return;
+    }
+
+    setForm(pendingDraft.form);
+    setStep(Number(pendingDraft.meta?.step ?? 1));
+    setSlugTouched(Boolean(pendingDraft.meta?.slugTouched));
+    setPendingDraft(null);
+  }
+
+  function handleDiscardDraft() {
+    clearAdminFormDraft(draftKey);
+    setPendingDraft(null);
+    setStep(1);
+    setForm(initialData ?? emptyServiceForm());
+    setSlugTouched(Boolean(initialData?.slug));
   }
 
   function updateField<K extends keyof ServiceFormInput>(
@@ -179,6 +259,7 @@ export function ServiceFormModal({
         return;
       }
 
+      clearAdminFormDraft(draftKey);
       toast.success(isEditing ? "Service updated." : "Service created.");
       onSaved?.();
       onClose();
@@ -210,7 +291,7 @@ export function ServiceFormModal({
             aria-label="Close service form"
             className="inline-flex items-center justify-center text-foreground transition hover:text-primary"
             disabled={isPending}
-            onClick={onClose}
+            onClick={handleClose}
             type="button"
           >
             <X size={22} strokeWidth={2.5} />
@@ -218,7 +299,15 @@ export function ServiceFormModal({
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-          {step === 1 ? (
+          {pendingDraft ? (
+            <AdminFormDraftPrompt
+              onDiscard={handleDiscardDraft}
+              onRestore={handleRestoreDraft}
+              savedAt={pendingDraft.savedAt}
+            />
+          ) : null}
+
+          {!pendingDraft && step === 1 ? (
             <ServiceContentStep
               errors={errors}
               form={form}
@@ -228,9 +317,11 @@ export function ServiceFormModal({
             />
           ) : null}
 
-          {step === 2 ? <ServiceSeoStep form={form} onChange={updateField} /> : null}
+          {!pendingDraft && step === 2 ? (
+            <ServiceSeoStep form={form} onChange={updateField} />
+          ) : null}
 
-          {step === 3 ? (
+          {!pendingDraft && step === 3 ? (
             <ServicePreviewStep form={form} onGoToStep={setStep} />
           ) : null}
         </div>
@@ -250,7 +341,7 @@ export function ServiceFormModal({
               <button
                 className="h-11 flex-1 rounded-full border border-border-strong text-sm font-medium"
                 disabled={isPending}
-                onClick={onClose}
+                onClick={handleClose}
                 type="button"
               >
                 Cancel
@@ -260,7 +351,7 @@ export function ServiceFormModal({
             {step < 3 ? (
               <button
                 className="h-11 flex-1 rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-70"
-                disabled={isPending}
+                disabled={isPending || Boolean(pendingDraft)}
                 onClick={() => {
                   if (validateStep(step)) {
                     setStep((current) => current + 1);
@@ -274,7 +365,7 @@ export function ServiceFormModal({
               <button
                 aria-busy={isPending}
                 className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-70"
-                disabled={isPending}
+                disabled={isPending || Boolean(pendingDraft)}
                 onClick={handleSubmit}
                 type="button"
               >

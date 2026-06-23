@@ -29,6 +29,10 @@ export function getAdminNavPage(pathname: string): AdminNavPage | null {
     return { label: "Services", href: "/admin/services" };
   }
 
+  if (pathname.startsWith("/admin/projects")) {
+    return { label: "Projects", href: "/admin/projects" };
+  }
+
   if (pathname === "/admin/settings") {
     return { label: "Settings", href: "/admin/settings" };
   }
@@ -84,6 +88,14 @@ export function getServicesPageBreadcrumb(): AdminBreadcrumbItem[] {
     { label: "Admin", href: "/admin" },
     { label: "Services", href: "/admin/services" },
     { label: "Manage services" },
+  ];
+}
+
+export function getProjectsPageBreadcrumb(): AdminBreadcrumbItem[] {
+  return [
+    { label: "Admin", href: "/admin" },
+    { label: "Projects", href: "/admin/projects" },
+    { label: "Manage projects" },
   ];
 }
 

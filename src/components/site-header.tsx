@@ -1,10 +1,15 @@
 import { BrandLogo } from "@/components/brand-logo";
 import { SiteMenuDrawer } from "@/components/site-menu-drawer";
-import { UserMenu } from "@/components/user-menu";
 import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { getAuthProfile } from "@/lib/auth/profile";
-import { hasSupabaseEnv } from "@/lib/env";
+import { getAdminEmails, hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+
+type SiteHeaderProps = {
+  overlay?: boolean;
+  className?: string;
+};
 
 async function getCurrentProfile() {
   if (!hasSupabaseEnv()) {
@@ -23,23 +28,37 @@ async function getCurrentProfile() {
   }
 }
 
-export async function SiteHeader() {
+export async function SiteHeader({
+  overlay = false,
+  className,
+}: SiteHeaderProps) {
   const [profile, settings] = await Promise.all([
     getCurrentProfile(),
     getPublicBusinessSettings(),
   ]);
 
+  const isAdmin = Boolean(
+    profile?.email &&
+      getAdminEmails().includes(profile.email.trim().toLowerCase()),
+  );
+
   return (
-    <header className="sticky top-0 z-20 -mx-4 border-b border-border-soft bg-surface/90 px-4 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
+    <header
+      className={cn(
+        "sticky top-0 z-30 py-3",
+        overlay
+          ? "bg-transparent px-4 sm:px-8"
+          : "z-20 -mx-4 border-b border-border-soft bg-surface/90 px-4 backdrop-blur-xl sm:-mx-8 sm:px-8",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between">
         <BrandLogo
           businessName={settings.businessName}
           logoUrl={settings.logoUrl}
         />
 
-        <div className="flex items-center">
-          {profile ? <UserMenu profile={profile} /> : <SiteMenuDrawer />}
-        </div>
+        <SiteMenuDrawer isAdmin={isAdmin} overlay={overlay} profile={profile} />
       </div>
     </header>
   );
