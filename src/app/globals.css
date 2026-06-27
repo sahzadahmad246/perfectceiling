@@ -487,6 +487,7 @@ a {
 }
 
 .article-editor-shell {
+  --bn-ui-base-z-index: 10000;
   --bn-colors-editor-text: var(--foreground);
   --bn-colors-editor-background: var(--surface);
   --bn-colors-menu-text: var(--foreground);
@@ -515,12 +516,34 @@ a {
   padding: 0;
 }
 
+.article-editor-shell .bn-editor,
+.article-editor-shell .bn-inline-content,
+.article-editor-shell [contenteditable="true"] {
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
 .article-editor-shell .bn-editor {
   box-sizing: border-box;
   width: 100%;
   min-height: 320px;
   /* Left gutter for vertical block toolbar; small padding on other sides. */
   padding: 0.375rem 0.3125rem 0.625rem 2.375rem !important;
+}
+
+.article-editor-shell .bn-mobile-formatting-toolbar {
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface);
+  box-shadow: 0 -8px 24px rgb(15 23 42 / 0.08);
+  padding-inline: 0.25rem;
+}
+
+.article-editor-shell .bn-mobile-formatting-toolbar .bn-toolbar {
+  width: max-content;
+  min-width: 100%;
+  justify-content: flex-start;
+  gap: 0.125rem;
+  padding: 0.375rem 0.5rem;
 }
 
 .article-editor-shell .bn-block-content {
