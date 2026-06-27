@@ -2,13 +2,13 @@
 
 import type { BlockNoteEditor } from "@blocknote/core";
 import { FormattingToolbarExtension } from "@blocknote/core/extensions";
+import { flip, offset, shift } from "@floating-ui/react";
 import {
-  ExperimentalMobileFormattingToolbarController,
   FormattingToolbarController,
   useBlockNoteEditor,
   useExtension,
 } from "@blocknote/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function useCoarsePointer() {
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
@@ -80,14 +80,29 @@ export function ArticleEditorFormattingToolbar() {
     }
 
     editorDom.addEventListener("contextmenu", preventNativeSelectionMenu);
+
     return () => {
       editorDom.removeEventListener("contextmenu", preventNativeSelectionMenu);
     };
   }, [editor]);
 
-  if (isCoarsePointer) {
-    return <ExperimentalMobileFormattingToolbarController />;
-  }
+  const floatingUIOptions = useMemo(
+    () => ({
+      useFloatingOptions: {
+        middleware: [offset(10), shift({ padding: 12 }), flip({ padding: 12 })],
+      },
+      elementProps: {
+        className: isCoarsePointer
+          ? "article-editor-formatting-popover"
+          : undefined,
+        style: {
+          zIndex: 10050,
+          maxWidth: "min(calc(100vw - 1.5rem), 520px)",
+        },
+      },
+    }),
+    [isCoarsePointer],
+  );
 
-  return <FormattingToolbarController />;
+  return <FormattingToolbarController floatingUIOptions={floatingUIOptions} />;
 }
