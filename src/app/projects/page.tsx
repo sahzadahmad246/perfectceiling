@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     getAllPublicProjects(),
   ]);
 
-  return buildProjectsListMetadata(settings, projects.length);
+  return buildProjectsListMetadata(settings, projects);
 }
 
 export default function ProjectsPage() {

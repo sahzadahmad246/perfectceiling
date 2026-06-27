@@ -1,18 +1,18 @@
 "use client";
 
-import { Hammer, Link2, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { BookOpenText, Link2, Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
-import { deleteService } from "@/app/admin/services/actions";
+import { deleteBlogPost } from "@/app/admin/blog/actions";
 import {
-  formatServiceRate,
-  getServicePublicPath,
-  type ServiceListItem,
-} from "@/lib/services";
+  formatBlogPublishedDate,
+  getBlogPublicPath,
+  type BlogListItem,
+} from "@/lib/blog";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
@@ -26,18 +26,20 @@ type MenuPosition = {
   right: number;
 };
 
-type ServiceCardProps = {
-  service: ServiceListItem;
+type BlogCardProps = {
+  post: BlogListItem;
   onEdit: (id: string) => void;
 };
 
-export function ServiceCard({ service, onEdit }: ServiceCardProps) {
+export function BlogCard({ post, onEdit }: BlogCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const publicPath = getBlogPublicPath(post.slug);
+  const publishedLabel = formatBlogPublishedDate(post.publishedAt);
 
   function updateMenuPosition() {
     const button = buttonRef.current;
@@ -92,14 +94,14 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteService(service.id);
+      const result = await deleteBlogPost(post.id);
 
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Service deleted.");
+      toast.success("Blog post deleted.");
       setConfirmOpen(false);
       setMenuOpen(false);
     });
@@ -122,7 +124,7 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
               disabled={isPending}
               onClick={() => {
                 setMenuOpen(false);
-                onEdit(service.id);
+                onEdit(post.id);
               }}
               type="button"
             >
@@ -150,9 +152,9 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
     ? createPortal(
         <div className={confirmOverlayClass}>
           <div className="w-full max-w-sm rounded-2xl border border-border-soft bg-surface-raised p-5 shadow-popover">
-            <h3 className="font-primary text-lg font-medium">Delete service?</h3>
+            <h3 className="font-primary text-lg font-medium">Delete article?</h3>
             <p className="mt-2 text-sm leading-6 text-muted">
-              {service.title} will be removed from admin and the public website.
+              {post.title} will be removed from admin and the public website.
             </p>
             <div className="mt-5 flex gap-3">
               <button
@@ -179,8 +181,6 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
       )
     : null;
 
-  const publicPath = getServicePublicPath(service.slug);
-
   return (
     <>
       <article className="relative flex overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80 transition hover:border-border-strong">
@@ -191,34 +191,34 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
           rel="noopener noreferrer"
         >
           <div className="relative w-[6.25rem] shrink-0 self-stretch bg-surface-muted">
-            {service.imageUrl ? (
+            {post.imageUrl ? (
               <Image
-                alt={service.title}
+                alt={post.title}
                 className="object-cover"
                 fill
                 sizes="100px"
-                src={service.imageUrl}
-                unoptimized={service.imageUrl.startsWith("http")}
+                src={post.imageUrl}
+                unoptimized={post.imageUrl.startsWith("http")}
               />
             ) : (
               <div className="flex h-full min-h-[6.25rem] items-center justify-center text-muted">
-                <Hammer size={22} strokeWidth={1.75} />
+                <BookOpenText size={22} strokeWidth={1.75} />
               </div>
             )}
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3 pr-12">
             <div>
+              {post.category ? (
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  {post.category}
+                </p>
+              ) : null}
               <h3 className="min-w-0 truncate font-primary text-base font-medium text-foreground">
-                {service.title}
+                {post.title}
               </h3>
-
-              <p className="mt-1 line-clamp-1 text-sm leading-5 text-muted">
-                {service.shortDescription}
-              </p>
-
-              <p className="mt-2 text-sm font-medium text-foreground">
-                {formatServiceRate(service.startingPrice, service.rateUnit)}
+              <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted">
+                {post.excerpt}
               </p>
             </div>
 
@@ -229,20 +229,23 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
               </p>
               <span
                 className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                  service.published
+                  post.published
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                     : "border-border-strong bg-surface-muted text-muted"
                 }`}
               >
-                {service.published ? "Live" : "Draft"}
+                {post.published ? "Live" : "Draft"}
               </span>
             </div>
+            {publishedLabel ? (
+              <p className="text-xs text-muted">Published {publishedLabel}</p>
+            ) : null}
           </div>
         </Link>
 
         <button
           aria-expanded={menuOpen}
-          aria-label={`Actions for ${service.title}`}
+          aria-label={`Actions for ${post.title}`}
           className="absolute right-3 top-3 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
           onClick={() => setMenuOpen((current) => !current)}
           ref={buttonRef}

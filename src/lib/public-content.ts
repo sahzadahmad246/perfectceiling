@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import { hasSupabaseEnv } from "@/lib/env";
+import { resolveBlogCardImageUrl } from "@/lib/blog";
 import {
   getProjectGalleryImages,
   getProjectPublicPath,
@@ -88,6 +89,21 @@ export type PublicService = {
   featuredImageUrl: string | null;
   imageUrl: string | null;
   galleryImages: ServiceGalleryImage[];
+  updatedAt: string | null;
+};
+
+export type PublicBlogPost = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string | null;
+  category: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  featuredImageUrl: string | null;
+  imageUrl: string | null;
+  publishedAt: string | null;
   updatedAt: string | null;
 };
 
@@ -562,4 +578,115 @@ export async function getPublicProjectSlugs() {
 
 export function getPublicProjectPageUrl(slug: string) {
   return `${siteConfig.url}${getProjectPublicPath(slug)}`;
+}
+
+type BlogRow = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string | null;
+  featured_image_url: string | null;
+  category: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  published_at: string | null;
+  updated_at: string | null;
+};
+
+function mapPublicBlogPost(row: BlogRow): PublicBlogPost {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    excerpt: row.excerpt,
+    content: row.content,
+    category: row.category,
+    seoTitle: row.seo_title,
+    seoDescription: row.seo_description,
+    featuredImageUrl: row.featured_image_url,
+    imageUrl: resolveBlogCardImageUrl(row.featured_image_url, row.content),
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function fetchPublishedBlogPosts(): Promise<PublicBlogPost[]> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select(
+      "id, title, slug, excerpt, content, featured_image_url, category, seo_title, seo_description, published_at, updated_at",
+    )
+    .eq("published", true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("title", { ascending: true });
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  return data.map((row) => mapPublicBlogPost(row as BlogRow));
+}
+
+async function fetchPublishedBlogPostBySlug(
+  slug: string,
+): Promise<PublicBlogPost | null> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select(
+      "id, title, slug, excerpt, content, featured_image_url, category, seo_title, seo_description, published_at, updated_at",
+    )
+    .eq("published", true)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapPublicBlogPost(data as BlogRow);
+}
+
+export const getPublicBlogPosts = cache(async (): Promise<PublicBlogPost[]> => {
+  if (!hasSupabaseEnv()) {
+    return [];
+  }
+
+  try {
+    return await fetchPublishedBlogPosts();
+  } catch {
+    return [];
+  }
+});
+
+export const getPublicBlogPostBySlug = cache(
+  async (slug: string): Promise<PublicBlogPost | null> => {
+    if (!hasSupabaseEnv()) {
+      return null;
+    }
+
+    try {
+      return await fetchPublishedBlogPostBySlug(slug);
+    } catch {
+      return null;
+    }
+  },
+);
+
+export async function getPublicBlogSlugs() {
+  const posts = await getPublicBlogPosts();
+
+  return posts.map((post) => post.slug);
 }

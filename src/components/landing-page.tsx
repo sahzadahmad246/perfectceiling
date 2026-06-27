@@ -6,15 +6,23 @@ import {
 import Link from "next/link";
 
 import { HeroMediaCarousel } from "@/components/hero-media-carousel";
+import { JsonLd } from "@/components/json-ld";
+import { PublicBlogPreviewCard } from "@/components/public-blog-preview-card";
 import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
 import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
 import { SiteHeader } from "@/components/site-header";
+import { getAdminClient } from "@/lib/auth/admin";
+import {
+  buildHomeJsonLd,
+  collectHomePreviewImages,
+} from "@/lib/home-seo";
 import {
   getPublicBusinessSettings,
   toTelLink,
   toWhatsAppLink,
 } from "@/lib/business-settings";
 import {
+  getPublicBlogPosts,
   getPublicHeroSlides,
   getPublicProjectCount,
   getPublicProjects,
@@ -45,13 +53,29 @@ const processSteps = [
 ] as const;
 
 export async function LandingPage() {
-  const [settings, slides, projects, projectCount, services] = await Promise.all([
-    getPublicBusinessSettings(),
-    getPublicHeroSlides(),
-    getPublicProjects(6),
-    getPublicProjectCount(),
-    getPublicServices(),
-  ]);
+  const [settings, slides, projects, projectCount, services, blogPosts, adminSession] =
+    await Promise.all([
+      getPublicBusinessSettings(),
+      getPublicHeroSlides(),
+      getPublicProjects(6),
+      getPublicProjectCount(),
+      getPublicServices(),
+      getPublicBlogPosts(),
+      getAdminClient(),
+    ]);
+
+  const publishedServices = services.filter(
+    (service) => !service.id.startsWith("fallback-"),
+  );
+  const recentBlogPosts = blogPosts.slice(0, 3);
+  const isAdminLoggedIn = Boolean(adminSession);
+  const previewImages = collectHomePreviewImages(
+    slides,
+    publishedServices,
+    projects,
+    blogPosts,
+    settings.logoUrl,
+  );
 
   const whatsappHref = toWhatsAppLink(
     settings.whatsapp,
@@ -61,6 +85,16 @@ export async function LandingPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
+      <JsonLd
+        data={buildHomeJsonLd(
+          settings,
+          publishedServices,
+          projects,
+          blogPosts,
+          previewImages,
+        )}
+      />
+
       <div className="grid -mx-4 sm:-mx-8">
         <HeroMediaCarousel
           badge={`False ceiling contractor in ${settings.city}`}
@@ -210,6 +244,36 @@ export async function LandingPage() {
           </div>
         </section>
 
+        {recentBlogPosts.length > 0 ? (
+          <section
+            className="landing-section landing-bg-grid px-4 sm:px-8"
+            id="blog"
+          >
+            <div aria-hidden className="landing-section-bg" />
+            <div className="landing-section-content">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted">Blog</p>
+                  <h2 className="mt-2 text-2xl font-medium">Recent articles</h2>
+                </div>
+                <Link
+                  className="minimal-link inline-flex items-center gap-1 text-sm"
+                  href="/blog"
+                >
+                  View all
+                  <ArrowUpRight size={14} />
+                </Link>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {recentBlogPosts.map((post) => (
+                  <PublicBlogPreviewCard key={post.id} post={post} />
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <section className="landing-section landing-bg-plain px-4 sm:px-8">
           <div aria-hidden className="landing-section-bg" />
           <div className="landing-section-content">
@@ -280,13 +344,18 @@ export async function LandingPage() {
           <a className="minimal-link" href={`mailto:${settings.email}`}>
             {settings.email}
           </a>
-          <Link
-            className="minimal-link inline-flex items-center gap-1"
-            href="/login"
-          >
-            Admin login
-            <ArrowUpRight size={14} />
+          <Link className="minimal-link" href="/blog">
+            Blog
           </Link>
+          {!isAdminLoggedIn ? (
+            <Link
+              className="minimal-link inline-flex items-center gap-1"
+              href="/login"
+            >
+              Admin login
+              <ArrowUpRight size={14} />
+            </Link>
+          ) : null}
           <span>{siteConfig.name}</span>
         </div>
       </footer>

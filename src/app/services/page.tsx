@@ -11,11 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     getPublicServices(),
   ]);
 
-  const publishedCount = services.filter(
-    (service) => !service.id.startsWith("fallback-"),
-  ).length;
-
-  return buildServicesListMetadata(settings, publishedCount);
+  return buildServicesListMetadata(settings, services);
 }
 
 export default function ServicesPage() {

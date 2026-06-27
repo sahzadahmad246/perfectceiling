@@ -6,7 +6,7 @@ export type AdminFormDraft<TForm> = {
 
 const STORAGE_PREFIX = "perfect-ceiling:draft";
 
-export type AdminFormDraftScope = "project" | "service";
+export type AdminFormDraftScope = "blog" | "project" | "service";
 
 function isBrowser() {
   return typeof window !== "undefined";

@@ -3,6 +3,15 @@ import type { Metadata } from "next";
 import type { PublicBusinessSettings } from "@/lib/business-settings";
 import type { PublicService } from "@/lib/public-content";
 import {
+  buildBreadcrumbListNode,
+  buildLocalBusinessNode,
+  buildPublicPageMetadata,
+  buildWebSiteNode,
+  collectPreviewImageUrls,
+  resolveSeoImageUrls,
+  toAbsoluteImageUrls,
+} from "@/lib/seo";
+import {
   formatServiceRate,
   getServiceGalleryImages,
   getServicePublicPath,
@@ -26,23 +35,6 @@ export function getServicesListUrl() {
   return `${siteConfig.url}/services`;
 }
 
-function toAbsoluteUrl(url: string) {
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
-  }
-
-  return `${siteConfig.url}${url.startsWith("/") ? url : `/${url}`}`;
-}
-
-function buildOpenGraphImages(images: string[], alt: string) {
-  return images.slice(0, 4).map((url) => ({
-    url: toAbsoluteUrl(url),
-    alt,
-    width: 1200,
-    height: 750,
-  }));
-}
-
 function buildServiceKeywords(
   service: PublicService,
   settings: PublicBusinessSettings,
@@ -64,58 +56,36 @@ function buildServiceKeywords(
 
 export function buildServicesListMetadata(
   settings: PublicBusinessSettings,
-  serviceCount: number,
+  services: PublicService[],
 ): Metadata {
+  const publishedServices = services.filter(
+    (service) => !service.id.startsWith("fallback-"),
+  );
   const title = `Ceiling Services in ${settings.city}`;
-  const description = `Explore ${serviceCount > 0 ? `${serviceCount} ` : ""}POP false ceiling, PVC, gypsum, wooden ceiling, and repair services from ${settings.businessName} in ${settings.city}. View prices, photos, and request a measured quotation.`;
-  const pageUrl = getServicesListUrl();
-  const keywords = [
-    "ceiling services",
-    "POP false ceiling",
-    "PVC ceiling",
-    "gypsum ceiling",
-    "wooden ceiling",
-    "ceiling repair",
-    settings.city,
-    settings.businessName,
-  ];
+  const description = `Explore ${publishedServices.length > 0 ? `${publishedServices.length} ` : ""}POP false ceiling, PVC, gypsum, wooden ceiling, and repair services from ${settings.businessName} in ${settings.city}. View prices, photos, and request a measured quotation.`;
+  const previewImages = collectPreviewImageUrls(publishedServices, {
+    limit: 4,
+    fallbackLogo: settings.logoUrl,
+  });
 
-  return {
+  return buildPublicPageMetadata({
     title,
     description,
-    keywords,
-    alternates: {
-      canonical: pageUrl,
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-        "max-video-preview": -1,
-      },
-    },
-    openGraph: {
-      title: `${title} | ${settings.businessName}`,
-      description,
-      url: pageUrl,
-      siteName: settings.businessName,
-      locale: "en_IN",
-      type: "website",
-      images: settings.logoUrl
-        ? buildOpenGraphImages([settings.logoUrl], settings.businessName)
-        : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} | ${settings.businessName}`,
-      description,
-      images: settings.logoUrl ? [toAbsoluteUrl(settings.logoUrl)] : undefined,
-    },
-  };
+    url: getServicesListUrl(),
+    settings,
+    keywords: [
+      "ceiling services",
+      "POP false ceiling",
+      "PVC ceiling",
+      "gypsum ceiling",
+      "wooden ceiling",
+      "ceiling repair",
+      settings.city,
+      settings.businessName,
+    ],
+    images: previewImages,
+    imageAlt: `Ceiling services in ${settings.city}`,
+  });
 }
 
 export function buildServiceDetailMetadata(
@@ -124,69 +94,28 @@ export function buildServiceDetailMetadata(
 ): Metadata {
   const title = getServiceSeoTitle(service);
   const description = getServiceSeoDescription(service);
-  const pageUrl = getServicePageUrl(service.slug);
   const galleryImages = getServiceGalleryImages(
     service.featuredImageUrl,
     service.content,
   );
-  const images = galleryImages.map((image) => image.url);
-  const ogImages = buildOpenGraphImages(
-    images.length > 0 ? images : service.imageUrl ? [service.imageUrl] : [],
-    title,
-  );
+  const images = resolveSeoImageUrls({
+    featuredUrls: [service.featuredImageUrl, service.imageUrl],
+    galleryUrls: galleryImages.map((image) => image.url),
+    content: service.content,
+    fallbackLogo: settings.logoUrl,
+  });
 
-  return {
+  return buildPublicPageMetadata({
     title,
     description,
+    url: getServicePageUrl(service.slug),
+    settings,
     keywords: buildServiceKeywords(service, settings),
-    alternates: {
-      canonical: pageUrl,
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-        "max-video-preview": -1,
-      },
-    },
-    openGraph: {
-      title,
-      description,
-      url: pageUrl,
-      siteName: settings.businessName,
-      locale: "en_IN",
-      type: "article",
-      images: ogImages.length > 0 ? ogImages : undefined,
-    },
-    twitter: {
-      card: ogImages.length > 0 ? "summary_large_image" : "summary",
-      title,
-      description,
-      images: ogImages.length > 0 ? ogImages.map((image) => image.url) : undefined,
-    },
-  };
-}
-
-function buildLocalBusinessNode(settings: PublicBusinessSettings) {
-  return {
-    "@type": "LocalBusiness",
-    "@id": `${siteConfig.url}/#business`,
-    name: settings.businessName,
-    url: siteConfig.url,
-    telephone: settings.phone,
-    email: settings.email,
-    image: settings.logoUrl ? toAbsoluteUrl(settings.logoUrl) : undefined,
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: settings.city,
-      addressCountry: "IN",
-    },
-    areaServed: settings.city,
-  };
+    images,
+    imageAlt: title,
+    openGraphType: "article",
+    modifiedTime: service.updatedAt ?? undefined,
+  });
 }
 
 export function buildServicesListJsonLd(
@@ -200,13 +129,13 @@ export function buildServicesListJsonLd(
 
   return [
     buildLocalBusinessNode(settings),
+    buildWebSiteNode(settings),
     {
       "@type": "WebPage",
       "@id": `${pageUrl}#webpage`,
       url: pageUrl,
       name: `Ceiling Services in ${settings.city}`,
-      description: buildServicesListMetadata(settings, publishedServices.length)
-        .description as string,
+      description: buildServicesListMetadata(settings, services).description as string,
       isPartOf: {
         "@id": `${siteConfig.url}/#website`,
       },
@@ -215,24 +144,10 @@ export function buildServicesListJsonLd(
       },
       inLanguage: "en-IN",
     },
-    {
-      "@type": "BreadcrumbList",
-      "@id": `${pageUrl}#breadcrumb`,
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: siteConfig.url,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Services",
-          item: pageUrl,
-        },
-      ],
-    },
+    buildBreadcrumbListNode(pageUrl, [
+      { name: "Home", item: siteConfig.url },
+      { name: "Services", item: pageUrl },
+    ]),
     {
       "@type": "ItemList",
       "@id": `${pageUrl}#itemlist`,
@@ -259,9 +174,14 @@ export function buildServiceDetailJsonLd(
     service.featuredImageUrl,
     service.content,
   );
-  const images = galleryImages.map((image) => image.url);
-  const absoluteImages = (images.length > 0 ? images : service.imageUrl ? [service.imageUrl] : [])
-    .map((url) => toAbsoluteUrl(url));
+  const absoluteImages = toAbsoluteImageUrls(
+    resolveSeoImageUrls({
+      featuredUrls: [service.featuredImageUrl, service.imageUrl],
+      galleryUrls: galleryImages.map((image) => image.url),
+      content: service.content,
+      fallbackLogo: settings.logoUrl,
+    }),
+  );
 
   const serviceNode: Record<string, unknown> = {
     "@type": "Service",
@@ -290,16 +210,7 @@ export function buildServiceDetailJsonLd(
 
   return [
     buildLocalBusinessNode(settings),
-    {
-      "@type": "WebSite",
-      "@id": `${siteConfig.url}/#website`,
-      url: siteConfig.url,
-      name: settings.businessName,
-      publisher: {
-        "@id": `${siteConfig.url}/#business`,
-      },
-      inLanguage: "en-IN",
-    },
+    buildWebSiteNode(settings),
     {
       "@type": "WebPage",
       "@id": `${pageUrl}#webpage`,
@@ -326,30 +237,11 @@ export function buildServiceDetailJsonLd(
       dateModified: service.updatedAt ?? undefined,
       inLanguage: "en-IN",
     },
-    {
-      "@type": "BreadcrumbList",
-      "@id": `${pageUrl}#breadcrumb`,
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Home",
-          item: siteConfig.url,
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Services",
-          item: getServicesListUrl(),
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          name: service.title,
-          item: pageUrl,
-        },
-      ],
-    },
+    buildBreadcrumbListNode(pageUrl, [
+      { name: "Home", item: siteConfig.url },
+      { name: "Services", item: getServicesListUrl() },
+      { name: service.title, item: pageUrl },
+    ]),
     serviceNode,
   ];
 }

@@ -448,6 +448,111 @@ export function CustomerDetailSkeleton() {
   );
 }
 
+function ServiceCardSkeleton() {
+  return (
+    <article className="flex overflow-hidden rounded-2xl border border-border-soft bg-surface-raised">
+      <Skeleton className="h-[6.25rem] w-[6.25rem] shrink-0 rounded-none" />
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <Skeleton className="h-4 w-[68%]" />
+            <Skeleton className="size-8 shrink-0 rounded-full" />
+          </div>
+          <Skeleton className="mt-2 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-24" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3 w-[72%]" />
+          <Skeleton className="h-5 w-12 shrink-0 rounded-full" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProjectCardSkeleton() {
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border-soft bg-surface-raised">
+      <Skeleton className="aspect-[16/10] w-full rounded-none" />
+      <div className="flex items-start gap-3 p-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-14 rounded-full" />
+          </div>
+          <Skeleton className="mt-2 h-5 w-[78%]" />
+          <Skeleton className="mt-2 h-4 w-32" />
+          <Skeleton className="mt-2 h-4 w-full" />
+        </div>
+        <Skeleton className="size-8 shrink-0 rounded-full" />
+      </div>
+    </article>
+  );
+}
+
+function BlogCardSkeleton() {
+  return <ServiceCardSkeleton />;
+}
+
+function SettingsFieldSkeleton() {
+  return (
+    <div className="rounded-xl border border-border-soft bg-surface-raised/50 p-4">
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="mt-3 h-11 w-full rounded-md" />
+    </div>
+  );
+}
+
+export function ServicesPageSkeleton() {
+  return (
+    <div aria-busy aria-label="Loading services">
+      <AdminDetailHeaderSkeleton withActions />
+      <SearchFieldSkeleton />
+      <ListCardsSkeleton Card={ServiceCardSkeleton} count={4} />
+    </div>
+  );
+}
+
+export function ProjectsPageSkeleton() {
+  return (
+    <div aria-busy aria-label="Loading projects">
+      <AdminDetailHeaderSkeleton withActions />
+      <SearchFieldSkeleton />
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <ProjectCardSkeleton key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function BlogPageSkeleton() {
+  return (
+    <div aria-busy aria-label="Loading blog posts">
+      <AdminDetailHeaderSkeleton withActions />
+      <SearchFieldSkeleton />
+      <ListCardsSkeleton Card={BlogCardSkeleton} count={4} />
+    </div>
+  );
+}
+
+export function SettingsPageSkeleton() {
+  return (
+    <div aria-busy aria-label="Loading settings">
+      <section className="mt-3">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="mt-2 h-4 w-56" />
+      </section>
+      <div className="mt-6 space-y-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <SettingsFieldSkeleton key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AdminHomeSkeleton() {
   return (
     <div aria-busy aria-label="Loading dashboard">

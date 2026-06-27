@@ -28,7 +28,8 @@ export function AdminHeader({
   const isSettingsPage = pathname === "/admin/settings";
   const isSecondaryAdminPage =
     pathname.startsWith("/admin/services") ||
-    pathname.startsWith("/admin/projects");
+    pathname.startsWith("/admin/projects") ||
+    pathname.startsWith("/admin/blog");
 
   if (isAdminDocumentDetailPage(pathname) || isSecondaryAdminPage) {
     return null;
