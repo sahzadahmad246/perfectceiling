@@ -50,7 +50,7 @@ export function ServiceContentEditorModal({
 
   return (
     <div className="fixed inset-0 z-[10000] flex justify-center bg-background/80 backdrop-blur-sm">
-      <div className="flex h-full w-full max-w-[560px] flex-col border-x border-border-soft bg-surface shadow-popover">
+      <div className="service-content-editor-modal flex h-full w-full max-w-[560px] flex-col border-x border-border-soft bg-surface shadow-popover">
         <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-border-soft bg-surface px-4 py-3 sm:px-8">
           <div>
             <p className="text-xs text-muted">Page content</p>
@@ -78,7 +78,7 @@ export function ServiceContentEditorModal({
           />
         </div>
 
-        <footer className="shrink-0 border-t border-border-soft bg-surface px-4 py-3 sm:px-8">
+        <footer className="service-content-editor-footer relative z-20 shrink-0 border-t border-border-soft bg-surface px-4 py-3 sm:px-8">
           <div className="flex gap-2">
             <button
               className="h-11 flex-1 rounded-full border border-border-strong text-sm font-medium"
