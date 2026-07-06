@@ -9,7 +9,10 @@ function getFileNameFromDisposition(header: string | null) {
 }
 
 export async function downloadInvoicePdf(invoiceId: string) {
-  const response = await fetch(`/admin/invoices/${invoiceId}/pdf`);
+  const response = await fetch(
+    `/admin/invoices/${invoiceId}/pdf?_=${Date.now()}`,
+    { cache: "no-store" },
+  );
 
   if (!response.ok) {
     throw new Error("Could not download invoice PDF.");

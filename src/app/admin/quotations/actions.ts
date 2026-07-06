@@ -1055,6 +1055,7 @@ export async function createQuotation(
 
       revalidatePath("/admin/quotations");
       revalidatePath(`/admin/quotations/${draftId}`);
+      revalidatePath(`/admin/quotations/${draftId}/pdf`);
 
       return { success: true, id: draftId };
     }
@@ -1112,6 +1113,7 @@ export async function createQuotation(
 
     revalidatePath("/admin/quotations");
     revalidatePath(`/admin/quotations/${quotation.id}`);
+    revalidatePath(`/admin/quotations/${quotation.id}/pdf`);
 
     return { success: true, id: quotation.id };
   } catch (error) {
@@ -1217,6 +1219,7 @@ export async function updateQuotation(
 
     revalidatePath("/admin/quotations");
     revalidatePath(`/admin/quotations/${id}`);
+    revalidatePath(`/admin/quotations/${id}/pdf`);
 
     return { success: true, id };
   } catch (error) {
@@ -1270,6 +1273,7 @@ export async function updateQuotationStatus(
 
     revalidatePath("/admin/quotations");
     revalidatePath(`/admin/quotations/${id}`);
+    revalidatePath(`/admin/quotations/${id}/pdf`);
 
     return { success: true, id };
   } catch (error) {

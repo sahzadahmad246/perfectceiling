@@ -1,6 +1,8 @@
 import { getAdminClient } from "@/lib/auth/admin";
 import { generateQuotationPdf } from "@/lib/quotation-pdf/generate";
 
+export const dynamic = "force-dynamic";
+
 type QuotationPdfRouteProps = {
   params: Promise<{
     id: string;
@@ -25,7 +27,8 @@ export async function GET(_request: Request, { params }: QuotationPdfRouteProps)
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${pdf.fileName}"`,
-      "Cache-Control": "no-store",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
     },
   });
 }

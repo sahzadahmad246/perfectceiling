@@ -9,7 +9,10 @@ function getFileNameFromDisposition(header: string | null) {
 }
 
 export async function downloadQuotationPdf(quotationId: string) {
-  const response = await fetch(`/admin/quotations/${quotationId}/pdf`);
+  const response = await fetch(
+    `/admin/quotations/${quotationId}/pdf?_=${Date.now()}`,
+    { cache: "no-store" },
+  );
 
   if (!response.ok) {
     throw new Error("Could not download quotation PDF.");

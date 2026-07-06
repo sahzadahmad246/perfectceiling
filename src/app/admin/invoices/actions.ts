@@ -548,6 +548,7 @@ export async function createInvoice(
 
     revalidatePath("/admin/invoices");
     revalidatePath(`/admin/invoices/${invoice.id}`);
+    revalidatePath(`/admin/invoices/${invoice.id}/pdf`);
 
     return { success: true, id: invoice.id };
   } catch (error) {
@@ -660,6 +661,7 @@ export async function updateInvoice(
 
     revalidatePath("/admin/invoices");
     revalidatePath(`/admin/invoices/${id}`);
+    revalidatePath(`/admin/invoices/${id}/pdf`);
 
     return { success: true, id };
   } catch (error) {
@@ -773,6 +775,7 @@ export async function recordPayment(
 
     revalidatePath("/admin/invoices");
     revalidatePath(`/admin/invoices/${invoiceId}`);
+    revalidatePath(`/admin/invoices/${invoiceId}/pdf`);
 
     return { success: true, id: payment.id };
   } catch (error) {
@@ -848,6 +851,7 @@ export async function deletePayment(
 
     revalidatePath("/admin/invoices");
     revalidatePath(`/admin/invoices/${invoiceId}`);
+    revalidatePath(`/admin/invoices/${invoiceId}/pdf`);
 
     return { success: true, id: paymentId };
   } catch (error) {
