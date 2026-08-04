@@ -35,6 +35,7 @@ export type QuotationPdfPayload = {
   customerAddress: string;
   customerNotes: string;
   items: QuotationPdfItem[];
+  showTotals: boolean;
   subtotalLabel: string;
   discountLabel: string | null;
   discountAmountLabel: string | null;

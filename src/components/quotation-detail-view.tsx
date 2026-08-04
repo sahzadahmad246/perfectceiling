@@ -20,6 +20,7 @@ import {
 import {
   formatCurrency,
   formatDiscountLabel,
+  formatRateOnlyItemLabel,
   formatQuotationDate,
   formatUnitType,
   getQuotationDiscountDisplay,
@@ -106,6 +107,7 @@ export function QuotationDetailView({
             {quotation.items.map((item, index) => {
               const { description } = parseQuotationItemNotes(item.notes);
               const isLumpSum = item.unitType === "lump_sum";
+              const isRateOnly = item.isRateOnly;
 
               return (
                 <li key={item.id}>
@@ -125,10 +127,12 @@ export function QuotationDetailView({
                     <span className="text-muted">
                       {isLumpSum
                         ? "Lump sum"
+                        : isRateOnly
+                          ? formatRateOnlyItemLabel(item)
                         : `${item.quantity} ${formatUnitType(item.unitType)} × ${formatCurrency(item.rate)}`}
                     </span>
                     <span className="shrink-0 font-medium text-foreground">
-                      {formatCurrency(item.amount)}
+                      {isRateOnly ? "Rate only" : formatCurrency(item.amount)}
                     </span>
                   </div>
 

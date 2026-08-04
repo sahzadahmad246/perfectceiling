@@ -23,6 +23,7 @@ import {
   calculateLineItemAmount,
   formatCurrency,
   formatDiscountLabel,
+  formatRateOnlyItemLabel,
   formatQuotationDate,
   formatUnitType,
   getInvoicePaymentStatusStyle,
@@ -171,6 +172,7 @@ export function InvoicePreviewStep({
           <ul>
             {savedItems.map((item, index) => {
               const isLumpSum = item.isLumpSum || item.unitType === "lump_sum";
+              const isRateOnly = item.isRateOnly;
 
               return (
                 <li key={item.id}>
@@ -192,10 +194,14 @@ export function InvoicePreviewStep({
                         <span className="text-muted">
                           {isLumpSum
                             ? "Lump sum"
+                            : isRateOnly
+                              ? formatRateOnlyItemLabel(item)
                             : `${item.quantity} ${formatUnitType(item.unitType)} × ${formatCurrency(Number(item.rate) || 0)}`}
                         </span>
                         <span className="shrink-0 font-medium text-foreground">
-                          {formatCurrency(calculateLineItemAmount(item))}
+                          {isRateOnly
+                            ? "Rate only"
+                            : formatCurrency(calculateLineItemAmount(item))}
                         </span>
                       </div>
                     </div>

@@ -23,6 +23,7 @@ export type InvoicePdfPayload = {
   customerAddress: string;
   customerNotes: string;
   items: InvoicePdfItem[];
+  showTotals: boolean;
   subtotalLabel: string;
   discountLabel: string | null;
   discountAmountLabel: string | null;

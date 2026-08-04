@@ -23,6 +23,7 @@ import {
   calculateLineItemAmount,
   formatCurrency,
   formatDiscountLabel,
+  formatRateOnlyItemLabel,
   formatUnitType,
   hasInvoiceWorkDiscount,
   type InvoiceDiscountType,
@@ -175,10 +176,14 @@ export function InvoiceWorkPricingStep({
                     <p className="mt-2 text-xs text-muted">
                       {item.isLumpSum
                         ? "Lump sum"
+                        : item.isRateOnly
+                          ? formatRateOnlyItemLabel(item)
                         : `${item.quantity} ${formatUnitType(item.unitType)} × ${item.rate}`}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-foreground">
-                      {formatCurrency(calculateLineItemAmount(item))}
+                      {item.isRateOnly
+                        ? "Rate only"
+                        : formatCurrency(calculateLineItemAmount(item))}
                     </p>
                   </div>
 

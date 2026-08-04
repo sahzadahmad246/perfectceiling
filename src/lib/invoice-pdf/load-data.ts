@@ -1,12 +1,14 @@
 import { getInvoiceById } from "@/app/admin/invoices/actions";
 import { requireAdmin } from "@/lib/auth/admin";
 import {
+  formatCustomerName,
   formatDiscountLabel,
   formatQuotationDate,
   formatUnitType,
   getInvoiceDiscountDisplay,
   parseQuotationItemNotes,
 } from "@/lib/invoices";
+import { normalizeCustomerTitle } from "@/lib/quotations";
 import { siteConfig } from "@/lib/site";
 import { parseTerms } from "@/lib/terms";
 
@@ -49,6 +51,9 @@ export async function loadInvoicePdfPayload(
   const items = invoice.items.map((item) => {
     const { description, notes } = parseQuotationItemNotes(item.notes);
     const isLumpSum = item.unitType === "lump_sum";
+    const isRateOnly = item.isRateOnly;
+    const unitLabel = formatUnitType(item.unitType);
+    const rateLabel = `${formatCurrencyForPdf(item.rate)} / ${unitLabel}`;
 
     return {
       name: item.description,
@@ -56,14 +61,28 @@ export async function loadInvoicePdfPayload(
       notes,
       quantityLabel: isLumpSum
         ? "Lump sum"
-        : `${item.quantity} ${formatUnitType(item.unitType)} × ${formatCurrencyForPdf(item.rate)}`,
-      amountLabel: formatCurrencyForPdf(item.amount),
+        : isRateOnly
+          ? item.quantity > 0
+            ? `Approx. ${item.quantity} ${unitLabel} × ${rateLabel}`
+            : rateLabel
+          : `${item.quantity} ${unitLabel} × ${formatCurrencyForPdf(item.rate)}`,
+      amountLabel: isRateOnly ? "Rate only" : formatCurrencyForPdf(item.amount),
     };
   });
 
   const workTitle = invoice.workTitle?.trim() || invoice.invoiceNumber;
-  const customerName = customer?.name?.trim() || "Customer";
-  const customerFirstName = customerName.split(/\s+/)[0] || customerName;
+  const customerName = customer
+    ? formatCustomerName({
+        title: customer.title,
+        name: customer.name,
+      }) || "Customer"
+    : "Customer";
+  const customerFirstName =
+    customer?.name?.trim().split(/\s+/)[0] || customerName;
+  const customerTitle = normalizeCustomerTitle(customer?.title);
+  const workSubtitleHonorific = customerTitle
+    ? `${customerTitle} ${customerFirstName}`
+    : customerFirstName;
 
   const payments = [...invoice.payments]
     .sort(
@@ -80,7 +99,7 @@ export async function loadInvoicePdfPayload(
   return {
     invoiceNumber: invoice.invoiceNumber,
     workTitle,
-    workSubtitle: `${workTitle} of Mr ${customerFirstName}`,
+    workSubtitle: `${workTitle} of ${workSubtitleHonorific}`,
     dateLabel: formatQuotationDate(invoice.invoiceDate),
     dueDateLabel: invoice.dueDate
       ? formatQuotationDate(invoice.dueDate)
@@ -90,6 +109,11 @@ export async function loadInvoicePdfPayload(
     customerAddress,
     customerNotes: customer?.notes?.trim() ?? "",
     items,
+    showTotals:
+      invoice.grandTotal > 0 ||
+      invoice.subtotal > 0 ||
+      invoice.paidAmount > 0 ||
+      invoice.balanceAmount > 0,
     subtotalLabel: formatCurrencyForPdf(invoice.subtotal),
     discountLabel: hasDiscount
       ? `Discount (${formatDiscountLabel(discountType, discountInput)})`

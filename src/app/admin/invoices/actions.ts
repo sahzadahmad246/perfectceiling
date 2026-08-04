@@ -10,6 +10,7 @@ import {
   calculateDiscountAmount,
   calculateGrandTotal,
   calculateLineItemAmount,
+  formatCustomerName,
   invoiceDetailToDraft,
   parseNumber,
   quotationDetailToInvoiceDraft,
@@ -22,6 +23,7 @@ import {
   type InvoicePaymentStatus,
   type InvoiceUnitType,
 } from "@/lib/invoices";
+import { normalizeCustomerTitle } from "@/lib/quotations";
 
 export type InvoiceDefaults = {
   invoiceTerms: string;
@@ -62,6 +64,7 @@ function buildItemRows(invoiceId: string, items: InvoiceLineItemDraft[]) {
 
   return validItems.map((item, index) => {
     const amount = calculateLineItemAmount(item);
+    const isRateOnly = Boolean(item.isRateOnly);
     const unitType = item.isLumpSum ? "lump_sum" : item.unitType;
 
     return {
@@ -72,6 +75,7 @@ function buildItemRows(invoiceId: string, items: InvoiceLineItemDraft[]) {
       quantity: item.isLumpSum ? 1 : parseNumber(item.quantity),
       rate: item.isLumpSum ? amount : parseNumber(item.rate),
       amount,
+      is_rate_only: isRateOnly,
       notes:
         [item.description.trim(), item.notes.trim()]
           .filter(Boolean)
@@ -111,6 +115,7 @@ function validateInvoiceInput(input: CreateInvoiceInput) {
   }
 
   const customerName = input.customer.name.trim();
+  const customerTitle = normalizeCustomerTitle(input.customer.title);
   const customerPhone = customerValidation.formattedPhone!;
   const customerAddress = input.customer.address.trim();
 
@@ -122,6 +127,17 @@ function validateInvoiceInput(input: CreateInvoiceInput) {
 
   for (const item of validItems) {
     const amount = calculateLineItemAmount(item);
+
+    if (item.isRateOnly) {
+      if (!parseNumber(item.rate)) {
+        return {
+          success: false as const,
+          error: `Item "${item.name.trim()}" needs a valid rate.`,
+        };
+      }
+
+      continue;
+    }
 
     if (amount <= 0) {
       return {
@@ -179,6 +195,7 @@ function validateInvoiceInput(input: CreateInvoiceInput) {
     success: true as const,
     validItems,
     customerName,
+    customerTitle,
     customerPhone,
     customerAddress,
   };
@@ -223,6 +240,7 @@ export async function listInvoices(): Promise<InvoiceListItem[]> {
       updated_at,
       quotation_id,
       customers (
+        title,
         name,
         phone,
         address,
@@ -263,7 +281,12 @@ export async function listInvoices(): Promise<InvoiceListItem[]> {
       dueDate: row.due_date,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      customerName: customer?.name ?? "Unknown customer",
+      customerName: customer
+        ? formatCustomerName({
+            title: customer.title,
+            name: customer.name,
+          })
+        : "Unknown customer",
       customerPhone: customer?.phone ?? "",
       customerAddress,
       quotationId: row.quotation_id,
@@ -299,6 +322,7 @@ function mapInvoiceDetail(
     quantity: number;
     rate: number;
     amount: number;
+    is_rate_only: boolean | null;
     notes: string | null;
     sort_order: number;
   }>,
@@ -330,6 +354,7 @@ function mapInvoiceDetail(
     notes: data.notes,
     customer: customer
       ? {
+          title: customer.title ?? null,
           name: customer.name,
           phone: customer.phone,
           whatsapp: customer.whatsapp,
@@ -346,6 +371,7 @@ function mapInvoiceDetail(
       quantity: Number(item.quantity),
       rate: Number(item.rate),
       amount: Number(item.amount),
+      isRateOnly: Boolean(item.is_rate_only),
       notes: item.notes,
       sortOrder: item.sort_order,
     })),
@@ -376,6 +402,7 @@ export async function getInvoiceById(id: string): Promise<InvoiceDetail | null> 
       payment_status,
       notes,
       customers (
+        title,
         name,
         phone,
         whatsapp,
@@ -405,7 +432,7 @@ export async function getInvoiceById(id: string): Promise<InvoiceDetail | null> 
       supabase
         .from("invoice_items")
         .select(
-          "id, description, unit_type, quantity, rate, amount, notes, sort_order",
+          "id, description, unit_type, quantity, rate, amount, is_rate_only, notes, sort_order",
         )
         .eq("invoice_id", id)
         .order("sort_order", { ascending: true }),
@@ -476,7 +503,13 @@ export async function createInvoice(
     return validation;
   }
 
-  const { validItems, customerName, customerPhone, customerAddress } = validation;
+  const {
+    validItems,
+    customerName,
+    customerTitle,
+    customerPhone,
+    customerAddress,
+  } = validation;
 
   try {
     const { supabase, user } = await requireAdmin();
@@ -497,6 +530,7 @@ export async function createInvoice(
     const { data: customer, error: customerError } = await supabase
       .from("customers")
       .insert({
+        title: customerTitle || null,
         name: customerName,
         phone: customerPhone,
         whatsapp: input.customer.whatsapp.trim() || null,
@@ -569,7 +603,13 @@ export async function updateInvoice(
     return validation;
   }
 
-  const { validItems, customerName, customerPhone, customerAddress } = validation;
+  const {
+    validItems,
+    customerName,
+    customerTitle,
+    customerPhone,
+    customerAddress,
+  } = validation;
 
   try {
     const { supabase } = await requireAdmin();
@@ -592,6 +632,7 @@ export async function updateInvoice(
       const { error: customerError } = await supabase
         .from("customers")
         .update({
+          title: customerTitle || null,
           name: customerName,
           phone: customerPhone,
           whatsapp: input.customer.whatsapp.trim() || null,

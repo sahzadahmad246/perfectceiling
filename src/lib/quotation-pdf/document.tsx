@@ -512,24 +512,26 @@ export function QuotationPdfDocument({ data }: { data: QuotationPdfPayload }) {
             ))}
           </View>
 
-          <View style={styles.totalsCard}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalRowMuted}>Subtotal</Text>
-              <Text>{data.subtotalLabel}</Text>
-            </View>
-            {data.discountLabel && data.discountAmountLabel ? (
+          {data.showTotals ? (
+            <View style={styles.totalsCard}>
               <View style={styles.totalRow}>
-                <Text style={styles.totalRowDiscount}>{data.discountLabel}</Text>
-                <Text style={styles.totalRowDiscount}>
-                  {data.discountAmountLabel}
-                </Text>
+                <Text style={styles.totalRowMuted}>Subtotal</Text>
+                <Text>{data.subtotalLabel}</Text>
               </View>
-            ) : null}
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>Grand total</Text>
-              <Text style={styles.grandTotalValue}>{data.grandTotalLabel}</Text>
+              {data.discountLabel && data.discountAmountLabel ? (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalRowDiscount}>{data.discountLabel}</Text>
+                  <Text style={styles.totalRowDiscount}>
+                    {data.discountAmountLabel}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={styles.grandTotalRow}>
+                <Text style={styles.grandTotalLabel}>Grand total</Text>
+                <Text style={styles.grandTotalValue}>{data.grandTotalLabel}</Text>
+              </View>
             </View>
-          </View>
+          ) : null}
         </View>
 
         <NotesSection notes={data.customerNotes} />

@@ -40,6 +40,7 @@ type InvoiceCreateModalProps = {
 };
 
 const emptyCustomer = (): InvoiceCustomerDraft => ({
+  title: "",
   name: "",
   phone: "",
   whatsapp: "",
@@ -179,6 +180,15 @@ export function InvoiceCreateModal({
       setItemsError(undefined);
 
       for (const item of validItems) {
+        if (item.isRateOnly) {
+          if (!item.rate.trim() || Number.parseFloat(item.rate) <= 0) {
+            toast.error(`"${item.name.trim()}" needs a valid rate.`);
+            return false;
+          }
+
+          continue;
+        }
+
         const amount = calculateLineItemAmount(item);
 
         if (amount <= 0) {

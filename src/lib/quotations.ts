@@ -37,6 +37,17 @@ export type QuotationLineItemImageDraft = {
   fileName?: string;
 };
 
+export const CUSTOMER_TITLE_OPTIONS = [
+  { value: "", label: "No title" },
+  { value: "Mr.", label: "Mr." },
+  { value: "Mrs.", label: "Mrs." },
+  { value: "Ms.", label: "Ms." },
+  { value: "Dr.", label: "Dr." },
+  { value: "M/s", label: "M/s" },
+] as const;
+
+export type CustomerTitle = (typeof CUSTOMER_TITLE_OPTIONS)[number]["value"];
+
 export type QuotationLineItemDraft = {
   id: string;
   name: string;
@@ -47,10 +58,12 @@ export type QuotationLineItemDraft = {
   amount: string;
   notes: string;
   isLumpSum: boolean;
+  isRateOnly: boolean;
   images: QuotationLineItemImageDraft[];
 };
 
 export type QuotationCustomerDraft = {
+  title: string;
   name: string;
   phone: string;
   whatsapp: string;
@@ -180,6 +193,7 @@ export type QuotationDetail = {
   terms: string | null;
   status: string;
   customer: {
+    title: string | null;
     name: string;
     phone: string;
     whatsapp: string | null;
@@ -196,6 +210,7 @@ export type QuotationDetail = {
     rate: number;
     amount: number;
     notes: string | null;
+    isRateOnly: boolean;
     sortOrder: number;
     images: QuotationLineItemImageDraft[];
   }>;
@@ -212,8 +227,27 @@ export function createEmptyLineItem(): QuotationLineItemDraft {
     amount: "",
     notes: "",
     isLumpSum: false,
+    isRateOnly: false,
     images: [],
   };
+}
+
+export function normalizeCustomerTitle(title: string | null | undefined) {
+  const normalized = title?.trim() ?? "";
+
+  return CUSTOMER_TITLE_OPTIONS.some((option) => option.value === normalized)
+    ? normalized
+    : "";
+}
+
+export function formatCustomerName(customer: {
+  title?: string | null;
+  name: string;
+}) {
+  const title = normalizeCustomerTitle(customer.title);
+  const name = customer.name.trim();
+
+  return [title, name].filter(Boolean).join(" ");
 }
 
 export function createEmptyLineItemImage(): QuotationLineItemImageDraft {
@@ -232,6 +266,10 @@ export function parseNumber(value: string) {
 }
 
 export function calculateLineItemAmount(item: QuotationLineItemDraft) {
+  if (item.isRateOnly) {
+    return 0;
+  }
+
   if (item.isLumpSum) {
     return parseNumber(item.amount);
   }
@@ -288,6 +326,7 @@ export function hasDraftContent(
 
   if (
     customer.name.trim() ||
+    customer.title.trim() ||
     customer.phone.trim() ||
     customer.whatsapp.trim() ||
     customer.email.trim() ||
@@ -315,6 +354,7 @@ export function hasDraftContent(
       item.quantity.trim() ||
       item.rate.trim() ||
       item.amount.trim() ||
+      item.isRateOnly ||
       item.images.length > 0,
   );
 }
@@ -387,6 +427,24 @@ export function formatUnitType(unitType: QuotationUnitType, isLumpSum = false) {
   return getUnitLabel(unitType);
 }
 
+export function formatRateOnlyItemLabel(item: {
+  unitType: QuotationUnitType;
+  quantity: string | number;
+  rate: string | number;
+}) {
+  const quantity =
+    typeof item.quantity === "number" ? item.quantity : parseNumber(item.quantity);
+  const rate = typeof item.rate === "number" ? item.rate : parseNumber(item.rate);
+  const unitLabel = formatUnitType(item.unitType);
+  const rateLabel = `${formatCurrency(rate)} / ${unitLabel}`;
+
+  if (quantity > 0) {
+    return `Approx. ${quantity} ${unitLabel} × ${rateLabel}`;
+  }
+
+  return rateLabel;
+}
+
 export function parseQuotationItemNotes(notes: string | null) {
   if (!notes?.trim()) {
     return { description: "", notes: "" };
@@ -411,6 +469,7 @@ export function quotationDetailToDraft(
     detail.items.length > 0
       ? detail.items.map((item) => {
           const isLumpSum = item.unitType === "lump_sum";
+          const isRateOnly = item.isRateOnly;
           const { description, notes } = parseQuotationItemNotes(item.notes);
 
           return {
@@ -418,11 +477,12 @@ export function quotationDetailToDraft(
             name: item.description,
             description,
             unitType: isLumpSum ? "sq_ft" : item.unitType,
-            quantity: isLumpSum ? "" : String(item.quantity),
-            rate: isLumpSum ? "" : String(item.rate),
+            quantity: isLumpSum ? "" : String(item.quantity || ""),
+            rate: isLumpSum ? "" : String(item.rate || ""),
             amount: isLumpSum ? String(item.amount) : "",
             notes,
             isLumpSum,
+            isRateOnly,
             images: item.images ?? [],
           } satisfies QuotationLineItemDraft;
         })
@@ -431,6 +491,7 @@ export function quotationDetailToDraft(
   return {
     customer: {
       name: customer?.name ?? "",
+      title: customer?.title ?? "",
       phone: customer?.phone ?? "",
       whatsapp: customer?.whatsapp ?? "",
       email: customer?.email ?? "",

@@ -3,10 +3,12 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { siteConfig } from "@/lib/site";
 import { parseTerms } from "@/lib/terms";
 import {
+  formatCustomerName,
   formatDiscountLabel,
   formatQuotationDate,
   formatUnitType,
   getQuotationDiscountDisplay,
+  normalizeCustomerTitle,
   parseQuotationItemNotes,
 } from "@/lib/quotations";
 
@@ -67,6 +69,9 @@ export async function loadQuotationPdfPayload(
   const items = quotation.items.map((item) => {
     const { description, notes } = parseQuotationItemNotes(item.notes);
     const isLumpSum = item.unitType === "lump_sum";
+    const isRateOnly = item.isRateOnly;
+    const unitLabel = formatUnitType(item.unitType);
+    const rateLabel = `${formatCurrencyForPdf(item.rate)} / ${unitLabel}`;
 
     return {
       name: item.description,
@@ -74,19 +79,33 @@ export async function loadQuotationPdfPayload(
       notes,
       quantityLabel: isLumpSum
         ? "Lump sum"
-        : `${item.quantity} ${formatUnitType(item.unitType)} × ${formatCurrencyForPdf(item.rate)}`,
-      amountLabel: formatCurrencyForPdf(item.amount),
+        : isRateOnly
+          ? item.quantity > 0
+            ? `Approx. ${item.quantity} ${unitLabel} × ${rateLabel}`
+            : rateLabel
+          : `${item.quantity} ${unitLabel} × ${formatCurrencyForPdf(item.rate)}`,
+      amountLabel: isRateOnly ? "Rate only" : formatCurrencyForPdf(item.amount),
     };
   });
 
   const workTitle = quotation.workTitle?.trim() || quotation.quotationNumber;
-  const customerName = customer?.name?.trim() || "Customer";
-  const customerFirstName = customerName.split(/\s+/)[0] || customerName;
+  const customerName = customer
+    ? formatCustomerName({
+        title: customer.title,
+        name: customer.name,
+      }) || "Customer"
+    : "Customer";
+  const customerFirstName =
+    customer?.name?.trim().split(/\s+/)[0] || customerName;
+  const customerTitle = normalizeCustomerTitle(customer?.title);
+  const workSubtitleHonorific = customerTitle
+    ? `${customerTitle} ${customerFirstName}`
+    : customerFirstName;
 
   return {
     quotationNumber: quotation.quotationNumber,
     workTitle,
-    workSubtitle: `${workTitle} of Mr ${customerFirstName}`,
+    workSubtitle: `${workTitle} of ${workSubtitleHonorific}`,
     dateLabel: formatQuotationDate(quotation.date),
     validUntilLabel: quotation.validUntil
       ? formatQuotationDate(quotation.validUntil)
@@ -96,6 +115,7 @@ export async function loadQuotationPdfPayload(
     customerAddress,
     customerNotes: customer?.notes?.trim() ?? "",
     items,
+    showTotals: quotation.grandTotal > 0 || quotation.subtotal > 0,
     subtotalLabel: formatCurrencyForPdf(quotation.subtotal),
     discountLabel: hasDiscount
       ? `Discount (${formatDiscountLabel(discountType, discountInput)})`

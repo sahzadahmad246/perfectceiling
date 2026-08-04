@@ -2,7 +2,9 @@ import {
   calculateDiscountAmount as calculateQuotationDiscountAmount,
   calculateGrandTotal as calculateQuotationGrandTotal,
   formatCurrency,
+  formatCustomerName,
   formatDiscountLabel,
+  formatRateOnlyItemLabel,
   formatQuotationDate,
   formatUnitType,
   normalizeQuotationDiscountType,
@@ -31,6 +33,7 @@ export type InvoiceLineItemDraft = {
   amount: string;
   notes: string;
   isLumpSum: boolean;
+  isRateOnly: boolean;
 };
 
 export type InvoiceWorkDraft = {
@@ -108,6 +111,7 @@ export type InvoiceDetail = {
   paymentStatus: InvoicePaymentStatus;
   notes: string | null;
   customer: {
+    title: string | null;
     name: string;
     phone: string;
     whatsapp: string | null;
@@ -124,6 +128,7 @@ export type InvoiceDetail = {
     rate: number;
     amount: number;
     notes: string | null;
+    isRateOnly: boolean;
     sortOrder: number;
   }>;
   payments: InvoicePayment[];
@@ -140,6 +145,7 @@ export function createEmptyInvoiceLineItem(): InvoiceLineItemDraft {
     amount: "",
     notes: "",
     isLumpSum: false,
+    isRateOnly: false,
   };
 }
 
@@ -154,6 +160,10 @@ export function defaultInvoiceDueDate(daysFromNow = 30) {
 }
 
 export function calculateLineItemAmount(item: InvoiceLineItemDraft) {
+  if (item.isRateOnly) {
+    return 0;
+  }
+
   if (item.isLumpSum) {
     return parseNumber(item.amount);
   }
@@ -183,7 +193,9 @@ export function calculateGrandTotal(
 
 export {
   formatCurrency,
+  formatCustomerName,
   formatDiscountLabel,
+  formatRateOnlyItemLabel,
   formatQuotationDate,
   formatUnitType,
   parseNumber,
@@ -336,6 +348,7 @@ export function invoiceDetailToDraft(
     detail.items.length > 0
       ? detail.items.map((item) => {
           const isLumpSum = item.unitType === "lump_sum";
+          const isRateOnly = item.isRateOnly;
           const { description, notes } = parseQuotationItemNotes(item.notes);
 
           return {
@@ -343,17 +356,19 @@ export function invoiceDetailToDraft(
             name: item.description,
             description,
             unitType: isLumpSum ? "sq_ft" : item.unitType,
-            quantity: isLumpSum ? "" : String(item.quantity),
-            rate: isLumpSum ? "" : String(item.rate),
+            quantity: isLumpSum ? "" : String(item.quantity || ""),
+            rate: isLumpSum ? "" : String(item.rate || ""),
             amount: isLumpSum ? String(item.amount) : "",
             notes,
             isLumpSum,
+            isRateOnly,
           } satisfies InvoiceLineItemDraft;
         })
       : [];
 
   return {
     customer: {
+      title: customer?.title ?? "",
       name: customer?.name ?? "",
       phone: customer?.phone ?? "",
       whatsapp: customer?.whatsapp ?? "",
@@ -382,6 +397,7 @@ export function quotationDetailToInvoiceDraft(
 
   const items = detail.items.map((item) => {
     const isLumpSum = item.unitType === "lump_sum";
+    const isRateOnly = item.isRateOnly;
     const { description, notes } = parseQuotationItemNotes(item.notes);
 
     return {
@@ -389,16 +405,18 @@ export function quotationDetailToInvoiceDraft(
       name: item.description,
       description,
       unitType: isLumpSum ? "sq_ft" : item.unitType,
-      quantity: isLumpSum ? "" : String(item.quantity),
-      rate: isLumpSum ? "" : String(item.rate),
+      quantity: isLumpSum ? "" : String(item.quantity || ""),
+      rate: isLumpSum ? "" : String(item.rate || ""),
       amount: isLumpSum ? String(item.amount) : "",
       notes,
       isLumpSum,
+      isRateOnly,
     } satisfies InvoiceLineItemDraft;
   });
 
   return {
     customer: {
+      title: customer?.title ?? "",
       name: customer?.name ?? "",
       phone: customer?.phone ?? "",
       whatsapp: customer?.whatsapp ?? "",

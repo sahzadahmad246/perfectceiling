@@ -8,7 +8,9 @@ import {
   calculateDiscountAmount,
   calculateGrandTotal,
   calculateLineItemAmount,
+  formatCustomerName,
   hasDraftContent,
+  normalizeCustomerTitle,
   parseNumber,
   QUOTATION_ADMIN_STATUSES,
   QUOTATION_AUTO_EXPIRE_DAYS,
@@ -146,6 +148,7 @@ function buildItemRows(quotationId: string, items: QuotationLineItemDraft[]) {
 
   return validItems.map((item, index) => {
     const amount = calculateLineItemAmount(item);
+    const isRateOnly = Boolean(item.isRateOnly);
     const unitType = item.isLumpSum ? "lump_sum" : item.unitType;
 
     return {
@@ -156,6 +159,7 @@ function buildItemRows(quotationId: string, items: QuotationLineItemDraft[]) {
       quantity: item.isLumpSum ? 1 : parseNumber(item.quantity),
       rate: item.isLumpSum ? amount : parseNumber(item.rate),
       amount,
+      is_rate_only: isRateOnly,
       notes:
         [item.description.trim(), item.notes.trim()]
           .filter(Boolean)
@@ -413,6 +417,7 @@ export async function listQuotations(): Promise<QuotationListItem[]> {
       created_at,
       updated_at,
       customers (
+        title,
         name,
         phone,
         address,
@@ -445,7 +450,12 @@ export async function listQuotations(): Promise<QuotationListItem[]> {
       date: row.date,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      customerName: customer?.name ?? "Unknown customer",
+      customerName: customer
+        ? formatCustomerName({
+            title: customer.title,
+            name: customer.name,
+          })
+        : "Unknown customer",
       customerPhone: customer?.phone ?? "",
       customerAddress,
     };
@@ -478,6 +488,7 @@ export async function getQuotationById(id: string): Promise<QuotationDetail | nu
       terms,
       status,
       customers (
+        title,
         name,
         phone,
         whatsapp,
@@ -509,6 +520,7 @@ export async function getQuotationById(id: string): Promise<QuotationDetail | nu
       quantity,
       rate,
       amount,
+      is_rate_only,
       notes,
       sort_order,
       quotation_item_images (
@@ -547,6 +559,7 @@ export async function getQuotationById(id: string): Promise<QuotationDetail | nu
     customer: customer
       ? {
           name: customer.name,
+          title: customer.title,
           phone: customer.phone,
           whatsapp: customer.whatsapp,
           email: customer.email,
@@ -570,6 +583,7 @@ export async function getQuotationById(id: string): Promise<QuotationDetail | nu
         rate: Number(item.rate),
         amount: Number(item.amount),
         notes: item.notes,
+        isRateOnly: Boolean(item.is_rate_only),
         sortOrder: item.sort_order,
         images: mapStoredImages(itemImages),
       };
@@ -591,6 +605,7 @@ function validateQuotationInput(input: CreateQuotationInput) {
   }
 
   const customerName = input.customer.name.trim();
+  const customerTitle = normalizeCustomerTitle(input.customer.title);
   const customerPhone = customerValidation.formattedPhone!;
   const customerAddress = input.customer.address.trim();
 
@@ -602,6 +617,17 @@ function validateQuotationInput(input: CreateQuotationInput) {
 
   for (const item of validItems) {
     const amount = calculateLineItemAmount(item);
+
+    if (item.isRateOnly) {
+      if (!parseNumber(item.rate)) {
+        return {
+          success: false as const,
+          error: `Item "${item.name.trim()}" needs a valid rate.`,
+        };
+      }
+
+      continue;
+    }
 
     if (amount <= 0) {
       return {
@@ -628,6 +654,7 @@ function validateQuotationInput(input: CreateQuotationInput) {
     success: true as const,
     validItems,
     customerName,
+    customerTitle,
     customerPhone,
     customerAddress,
   };
@@ -741,6 +768,7 @@ export async function saveQuotationDraft(
     const { validItems, subtotal, discountType, discountValue, grandTotal } =
       calculateWorkTotals(input.work, input.work.items);
     const customerName = input.customer.name.trim() || "Draft customer";
+    const customerTitle = normalizeCustomerTitle(input.customer.title);
     const customerPhone = input.customer.phone.trim() || "0000000000";
 
     if (draftId) {
@@ -765,6 +793,7 @@ export async function saveQuotationDraft(
           .from("customers")
           .update({
             name: customerName,
+            title: customerTitle || null,
             phone: customerPhone,
             whatsapp: input.customer.whatsapp.trim() || null,
             email: input.customer.email.trim() || null,
@@ -778,6 +807,7 @@ export async function saveQuotationDraft(
           .from("customers")
           .insert({
             name: customerName,
+            title: customerTitle || null,
             phone: customerPhone,
             whatsapp: input.customer.whatsapp.trim() || null,
             email: input.customer.email.trim() || null,
@@ -832,6 +862,7 @@ export async function saveQuotationDraft(
       .from("customers")
       .insert({
         name: customerName,
+        title: customerTitle || null,
         phone: customerPhone,
         whatsapp: input.customer.whatsapp.trim() || null,
         email: input.customer.email.trim() || null,
@@ -950,7 +981,7 @@ export async function createQuotation(
     return validation;
   }
 
-  const { validItems, customerName, customerPhone, customerAddress } = validation;
+  const { validItems, customerName, customerTitle, customerPhone, customerAddress } = validation;
 
   try {
     const { supabase, user } = await requireAdmin();
@@ -990,6 +1021,7 @@ export async function createQuotation(
           .from("customers")
           .update({
             name: customerName,
+            title: customerTitle || null,
             phone: customerPhone,
             whatsapp: input.customer.whatsapp.trim() || null,
             email: input.customer.email.trim() || null,
@@ -1007,6 +1039,7 @@ export async function createQuotation(
           .from("customers")
           .insert({
             name: customerName,
+            title: customerTitle || null,
             phone: customerPhone,
             whatsapp: input.customer.whatsapp.trim() || null,
             email: input.customer.email.trim() || null,
@@ -1064,6 +1097,7 @@ export async function createQuotation(
       .from("customers")
       .insert({
         name: customerName,
+        title: customerTitle || null,
         phone: customerPhone,
         whatsapp: input.customer.whatsapp.trim() || null,
         email: input.customer.email.trim() || null,
@@ -1134,7 +1168,7 @@ export async function updateQuotation(
     return validation;
   }
 
-  const { validItems, customerName, customerPhone, customerAddress } = validation;
+  const { validItems, customerName, customerTitle, customerPhone, customerAddress } = validation;
 
   try {
     const { supabase } = await requireAdmin();
@@ -1158,6 +1192,7 @@ export async function updateQuotation(
         .from("customers")
         .update({
           name: customerName,
+          title: customerTitle || null,
           phone: customerPhone,
           whatsapp: input.customer.whatsapp.trim() || null,
           email: input.customer.email.trim() || null,

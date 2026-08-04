@@ -23,6 +23,7 @@ import {
   calculateLineItemAmount,
   formatCurrency,
   formatDiscountLabel,
+  formatRateOnlyItemLabel,
   formatUnitType,
   hasWorkDiscount,
   type QuotationDiscountType,
@@ -167,6 +168,8 @@ export function WorkPricingStep({
                       <p className="text-xs text-muted">
                         {item.isLumpSum
                           ? "Lump sum"
+                          : item.isRateOnly
+                            ? formatRateOnlyItemLabel(item)
                           : `${item.quantity} ${formatUnitType(item.unitType)} × ${item.rate}`}
                       </p>
                       <QuotationItemImageCountButton
@@ -175,7 +178,9 @@ export function WorkPricingStep({
                       />
                     </div>
                     <p className="mt-1 text-sm font-semibold text-foreground">
-                      {formatCurrency(calculateLineItemAmount(item))}
+                      {item.isRateOnly
+                        ? "Rate only"
+                        : formatCurrency(calculateLineItemAmount(item))}
                     </p>
                   </div>
 

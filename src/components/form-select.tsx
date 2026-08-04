@@ -12,7 +12,7 @@ export type FormSelectOption<T extends string> = {
 
 type FormSelectProps<T extends string> = {
   value: T;
-  options: FormSelectOption<T>[];
+  options: readonly FormSelectOption<T>[];
   onChange: (value: T) => void;
   ariaLabel: string;
   size?: "sm" | "md";

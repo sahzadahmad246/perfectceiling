@@ -1,16 +1,17 @@
 "use client";
 
-import { MapPin, NotebookPen, Phone, UserRound } from "lucide-react";
+import { Check, ChevronDown, MapPin, NotebookPen, Phone, UserRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { PhoneInput } from "@/components/phone-input";
 import type { CustomerFieldErrors } from "@/lib/customer-validation";
-import type { QuotationCustomerDraft } from "@/lib/quotations";
+import {
+  CUSTOMER_TITLE_OPTIONS,
+  type CustomerTitle,
+  type QuotationCustomerDraft,
+} from "@/lib/quotations";
 import { cn } from "@/lib/utils";
-
-const inputClass =
-  "mt-2 h-11 w-full rounded-md border bg-surface px-3 text-sm outline-none transition focus:border-primary";
 
 const textareaClass =
   "mt-2 w-full rounded-md border bg-surface px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary";
@@ -61,6 +62,115 @@ function CustomerField({
   );
 }
 
+type CustomerNameInputProps = {
+  title: string;
+  name: string;
+  error?: string;
+  onTitleChange: (title: CustomerTitle) => void;
+  onNameChange: (name: string) => void;
+};
+
+function CustomerNameInput({
+  title,
+  name,
+  error,
+  onTitleChange,
+  onNameChange,
+}: CustomerNameInputProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedTitle =
+    CUSTOMER_TITLE_OPTIONS.find((option) => option.value === title) ??
+    CUSTOMER_TITLE_OPTIONS[0];
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, []);
+
+  return (
+    <div className="relative mt-2" ref={containerRef}>
+      <div
+        className={cn(
+          "flex h-11 items-stretch rounded-md border bg-surface transition focus-within:border-primary",
+          error ? "border-rose-400" : "border-border-strong",
+        )}
+      >
+        <button
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label="Select customer title"
+          className="flex shrink-0 items-center gap-1.5 rounded-l-md px-3 text-sm font-medium text-foreground transition hover:bg-surface-muted"
+          onClick={() => setOpen((current) => !current)}
+          type="button"
+        >
+          <span className={cn(!selectedTitle.value && "text-muted")}>
+            {selectedTitle.value || "Title"}
+          </span>
+          <ChevronDown
+            className={cn("text-muted transition", open && "rotate-180")}
+            size={14}
+          />
+        </button>
+
+        <div aria-hidden className="w-px self-stretch bg-border-strong" />
+
+        <input
+          aria-invalid={Boolean(error)}
+          className="min-w-0 flex-1 rounded-r-md bg-transparent px-3 text-sm outline-none"
+          onChange={(event) => onNameChange(event.target.value)}
+          placeholder="Enter customer name"
+          value={name}
+        />
+      </div>
+
+      {open ? (
+        <div
+          className="animate-menu-pop absolute left-0 top-[calc(100%+8px)] z-50 min-w-[10rem] overflow-hidden rounded-xl border border-border-soft bg-surface-raised p-1.5 shadow-popover"
+          role="listbox"
+        >
+          {CUSTOMER_TITLE_OPTIONS.map((option) => {
+            const isSelected = option.value === selectedTitle.value;
+
+            return (
+              <button
+                aria-selected={isSelected}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-surface-muted",
+                  isSelected && "bg-surface-muted",
+                )}
+                key={option.value || "no-title"}
+                onClick={() => {
+                  onTitleChange(option.value);
+                  setOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                <span className={cn(!option.value && "text-muted")}>
+                  {option.label}
+                </span>
+                {isSelected ? (
+                  <Check className="text-primary" size={14} />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function CustomerDetailsStep({
   customer,
   errors,
@@ -74,15 +184,12 @@ export function CustomerDetailsStep({
         label="Customer name"
         required
       >
-        <input
-          aria-invalid={Boolean(errors.name)}
-          className={cn(
-            inputClass,
-            errors.name ? "border-rose-400" : "border-border-strong",
-          )}
-          onChange={(event) => onChange("name", event.target.value)}
-          placeholder="Enter customer name"
-          value={customer.name}
+        <CustomerNameInput
+          error={errors.name}
+          name={customer.name}
+          onNameChange={(value) => onChange("name", value)}
+          onTitleChange={(title) => onChange("title", title)}
+          title={customer.title ?? ""}
         />
       </CustomerField>
 

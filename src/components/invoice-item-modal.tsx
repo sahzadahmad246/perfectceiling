@@ -106,6 +106,12 @@ export function InvoiceItemModal({
       if (!item.amount.trim() || calculateLineItemAmount(item) <= 0) {
         nextErrors.amount = "Enter a valid total amount.";
       }
+    } else if (item.isRateOnly) {
+      const rate = Number.parseFloat(item.rate);
+
+      if (!item.rate.trim() || !Number.isFinite(rate) || rate <= 0) {
+        nextErrors.rate = "Enter a valid rate.";
+      }
     } else {
       if (!item.quantity.trim()) {
         nextErrors.quantity = "Area is required.";
@@ -195,25 +201,98 @@ export function InvoiceItemModal({
             />
           </QuotationFormField>
 
-          <label className="mb-3 flex items-center gap-2 text-sm">
-            <input
-              checked={item.isLumpSum}
-              className="size-4 rounded border-border-strong"
-              onChange={(event) =>
-                updateItem({
-                  isLumpSum: event.target.checked,
-                  unitType: event.target.checked
-                    ? "lump_sum"
-                    : item.unitType === "lump_sum"
-                      ? "sq_ft"
-                      : item.unitType,
-                })
-              }
-              type="checkbox"
-            />
-            <CircleDollarSign className="text-muted" size={15} />
-            Lump sum only
-          </label>
+          <fieldset className="mb-3">
+            <legend className="mb-2 text-sm font-medium text-foreground">
+              Pricing mode
+            </legend>
+            <div
+              className="grid w-full grid-cols-3 overflow-hidden rounded-lg bg-surface-muted"
+              role="radiogroup"
+              aria-label="Pricing mode"
+            >
+              {(
+                [
+                  {
+                    id: "standard" as const,
+                    label: "Area & rate",
+                    icon: Ruler,
+                  },
+                  {
+                    id: "lump_sum" as const,
+                    label: "Lump sum",
+                    icon: CircleDollarSign,
+                  },
+                  {
+                    id: "rate_only" as const,
+                    label: "Rate only",
+                    icon: Calculator,
+                  },
+                ] as const
+              ).map((option) => {
+                const selected =
+                  option.id === "lump_sum"
+                    ? item.isLumpSum
+                    : option.id === "rate_only"
+                      ? item.isRateOnly
+                      : !item.isLumpSum && !item.isRateOnly;
+                const Icon = option.icon;
+
+                return (
+                  <label
+                    key={option.id}
+                    className={cn(
+                      "relative flex cursor-pointer items-center justify-center gap-1.5 px-2 py-2.5 text-center text-xs font-medium transition",
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted hover:text-foreground",
+                    )}
+                  >
+                    <input
+                      checked={selected}
+                      className="sr-only"
+                      name="invoice-item-pricing-mode"
+                      onChange={() => {
+                        if (option.id === "lump_sum") {
+                          updateItem({
+                            isLumpSum: true,
+                            isRateOnly: false,
+                            unitType: "lump_sum",
+                          });
+                          return;
+                        }
+
+                        if (option.id === "rate_only") {
+                          updateItem({
+                            isLumpSum: false,
+                            isRateOnly: true,
+                            amount: "",
+                            unitType:
+                              item.unitType === "lump_sum"
+                                ? "sq_ft"
+                                : item.unitType,
+                          });
+                          return;
+                        }
+
+                        updateItem({
+                          isLumpSum: false,
+                          isRateOnly: false,
+                          unitType:
+                            item.unitType === "lump_sum"
+                              ? "sq_ft"
+                              : item.unitType,
+                        });
+                      }}
+                      type="radio"
+                      value={option.id}
+                    />
+                    <Icon size={14} />
+                    <span className="leading-none">{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           {!item.isLumpSum ? (
             <>
@@ -222,7 +301,10 @@ export function InvoiceItemModal({
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Ruler className="text-muted" size={16} />
                     <span>
-                      Area<span className="text-rose-500"> *</span>
+                      {item.isRateOnly ? "Estimated area" : "Area"}
+                      {item.isRateOnly ? null : (
+                        <span className="text-rose-500"> *</span>
+                      )}
                     </span>
                   </div>
                   <FormSelect
@@ -243,7 +325,11 @@ export function InvoiceItemModal({
                   )}
                   inputMode="decimal"
                   onChange={(event) => updateItem({ quantity: event.target.value })}
-                  placeholder={`Enter area in ${getUnitLabel(item.unitType === "lump_sum" ? "sq_ft" : item.unitType)}`}
+                  placeholder={
+                    item.isRateOnly
+                      ? `Optional estimate in ${getUnitLabel(item.unitType === "lump_sum" ? "sq_ft" : item.unitType)}`
+                      : `Enter area in ${getUnitLabel(item.unitType === "lump_sum" ? "sq_ft" : item.unitType)}`
+                  }
                   value={item.quantity}
                 />
                 {errors.quantity ? (
@@ -298,7 +384,7 @@ export function InvoiceItemModal({
           <div className="rounded-lg border border-border-soft bg-surface-muted/60 px-3 py-2.5 text-sm">
             <span className="text-xs text-muted">Line total</span>
             <p className="mt-0.5 font-primary text-base font-medium text-foreground">
-              {formatCurrency(lineTotal)}
+              {item.isRateOnly ? "Rate only" : formatCurrency(lineTotal)}
             </p>
           </div>
         </div>

@@ -35,6 +35,7 @@ with check (auth.uid() = id);
 
 create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
+  title text,
   name text not null,
   phone text not null,
   whatsapp text,
@@ -86,6 +87,7 @@ create table if not exists public.quotation_items (
   quantity numeric(12, 2) not null default 1,
   rate numeric(12, 2) not null default 0,
   amount numeric(12, 2) not null default 0,
+  is_rate_only boolean not null default false,
   notes text,
   sort_order integer not null default 0
 );
@@ -136,6 +138,7 @@ create table if not exists public.invoice_items (
   quantity numeric(12, 2) not null default 1,
   rate numeric(12, 2) not null default 0,
   amount numeric(12, 2) not null default 0,
+  is_rate_only boolean not null default false,
   notes text,
   sort_order integer not null default 0
 );
