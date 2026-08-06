@@ -3,13 +3,14 @@ import Link from "next/link";
 
 import { JsonLd } from "@/components/json-ld";
 import { PublicBlogPreviewCard } from "@/components/public-blog-preview-card";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
   toTelLink,
   toWhatsAppLink,
 } from "@/lib/business-settings";
-import { buildBlogListJsonLd } from "@/lib/blog-seo";
+import { buildBlogListJsonLd, getBlogListUrl } from "@/lib/blog-seo";
 import { getPublicBlogPosts } from "@/lib/public-content";
 
 export async function PublicBlogPage() {
@@ -51,6 +52,13 @@ export async function PublicBlogPage() {
           Practical articles on false ceiling cost, materials, maintenance, and
           design ideas from {settings.businessName}.
         </p>
+        <div className="mt-5">
+          <ShareButton
+            text={`Ceiling tips and guides from ${settings.businessName} in ${settings.city}.`}
+            title={`Blog — ${settings.businessName}`}
+            url={getBlogListUrl()}
+          />
+        </div>
       </section>
 
       {posts.length > 0 ? (

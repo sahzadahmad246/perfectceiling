@@ -2,6 +2,7 @@ import { MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 
 import { PublicServiceCard } from "@/components/public-service-card";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
@@ -10,7 +11,10 @@ import {
 } from "@/lib/business-settings";
 import { JsonLd } from "@/components/json-ld";
 import { getPublicServices } from "@/lib/public-content";
-import { buildServicesListJsonLd } from "@/lib/service-seo";
+import {
+  buildServicesListJsonLd,
+  getServicesListUrl,
+} from "@/lib/service-seo";
 import { siteConfig } from "@/lib/site";
 
 export async function PublicServicesPage() {
@@ -51,6 +55,13 @@ export async function PublicServicesPage() {
           Ceiling services in {settings.city}
         </h1>
         <p className="mt-4 text-sm leading-7 text-muted">{listDescription}</p>
+        <div className="mt-5">
+          <ShareButton
+            text={listDescription}
+            title={`Ceiling services in ${settings.city} — ${settings.businessName}`}
+            url={getServicesListUrl()}
+          />
+        </div>
       </section>
 
       {services.length > 0 ? (

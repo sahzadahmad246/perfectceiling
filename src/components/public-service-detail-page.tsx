@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import { ServiceImageCarousel } from "@/components/service-image-carousel";
 import {
@@ -97,6 +98,15 @@ export async function PublicServiceDetailPage({
           <p className="mt-4 text-sm leading-7 text-foreground">
             {service.shortDescription}
           </p>
+          <div className="mt-5">
+            <ShareButton
+              text={
+                service.seoDescription?.trim() || service.shortDescription
+              }
+              title={`${service.title} — ${settings.businessName}`}
+              url={getServicePageUrl(service.slug)}
+            />
+          </div>
         </section>
 
         {hasContent ? (

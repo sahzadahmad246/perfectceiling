@@ -4,7 +4,9 @@ import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { AdminDetailBreadcrumbBar } from "@/components/admin-detail-breadcrumb-bar";
+import { ShareButton } from "@/components/share-button";
 import { getCataloguePageBreadcrumb } from "@/lib/admin-nav";
+import { getCatalogueListUrl } from "@/lib/catalogue-seo";
 
 type CataloguePageHeaderProps = {
   onAddImage: () => void;
@@ -29,7 +31,14 @@ export function CataloguePageHeader({ onAddImage }: CataloguePageHeaderProps) {
             Design catalogue
           </h1>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-0.5">
+            <ShareButton
+              label="Share public catalogue"
+              text="Browse ceiling design ideas from Perfect Ceiling."
+              title="Ceiling design catalogue"
+              url={getCatalogueListUrl()}
+              variant="icon"
+            />
             <button
               aria-label="Add catalogue image"
               className="inline-flex size-9 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground"

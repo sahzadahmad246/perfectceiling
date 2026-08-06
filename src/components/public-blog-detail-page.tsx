@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
@@ -94,6 +95,13 @@ export async function PublicBlogDetailPage({ slug }: PublicBlogDetailPageProps) 
           {post.excerpt ? (
             <p className="mt-4 text-sm leading-7 text-foreground">{post.excerpt}</p>
           ) : null}
+          <div className="mt-5">
+            <ShareButton
+              text={getBlogSeoDescription(post)}
+              title={`${post.title} — ${settings.businessName}`}
+              url={getBlogPageUrl(post.slug)}
+            />
+          </div>
         </header>
 
         {post.imageUrl ? (

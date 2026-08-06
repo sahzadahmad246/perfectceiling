@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { JsonLd } from "@/components/json-ld";
 import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
@@ -10,7 +11,10 @@ import {
   toWhatsAppLink,
 } from "@/lib/business-settings";
 import { getAllPublicProjects } from "@/lib/public-content";
-import { buildProjectsListJsonLd } from "@/lib/project-seo";
+import {
+  buildProjectsListJsonLd,
+  getProjectsListUrl,
+} from "@/lib/project-seo";
 import { siteConfig } from "@/lib/site";
 
 export async function PublicProjectsPage() {
@@ -51,6 +55,13 @@ export async function PublicProjectsPage() {
           Completed ceiling projects in {settings.city}
         </h1>
         <p className="mt-4 text-sm leading-7 text-muted">{listDescription}</p>
+        <div className="mt-5">
+          <ShareButton
+            text={listDescription}
+            title={`Ceiling projects in ${settings.city} — ${settings.businessName}`}
+            url={getProjectsListUrl()}
+          />
+        </div>
       </section>
 
       {projects.length > 0 ? (

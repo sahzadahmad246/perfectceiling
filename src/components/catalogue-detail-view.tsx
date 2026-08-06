@@ -13,12 +13,14 @@ import {
 import { CatalogueDetailHeader } from "@/components/catalogue-detail-header";
 import { CatalogueFormModal } from "@/components/catalogue-form-modal";
 import { ImageLightbox } from "@/components/image-lightbox";
+import { ShareButton } from "@/components/share-button";
 import { useAppRouter } from "@/hooks/use-app-router";
 import {
   getCatalogueAltText,
   getCatalogueDisplayTitle,
   type CatalogueImageItem,
 } from "@/lib/catalogue";
+import { getCataloguePageUrl } from "@/lib/catalogue-seo";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
@@ -90,7 +92,10 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
 
   return (
     <>
-      <CatalogueDetailHeader caption={displayTitle} />
+      <CatalogueDetailHeader
+        caption={displayTitle}
+        publicUrl={getCataloguePageUrl(current.id)}
+      />
 
       <section className="py-4 pb-8">
         <div className="overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80">
@@ -166,7 +171,18 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <ShareButton
+            className="w-full px-3"
+            label="Share"
+            text={
+              current.seoDescription?.trim() ||
+              current.caption ||
+              "Ceiling design from Perfect Ceiling"
+            }
+            title={displayTitle}
+            url={getCataloguePageUrl(current.id)}
+          />
           <button
             className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border-strong text-sm font-medium transition hover:border-primary"
             onClick={() => setEditOpen(true)}

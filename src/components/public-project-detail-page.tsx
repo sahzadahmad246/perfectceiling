@@ -1,8 +1,9 @@
-import { ArrowLeft, MessageCircle, Phone } from "lucide-react";
+import { MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import { ServiceImageCarousel } from "@/components/service-image-carousel";
 import {
@@ -140,6 +141,14 @@ export async function PublicProjectDetailPage({
               dangerouslySetInnerHTML={{ __html: articleHtml }}
             />
           ) : null}
+
+          <div className="mt-5">
+            <ShareButton
+              text={seoDescription}
+              title={`${project.title} — ${settings.businessName}`}
+              url={getProjectPageUrl(project.slug)}
+            />
+          </div>
         </section>
       </article>
 

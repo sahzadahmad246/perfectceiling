@@ -4,13 +4,19 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { AdminDetailBreadcrumbBar } from "@/components/admin-detail-breadcrumb-bar";
+import { ShareButton } from "@/components/share-button";
 import { getCatalogueDetailBreadcrumb } from "@/lib/admin-nav";
 
 type CatalogueDetailHeaderProps = {
   caption: string;
+  /** Public page URL for this design (shared with customers). */
+  publicUrl?: string;
 };
 
-export function CatalogueDetailHeader({ caption }: CatalogueDetailHeaderProps) {
+export function CatalogueDetailHeader({
+  caption,
+  publicUrl,
+}: CatalogueDetailHeaderProps) {
   return (
     <div className="sticky top-0 z-20 -mx-4 bg-surface/90 backdrop-blur-xl sm:-mx-8">
       <header className="border-b border-border-soft px-4 py-2 sm:px-8">
@@ -29,7 +35,17 @@ export function CatalogueDetailHeader({ caption }: CatalogueDetailHeaderProps) {
             {caption || "Catalogue image"}
           </h1>
 
-          <div />
+          <div className="flex justify-end">
+            {publicUrl ? (
+              <ShareButton
+                label="Share public page"
+                text={caption || "Ceiling design from Perfect Ceiling"}
+                title={caption || "Catalogue design"}
+                url={publicUrl}
+                variant="icon"
+              />
+            ) : null}
+          </div>
         </div>
       </header>
 

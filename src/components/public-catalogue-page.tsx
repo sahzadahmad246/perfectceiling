@@ -3,13 +3,17 @@ import Link from "next/link";
 
 import { JsonLd } from "@/components/json-ld";
 import { PublicCatalogueCard } from "@/components/public-catalogue-card";
+import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import {
   getPublicBusinessSettings,
   toTelLink,
   toWhatsAppLink,
 } from "@/lib/business-settings";
-import { buildCatalogueListJsonLd } from "@/lib/catalogue-seo";
+import {
+  buildCatalogueListJsonLd,
+  getCatalogueListUrl,
+} from "@/lib/catalogue-seo";
 import { getAllPublicCatalogueImages } from "@/lib/public-content";
 
 export async function PublicCataloguePage() {
@@ -49,6 +53,13 @@ export async function PublicCataloguePage() {
           Ceiling catalogue
         </h1>
         <p className="mt-4 text-sm leading-7 text-muted">{listDescription}</p>
+        <div className="mt-5">
+          <ShareButton
+            text={listDescription}
+            title={`Ceiling catalogue — ${settings.businessName}`}
+            url={getCatalogueListUrl()}
+          />
+        </div>
       </section>
 
       {images.length > 0 ? (
