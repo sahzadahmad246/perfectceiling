@@ -5,6 +5,7 @@ import {
   FolderKanban,
   Hammer,
   Home,
+  Images,
   LogOut,
   PanelRightClose,
   Settings,
@@ -21,6 +22,7 @@ const drawerItems = [
   { href: "/", label: "Back to website", icon: Home },
   { href: "/admin/services", label: "Services", icon: Hammer },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
+  { href: "/admin/catalogue", label: "Catalogue", icon: Images },
   { href: "/admin/blog", label: "Blogs", icon: BookOpenText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

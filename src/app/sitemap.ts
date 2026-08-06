@@ -2,6 +2,11 @@ import type { MetadataRoute } from "next";
 
 import { getBlogPageUrl } from "@/lib/blog-seo";
 import {
+  getCatalogueListUrl,
+  getCataloguePageUrl,
+} from "@/lib/catalogue-seo";
+import {
+  getAllPublicCatalogueImages,
   getAllPublicProjects,
   getPublicBlogPosts,
   getPublicServices,
@@ -20,10 +25,11 @@ function sitemapImages(urls: string[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, projects, blogPosts] = await Promise.all([
+  const [services, projects, blogPosts, catalogueImages] = await Promise.all([
     getPublicServices(),
     getAllPublicProjects(),
     getPublicBlogPosts(),
+    getAllPublicCatalogueImages(),
   ]);
 
   const publishedServices = services.filter(
@@ -73,6 +79,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       images: sitemapImages(
         resolveSeoImageUrls({
           featuredUrls: blogPosts.map((post) => post.imageUrl),
+        }),
+      ),
+    },
+    {
+      url: getCatalogueListUrl(),
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.85,
+      images: sitemapImages(
+        resolveSeoImageUrls({
+          galleryUrls: catalogueImages.map((image) => image.imageUrl),
         }),
       ),
     },
@@ -126,5 +143,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
   }));
 
-  return [...staticEntries, ...serviceEntries, ...projectEntries, ...blogEntries];
+  const catalogueEntries = catalogueImages.map((image) => ({
+    url: getCataloguePageUrl(image.id),
+    lastModified: image.updatedAt ? new Date(image.updatedAt) : new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+    images: sitemapImages(
+      resolveSeoImageUrls({
+        featuredUrls: [image.imageUrl],
+      }),
+    ),
+  }));
+
+  return [
+    ...staticEntries,
+    ...serviceEntries,
+    ...projectEntries,
+    ...blogEntries,
+    ...catalogueEntries,
+  ];
 }

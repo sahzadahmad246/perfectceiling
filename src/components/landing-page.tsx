@@ -8,9 +8,11 @@ import Link from "next/link";
 import { HeroMediaCarousel } from "@/components/hero-media-carousel";
 import { JsonLd } from "@/components/json-ld";
 import { PublicBlogPreviewCard } from "@/components/public-blog-preview-card";
+import { PublicCatalogueCard } from "@/components/public-catalogue-card";
 import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
 import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
 import { SiteHeader } from "@/components/site-header";
+import { WhatsAppFab } from "@/components/whatsapp-fab";
 import { getAdminClient } from "@/lib/auth/admin";
 import {
   buildHomeJsonLd,
@@ -23,6 +25,7 @@ import {
 } from "@/lib/business-settings";
 import {
   getPublicBlogPosts,
+  getPublicCatalogueImages,
   getPublicHeroSlides,
   getPublicProjectCount,
   getPublicProjects,
@@ -53,16 +56,25 @@ const processSteps = [
 ] as const;
 
 export async function LandingPage() {
-  const [settings, slides, projects, projectCount, services, blogPosts, adminSession] =
-    await Promise.all([
-      getPublicBusinessSettings(),
-      getPublicHeroSlides(),
-      getPublicProjects(6),
-      getPublicProjectCount(),
-      getPublicServices(),
-      getPublicBlogPosts(),
-      getAdminClient(),
-    ]);
+  const [
+    settings,
+    slides,
+    projects,
+    projectCount,
+    services,
+    catalogueImages,
+    blogPosts,
+    adminSession,
+  ] = await Promise.all([
+    getPublicBusinessSettings(),
+    getPublicHeroSlides(),
+    getPublicProjects(6),
+    getPublicProjectCount(),
+    getPublicServices(),
+    getPublicCatalogueImages(4),
+    getPublicBlogPosts(),
+    getAdminClient(),
+  ]);
 
   const publishedServices = services.filter(
     (service) => !service.id.startsWith("fallback-"),
@@ -84,7 +96,7 @@ export async function LandingPage() {
   const telHref = toTelLink(settings.phone);
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
+    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-24 text-foreground sm:px-8">
       <JsonLd
         data={buildHomeJsonLd(
           settings,
@@ -104,7 +116,7 @@ export async function LandingPage() {
         >
         <div className="flex flex-wrap gap-3">
           <a
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white transition duration-200 hover:bg-[#1ebe57]"
             href={whatsappHref}
             rel="noopener noreferrer"
             target="_blank"
@@ -197,6 +209,41 @@ export async function LandingPage() {
             </div>
           </div>
         </section>
+
+        {catalogueImages.length > 0 ? (
+          <section
+            className="landing-section landing-bg-plain px-4 sm:px-8"
+            id="catalogue"
+          >
+            <div aria-hidden className="landing-section-bg" />
+            <div className="landing-section-content">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted">Design ideas</p>
+                  <h2 className="mt-2 text-2xl font-medium">
+                    Ceiling catalogue
+                  </h2>
+                </div>
+                <Link
+                  className="minimal-link inline-flex items-center gap-1 text-sm"
+                  href="/catalogue"
+                >
+                  View all
+                  <ArrowUpRight size={14} />
+                </Link>
+              </div>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                Real ceiling finishes and layouts — photos of styles we build.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                {catalogueImages.map((item) => (
+                  <PublicCatalogueCard item={item} key={item.id} />
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section
           className="landing-section landing-bg-shade-warm px-4 sm:px-8"
@@ -315,7 +362,7 @@ export async function LandingPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <a
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white transition duration-200 hover:bg-[#1ebe57]"
                 href={whatsappHref}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -335,30 +382,93 @@ export async function LandingPage() {
         </section>
       </div>
 
-      <footer className="mt-8 flex flex-col gap-3 border-t border-border-soft pt-5 text-sm text-muted">
-        <div>
-          <p className="font-medium text-foreground">{settings.businessName}</p>
-          <p className="mt-1">{settings.city}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <a className="minimal-link" href={`mailto:${settings.email}`}>
-            {settings.email}
-          </a>
-          <Link className="minimal-link" href="/blog">
-            Blog
-          </Link>
-          {!isAdminLoggedIn ? (
-            <Link
-              className="minimal-link inline-flex items-center gap-1"
-              href="/login"
-            >
-              Admin login
-              <ArrowUpRight size={14} />
-            </Link>
-          ) : null}
-          <span>{siteConfig.name}</span>
+      <footer className="mt-10 border-t border-border-soft pt-6 text-sm text-muted">
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="font-primary text-base font-medium text-foreground">
+              {settings.businessName}
+            </p>
+            <p className="mt-1.5 leading-6">
+              False ceiling contractor in {settings.city}
+              {settings.serviceAreas ? ` · ${settings.serviceAreas}` : ""}
+            </p>
+          </div>
+
+          <nav aria-label="Footer">
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3">
+              <li>
+                <Link className="minimal-link" href="/services">
+                  Services
+                </Link>
+              </li>
+              <li>
+                <Link className="minimal-link" href="/catalogue">
+                  Catalogue
+                </Link>
+              </li>
+              <li>
+                <Link className="minimal-link" href="/projects">
+                  Projects
+                </Link>
+              </li>
+              <li>
+                <Link className="minimal-link" href="/blog">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link className="minimal-link" href="/#contact">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <a
+                  className="minimal-link"
+                  href={whatsappHref}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  WhatsApp
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          <div className="space-y-1.5 border-t border-border-soft pt-4">
+            {settings.phone ? (
+              <p>
+                <a className="minimal-link" href={telHref}>
+                  {settings.phone}
+                </a>
+              </p>
+            ) : null}
+            {settings.email ? (
+              <p>
+                <a className="minimal-link" href={`mailto:${settings.email}`}>
+                  {settings.email}
+                </a>
+              </p>
+            ) : null}
+            <p className="leading-6 text-muted">{settings.city}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-soft pt-4 text-xs text-muted">
+            <span>© {new Date().getFullYear()} {settings.businessName}</span>
+            {!isAdminLoggedIn ? (
+              <Link
+                className="minimal-link inline-flex items-center gap-1"
+                href="/login"
+              >
+                Admin login
+                <ArrowUpRight size={12} />
+              </Link>
+            ) : null}
+            <span>{siteConfig.name}</span>
+          </div>
         </div>
       </footer>
+
+      <WhatsAppFab href={whatsappHref} />
     </main>
   );
 }

@@ -7,8 +7,10 @@ import {
   getProjectPublicPath,
   type ProjectGalleryImage,
 } from "@/lib/projects";
+import { getCataloguePublicPath } from "@/lib/catalogue";
 import {
   getServiceGalleryImages,
+  getServicePublicPath,
   resolveServiceCardImageUrl,
   type ServiceGalleryImage,
   type ServiceRateUnit,
@@ -104,6 +106,15 @@ export type PublicBlogPost = {
   featuredImageUrl: string | null;
   imageUrl: string | null;
   publishedAt: string | null;
+  updatedAt: string | null;
+};
+
+export type PublicCatalogueImage = {
+  id: string;
+  imageUrl: string;
+  caption: string;
+  altText: string | null;
+  seoDescription: string | null;
   updatedAt: string | null;
 };
 
@@ -219,6 +230,22 @@ function mapProject(row: ProjectRow): PublicProject {
   };
 }
 
+function catalogueToHeroSlides(images: PublicCatalogueImage[]): HeroSlide[] {
+  return images
+    .filter((image) => image.imageUrl?.trim())
+    .map((image) => ({
+      id: `catalogue-${image.id}`,
+      mediaType: "image" as const,
+      mediaUrl: image.imageUrl,
+      posterUrl: null,
+      theme: undefined,
+      overlayTitle: image.caption,
+      overlaySubtitle: image.seoDescription?.trim() || "Design catalogue",
+      durationMs: 8000,
+      href: getCataloguePublicPath(image.id),
+    }));
+}
+
 function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
   const slides: HeroSlide[] = [];
 
@@ -243,6 +270,43 @@ function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
           null,
         durationMs: 8000,
         href: getProjectPublicPath(project.slug),
+      });
+    }
+  }
+
+  return slides;
+}
+
+function servicesToHeroSlides(services: PublicService[]): HeroSlide[] {
+  const slides: HeroSlide[] = [];
+
+  for (const service of services) {
+    if (service.id.startsWith("fallback-")) {
+      continue;
+    }
+
+    const images =
+      service.galleryImages.length > 0
+        ? service.galleryImages
+        : service.imageUrl
+          ? [{ url: service.imageUrl, caption: "" }]
+          : [];
+
+    for (const [index, image] of images.entries()) {
+      if (!image.url?.trim()) {
+        continue;
+      }
+
+      slides.push({
+        id: `service-${service.id}-${index}`,
+        mediaType: "image",
+        mediaUrl: image.url,
+        posterUrl: null,
+        theme: undefined,
+        overlayTitle: service.title,
+        overlaySubtitle: service.shortDescription || null,
+        durationMs: 8000,
+        href: getServicePublicPath(service.slug),
       });
     }
   }
@@ -311,17 +375,35 @@ export const getPublicHeroSlides = cache(async (): Promise<HeroSlide[]> => {
   }
 
   try {
+    // Prefer dedicated hero_slides table when configured.
     const slides = await fetchPublishedHeroSlides();
 
     if (slides.length > 0) {
       return slides;
     }
 
+    // Then catalogue designs (best visual for design-led hero).
+    const catalogueImages = await fetchPublishedCatalogueImages(8);
+    const catalogueSlides = catalogueToHeroSlides(catalogueImages);
+
+    if (catalogueSlides.length > 0) {
+      return catalogueSlides;
+    }
+
+    // Then real project photos.
     const projects = await fetchPublishedProjects(8);
     const projectSlides = projectsToHeroSlides(projects);
 
     if (projectSlides.length > 0) {
       return projectSlides;
+    }
+
+    // Then service photos.
+    const services = await fetchPublishedServices();
+    const serviceSlides = servicesToHeroSlides(services);
+
+    if (serviceSlides.length > 0) {
+      return serviceSlides.slice(0, 8);
     }
 
     return fallbackHeroSlides;
@@ -508,6 +590,125 @@ export async function getPublicServiceSlugs() {
 
 export function getPublicServicePageUrl(slug: string) {
   return `${siteConfig.url}/services/${slug}`;
+}
+
+type CatalogueImageRow = {
+  id: string;
+  image_url: string;
+  caption: string;
+  alt_text: string | null;
+  seo_description: string | null;
+  updated_at: string | null;
+};
+
+function mapPublicCatalogueImage(row: CatalogueImageRow): PublicCatalogueImage {
+  return {
+    id: row.id,
+    imageUrl: row.image_url,
+    caption: row.caption,
+    altText: row.alt_text,
+    seoDescription: row.seo_description,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function fetchPublishedCatalogueImages(
+  limit?: number,
+): Promise<PublicCatalogueImage[]> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  let query = supabase
+    .from("catalogue_images")
+    .select("id, image_url, caption, alt_text, seo_description, updated_at")
+    .eq("published", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (typeof limit === "number") {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  return data.map((row) => mapPublicCatalogueImage(row as CatalogueImageRow));
+}
+
+async function fetchPublishedCatalogueImageById(
+  id: string,
+): Promise<PublicCatalogueImage | null> {
+  const supabase = createPublicClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("catalogue_images")
+    .select("id, image_url, caption, alt_text, seo_description, updated_at")
+    .eq("published", true)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapPublicCatalogueImage(data as CatalogueImageRow);
+}
+
+export const getPublicCatalogueImages = cache(
+  async (limit = 12): Promise<PublicCatalogueImage[]> => {
+    if (!hasSupabaseEnv()) {
+      return [];
+    }
+
+    try {
+      return await fetchPublishedCatalogueImages(limit);
+    } catch {
+      return [];
+    }
+  },
+);
+
+export const getAllPublicCatalogueImages = cache(
+  async (): Promise<PublicCatalogueImage[]> => {
+    if (!hasSupabaseEnv()) {
+      return [];
+    }
+
+    try {
+      return await fetchPublishedCatalogueImages();
+    } catch {
+      return [];
+    }
+  },
+);
+
+export const getPublicCatalogueImageById = cache(
+  async (id: string): Promise<PublicCatalogueImage | null> => {
+    if (!hasSupabaseEnv()) {
+      return null;
+    }
+
+    try {
+      return await fetchPublishedCatalogueImageById(id);
+    } catch {
+      return null;
+    }
+  },
+);
+
+export async function getPublicCatalogueIds() {
+  const images = await getAllPublicCatalogueImages();
+  return images.map((image) => image.id);
 }
 
 async function fetchPublishedProjectBySlug(

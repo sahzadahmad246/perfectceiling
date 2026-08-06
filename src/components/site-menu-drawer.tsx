@@ -4,6 +4,7 @@ import {
   BookOpen,
   FolderKanban,
   Hammer,
+  Images,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   { href: "/services", label: "Services", icon: Hammer },
+  { href: "/catalogue", label: "Catalogue", icon: Images },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/blog", label: "Blog", icon: BookOpen },
   { href: "/#contact", label: "Contact", icon: Phone },

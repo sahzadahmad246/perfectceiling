@@ -37,6 +37,10 @@ export function getAdminNavPage(pathname: string): AdminNavPage | null {
     return { label: "Blogs", href: "/admin/blog" };
   }
 
+  if (pathname.startsWith("/admin/catalogue")) {
+    return { label: "Catalogue", href: "/admin/catalogue" };
+  }
+
   if (pathname === "/admin/settings") {
     return { label: "Settings", href: "/admin/settings" };
   }
@@ -109,6 +113,28 @@ export function getBlogPageBreadcrumb(): AdminBreadcrumbItem[] {
     { label: "Blogs", href: "/admin/blog" },
     { label: "Manage blog" },
   ];
+}
+
+export function getCataloguePageBreadcrumb(): AdminBreadcrumbItem[] {
+  return [
+    { label: "Admin", href: "/admin" },
+    { label: "Catalogue", href: "/admin/catalogue" },
+    { label: "Design catalogue" },
+  ];
+}
+
+export function getCatalogueDetailBreadcrumb(
+  caption: string,
+): AdminBreadcrumbItem[] {
+  return [
+    { label: "Admin", href: "/admin" },
+    { label: "Catalogue", href: "/admin/catalogue" },
+    { label: caption },
+  ];
+}
+
+export function getCatalogueAdminPath(id: string) {
+  return `/admin/catalogue/${id}`;
 }
 
 export function isAdminDocumentDetailPage(pathname: string) {
