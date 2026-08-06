@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { hasSupabaseEnv } from "@/lib/env";
+import { getSiteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signInWithGoogle(formData?: FormData) {
@@ -11,25 +12,30 @@ export async function signInWithGoogle(formData?: FormData) {
   }
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = getSiteUrl();
   const nextValue = formData?.get("next");
   const next =
     typeof nextValue === "string" && nextValue.startsWith("/")
       ? nextValue
       : "/admin";
 
+  const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`;
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo,
       queryParams: {
         access_type: "offline",
-        prompt: "consent",
+        prompt: "select_account",
       },
     },
   });
 
   if (error || !data.url) {
+    console.error("[auth] signInWithGoogle failed", error?.message, {
+      redirectTo,
+    });
     redirect("/login?error=oauth");
   }
 

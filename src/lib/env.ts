@@ -21,3 +21,10 @@ export function hasSupabaseEnv() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );
 }
+
+export function hasGoogleReviewsEnv() {
+  return Boolean(
+    process.env.GOOGLE_MAPS_API_KEY?.trim() &&
+      process.env.GOOGLE_PLACE_ID?.trim(),
+  );
+}

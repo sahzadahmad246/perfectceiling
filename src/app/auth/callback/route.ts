@@ -1,10 +1,35 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { upsertProfile } from "@/lib/auth/profile";
-import { createClient } from "@/lib/supabase/server";
+import { getRequiredEnv } from "@/lib/env";
+import { getSiteUrl } from "@/lib/site-url";
+
+function resolveRedirectBase(request: Request) {
+  const { origin } = new URL(request.url);
+  const isLocalEnv = process.env.NODE_ENV === "development";
+
+  if (isLocalEnv) {
+    return origin;
+  }
+
+  // Prefer configured production URL so OAuth cookies land on the real domain.
+  const siteUrl = getSiteUrl();
+  if (siteUrl.startsWith("https://") || siteUrl.startsWith("http://")) {
+    return siteUrl;
+  }
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedHost) {
+    return `https://${forwardedHost}`;
+  }
+
+  return origin;
+}
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   let next = searchParams.get("next") ?? "/admin";
 
@@ -12,33 +37,54 @@ export async function GET(request: Request) {
     next = "/admin";
   }
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const base = resolveRedirectBase(request);
 
-    if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  if (!code) {
+    return NextResponse.redirect(`${base}/login?error=callback-missing-code`);
+  }
 
-      if (user) {
-        await upsertProfile(supabase, user);
-      }
+  const cookieStore = await cookies();
+  const response = NextResponse.redirect(`${base}${next}`);
 
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const isLocalEnv = process.env.NODE_ENV === "development";
+  // Set session cookies on the redirect response (required on Vercel / production).
+  const supabase = createServerClient(
+    getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    },
+  );
 
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-      if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      }
+  if (error) {
+    console.error("[auth/callback] exchangeCodeForSession failed", error.message);
+    return NextResponse.redirect(
+      `${base}/login?error=${encodeURIComponent(error.message.slice(0, 80))}`,
+    );
+  }
 
-      return NextResponse.redirect(`${origin}${next}`);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    try {
+      await upsertProfile(supabase, user);
+    } catch (profileError) {
+      console.error("[auth/callback] upsertProfile failed", profileError);
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=callback`);
+  return response;
 }

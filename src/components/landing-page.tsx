@@ -12,6 +12,7 @@ import { PublicCatalogueCard } from "@/components/public-catalogue-card";
 import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
 import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
 import { SiteHeader } from "@/components/site-header";
+import { PublicGoogleReviewsSection } from "@/components/public-google-reviews-section";
 import { WhatsAppFab } from "@/components/whatsapp-fab";
 import { getAdminClient } from "@/lib/auth/admin";
 import {
@@ -23,6 +24,7 @@ import {
   toTelLink,
   toWhatsAppLink,
 } from "@/lib/business-settings";
+import { getGoogleBusinessReviews } from "@/lib/google-reviews";
 import {
   getPublicBlogPosts,
   getPublicCatalogueImages,
@@ -64,6 +66,7 @@ export async function LandingPage() {
     services,
     catalogueImages,
     blogPosts,
+    googleReviews,
     adminSession,
   ] = await Promise.all([
     getPublicBusinessSettings(),
@@ -73,6 +76,7 @@ export async function LandingPage() {
     getPublicServices(),
     getPublicCatalogueImages(4),
     getPublicBlogPosts(),
+    getGoogleBusinessReviews(),
     getAdminClient(),
   ]);
 
@@ -321,6 +325,10 @@ export async function LandingPage() {
           </section>
         ) : null}
 
+        {googleReviews ? (
+          <PublicGoogleReviewsSection data={googleReviews} />
+        ) : null}
+
         <section className="landing-section landing-bg-plain px-4 sm:px-8">
           <div aria-hidden className="landing-section-bg" />
           <div className="landing-section-content">
@@ -421,6 +429,13 @@ export async function LandingPage() {
                   Contact
                 </Link>
               </li>
+              {googleReviews ? (
+                <li>
+                  <Link className="minimal-link" href="/#reviews">
+                    Reviews
+                  </Link>
+                </li>
+              ) : null}
               <li>
                 <a
                   className="minimal-link"
