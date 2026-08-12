@@ -7,13 +7,14 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
-import { deleteCatalogueImage } from "@/app/admin/catalogue/actions";
+import { deleteCatalogueGroup } from "@/app/admin/catalogue/actions";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { getCatalogueAdminPath } from "@/lib/admin-nav";
 import {
-  getCatalogueAltText,
   getCatalogueDisplayTitle,
-  type CatalogueImageItem,
+  getCatalogueImageAlt,
+  getCataloguePreviewImage,
+  type CatalogueGroupItem,
 } from "@/lib/catalogue";
 
 const confirmOverlayClass =
@@ -29,7 +30,7 @@ type MenuPosition = {
 };
 
 type CatalogueCardProps = {
-  item: CatalogueImageItem;
+  item: CatalogueGroupItem;
   onEdit: (id: string) => void;
 };
 
@@ -42,8 +43,13 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const displayTitle = getCatalogueDisplayTitle(item);
-  const altText = getCatalogueAltText(item);
+  const preview = getCataloguePreviewImage(item);
+  const altText = getCatalogueImageAlt(
+    { subtitle: preview?.subtitle },
+    displayTitle,
+  );
   const detailHref = getCatalogueAdminPath(item.id);
+  const imageCount = item.images.length;
 
   function updateMenuPosition() {
     const button = buttonRef.current;
@@ -98,14 +104,14 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteCatalogueImage(item.id);
+      const result = await deleteCatalogueGroup(item.id);
 
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Image deleted.");
+      toast.success("Group deleted.");
       setConfirmOpen(false);
       setMenuOpen(false);
       router.refresh();
@@ -158,15 +164,17 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
       <article className="overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80 transition hover:border-border-strong">
         <Link className="block" href={detailHref}>
           <div className="relative aspect-[4/3] bg-surface-muted">
-            {item.imageUrl ? (
+            {preview?.imageUrl ? (
               <Image
                 alt={altText}
                 className="object-cover"
                 fill
+                loading="eager"
+                priority
                 sizes="280px"
-                src={item.imageUrl}
+                src={preview.imageUrl}
                 title={displayTitle}
-                unoptimized={item.imageUrl.startsWith("http")}
+                unoptimized={preview.imageUrl.startsWith("http")}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted">
@@ -175,8 +183,13 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
             )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-3 pb-3 pt-10">
               <p className="line-clamp-2 text-sm font-medium text-white">
-                {item.caption}
+                {displayTitle}
               </p>
+              {imageCount > 0 ? (
+                <p className="mt-1 text-xs text-white/80">
+                  {imageCount} {imageCount === 1 ? "photo" : "photos"}
+                </p>
+              ) : null}
             </div>
           </div>
         </Link>
@@ -193,7 +206,7 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
           </span>
 
           <button
-            aria-label="Catalogue image actions"
+            aria-label="Catalogue group actions"
             className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-foreground"
             onClick={() => setMenuOpen((open) => !open)}
             ref={buttonRef}
@@ -211,10 +224,11 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
             <div className={confirmOverlayClass}>
               <div className="w-full max-w-sm rounded-2xl border border-border-soft bg-surface-raised p-5 shadow-popover">
                 <h3 className="font-primary text-lg font-medium">
-                  Delete image?
+                  Delete group?
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  This removes “{item.caption}” from the catalogue and homepage.
+                  This removes “{displayTitle}” and all of its photos from the
+                  catalogue.
                 </p>
                 <div className="mt-5 flex gap-2">
                   <button

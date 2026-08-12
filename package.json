@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "wipe:catalogue-storage": "bun run scripts/wipe-catalogue-storage.ts"
   },
   "dependencies": {
     "@blocknote/core": "^0.51.4",

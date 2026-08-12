@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { listCatalogueImages } from "@/app/admin/catalogue/actions";
+import { listCatalogueGroups } from "@/app/admin/catalogue/actions";
 import { CataloguePageClient } from "@/components/catalogue-page-client";
 import { PageSpinner } from "@/components/page-spinner";
 
@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 };
 
 export default async function CataloguePage() {
-  const images = await listCatalogueImages();
+  const groups = await listCatalogueGroups();
 
   return (
     <Suspense fallback={<PageSpinner label="Loading catalogue..." />}>
-      <CataloguePageClient images={images} />
+      <CataloguePageClient groups={groups} />
     </Suspense>
   );
 }

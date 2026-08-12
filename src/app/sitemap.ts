@@ -6,7 +6,7 @@ import {
   getCataloguePageUrl,
 } from "@/lib/catalogue-seo";
 import {
-  getAllPublicCatalogueImages,
+  getAllPublicCatalogueGroups,
   getAllPublicProjects,
   getPublicBlogPosts,
   getPublicServices,
@@ -25,11 +25,11 @@ function sitemapImages(urls: string[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, projects, blogPosts, catalogueImages] = await Promise.all([
+  const [services, projects, blogPosts, catalogueGroups] = await Promise.all([
     getPublicServices(),
     getAllPublicProjects(),
     getPublicBlogPosts(),
-    getAllPublicCatalogueImages(),
+    getAllPublicCatalogueGroups(),
   ]);
 
   const publishedServices = services.filter(
@@ -89,7 +89,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
       images: sitemapImages(
         resolveSeoImageUrls({
-          galleryUrls: catalogueImages.map((image) => image.imageUrl),
+          galleryUrls: catalogueGroups.flatMap((group) =>
+            group.images.map((image) => image.imageUrl),
+          ),
         }),
       ),
     },
@@ -143,14 +145,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
   }));
 
-  const catalogueEntries = catalogueImages.map((image) => ({
-    url: getCataloguePageUrl(image.id),
-    lastModified: image.updatedAt ? new Date(image.updatedAt) : new Date(),
+  const catalogueEntries = catalogueGroups.map((group) => ({
+    url: getCataloguePageUrl(group.id),
+    lastModified: group.updatedAt ? new Date(group.updatedAt) : new Date(),
     changeFrequency: "monthly" as const,
     priority: 0.7,
     images: sitemapImages(
       resolveSeoImageUrls({
-        featuredUrls: [image.imageUrl],
+        featuredUrls: [group.previewImageUrl],
+        galleryUrls: group.images.map((image) => image.imageUrl),
       }),
     ),
   }));

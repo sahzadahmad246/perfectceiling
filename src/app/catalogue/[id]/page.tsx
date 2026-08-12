@@ -4,12 +4,13 @@ import { PublicCatalogueDetailPage } from "@/components/public-catalogue-detail-
 import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { buildCatalogueDetailMetadata } from "@/lib/catalogue-seo";
 import {
+  getPublicCatalogueGroupById,
   getPublicCatalogueIds,
-  getPublicCatalogueImageById,
 } from "@/lib/public-content";
 
 type CatalogueDetailPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ image?: string }>;
 };
 
 export async function generateStaticParams() {
@@ -19,10 +20,12 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: CatalogueDetailPageProps): Promise<Metadata> {
   const { id } = await params;
+  const { image: imageId } = await searchParams;
   const [item, settings] = await Promise.all([
-    getPublicCatalogueImageById(id),
+    getPublicCatalogueGroupById(id),
     getPublicBusinessSettings(),
   ]);
 
@@ -36,13 +39,15 @@ export async function generateMetadata({
     };
   }
 
-  return buildCatalogueDetailMetadata(item, settings);
+  return buildCatalogueDetailMetadata(item, settings, { imageId });
 }
 
 export default async function CatalogueDetailRoute({
   params,
+  searchParams,
 }: CatalogueDetailPageProps) {
   const { id } = await params;
+  const { image: imageId } = await searchParams;
 
-  return <PublicCatalogueDetailPage id={id} />;
+  return <PublicCatalogueDetailPage id={id} imageId={imageId ?? null} />;
 }

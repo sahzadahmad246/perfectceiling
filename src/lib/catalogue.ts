@@ -1,64 +1,91 @@
-export type CatalogueImageItem = {
+/** One photo inside a catalogue group. */
+export type CatalogueGroupImage = {
   id: string;
   imageUrl: string;
   storagePath: string;
-  caption: string;
-  altText: string | null;
-  seoDescription: string | null;
-  published: boolean;
+  /** Optional label under the photo; also used as image alt text. */
+  subtitle: string | null;
+  /** List-card cover for this group. */
+  isThumbnail: boolean;
   sortOrder: number;
 };
 
-/** One draft image in the admin form (create multi / edit single). */
+/** Admin catalogue group (e.g. "Moldings") with its photos. */
+export type CatalogueGroupItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  published: boolean;
+  sortOrder: number;
+  images: CatalogueGroupImage[];
+};
+
+/** Local draft for one photo in the admin form. */
 export type CatalogueImageDraft = {
   clientId: string;
+  /** Existing DB id when editing a saved image. */
+  id?: string;
   /** Preview URL (blob: for local picks, https for existing). */
   imageUrl: string;
   storagePath: string;
   /** Local file held until save — only then is it uploaded. */
   file?: File | null;
-  caption: string;
-  altText: string;
-  seoDescription: string;
-  published: boolean;
+  subtitle: string;
+  isThumbnail: boolean;
   sortOrder: string;
 };
 
+/** Form payload for create/update of a whole group. */
 export type CatalogueFormInput = {
-  imageUrl: string;
-  storagePath: string;
-  caption: string;
-  altText: string;
-  seoDescription: string;
+  title: string;
+  description: string;
   published: boolean;
   sortOrder: string;
+  images: Array<{
+    /** Existing image id when updating; omit for new uploads. */
+    id?: string;
+    imageUrl: string;
+    storagePath: string;
+    subtitle: string;
+    isThumbnail: boolean;
+    sortOrder: string;
+  }>;
 };
 
-/** Caption is the public title. */
-export function getCatalogueDisplayTitle(item: { caption: string }) {
-  return item.caption.trim();
+export function getCatalogueDisplayTitle(item: { title: string }) {
+  return item.title.trim();
 }
 
-/** Alt text for the image; falls back to caption. */
-export function getCatalogueAltText(item: {
-  caption: string;
-  altText?: string | null;
-}) {
-  return item.altText?.trim() || item.caption.trim();
+/** Alt text for a photo: subtitle, else group title, else generic. */
+export function getCatalogueImageAlt(
+  image: { subtitle?: string | null },
+  groupTitle?: string,
+) {
+  return (
+    image.subtitle?.trim() ||
+    groupTitle?.trim() ||
+    "Catalogue design photo"
+  );
 }
 
 export function getCataloguePublicPath(id: string) {
   return `/catalogue/${id}`;
 }
 
-export function getCatalogueSeoDescription(item: {
-  caption: string;
-  seoDescription?: string | null;
-}) {
-  return item.seoDescription?.trim() || item.caption.trim();
+/** Public path for a single image (OG/share deep link). */
+export function getCatalogueImagePublicPath(groupId: string, imageId: string) {
+  return `/catalogue/${groupId}?image=${encodeURIComponent(imageId)}`;
 }
 
-export function emptyCatalogueDraft(
+/** Cover photo for list cards: marked thumbnail, else first image. */
+export function getCataloguePreviewImage(
+  item: Pick<CatalogueGroupItem, "images">,
+): CatalogueGroupImage | null {
+  const thumb = item.images.find((image) => image.isThumbnail);
+  return thumb ?? item.images[0] ?? null;
+}
+
+export function emptyCatalogueImageDraft(
   sortOrder = "0",
 ): CatalogueImageDraft {
   return {
@@ -66,45 +93,39 @@ export function emptyCatalogueDraft(
     imageUrl: "",
     storagePath: "",
     file: null,
-    caption: "",
-    altText: "",
-    seoDescription: "",
-    published: true,
+    subtitle: "",
+    isThumbnail: false,
     sortOrder,
   };
 }
 
-export function catalogueItemToDraft(
-  item: CatalogueImageItem,
-): CatalogueImageDraft {
-  return {
-    clientId: item.id,
-    imageUrl: item.imageUrl,
-    storagePath: item.storagePath,
+export function groupItemToImageDrafts(
+  item: CatalogueGroupItem,
+): CatalogueImageDraft[] {
+  return item.images.map((image) => ({
+    clientId: image.id,
+    id: image.id,
+    imageUrl: image.imageUrl,
+    storagePath: image.storagePath,
     file: null,
-    caption: item.caption,
-    altText: item.altText ?? "",
-    seoDescription: item.seoDescription ?? "",
-    published: item.published,
-    sortOrder: String(item.sortOrder),
-  };
+    subtitle: image.subtitle ?? "",
+    isThumbnail: image.isThumbnail,
+    sortOrder: String(image.sortOrder),
+  }));
 }
 
-export function draftToFormInput(draft: CatalogueImageDraft): CatalogueFormInput {
-  return {
-    imageUrl: draft.imageUrl,
-    storagePath: draft.storagePath,
-    caption: draft.caption,
-    altText: draft.altText,
-    seoDescription: draft.seoDescription,
-    published: draft.published,
-    sortOrder: draft.sortOrder,
-  };
-}
+/** Ensure exactly one thumbnail among form images (first if none). */
+export function normalizeThumbnailFlags(
+  images: CatalogueFormInput["images"],
+): CatalogueFormInput["images"] {
+  if (!images.length) {
+    return images;
+  }
 
-/** @deprecated use draft helpers; kept for edit-cache mapping */
-export function catalogueItemToForm(
-  item: CatalogueImageItem,
-): CatalogueFormInput {
-  return draftToFormInput(catalogueItemToDraft(item));
+  const hasThumb = images.some((image) => image.isThumbnail);
+
+  return images.map((image, index) => ({
+    ...image,
+    isThumbnail: hasThumb ? Boolean(image.isThumbnail) : index === 0,
+  }));
 }

@@ -7,8 +7,8 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import {
-  deleteCatalogueImage,
-  getCatalogueImageById,
+  deleteCatalogueGroup,
+  getCatalogueGroupById,
 } from "@/app/admin/catalogue/actions";
 import { CatalogueDetailHeader } from "@/components/catalogue-detail-header";
 import { CatalogueFormModal } from "@/components/catalogue-form-modal";
@@ -16,63 +16,45 @@ import { ImageLightbox } from "@/components/image-lightbox";
 import { ShareButton } from "@/components/share-button";
 import { useAppRouter } from "@/hooks/use-app-router";
 import {
-  getCatalogueAltText,
   getCatalogueDisplayTitle,
-  type CatalogueImageItem,
+  getCatalogueImageAlt,
+  type CatalogueGroupItem,
 } from "@/lib/catalogue";
-import { getCataloguePageUrl } from "@/lib/catalogue-seo";
+import {
+  getCatalogueImageShareUrl,
+  getCataloguePageUrl,
+} from "@/lib/catalogue-seo";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
 
 type CatalogueDetailViewProps = {
-  item: CatalogueImageItem;
+  item: CatalogueGroupItem;
 };
-
-function DetailRow({
-  label,
-  value,
-  empty = "—",
-}: {
-  label: string;
-  value: string | null | undefined;
-  empty?: string;
-}) {
-  const display = value?.trim() ? value.trim() : empty;
-
-  return (
-    <div className="border-b border-border-soft py-3 last:border-b-0">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted">
-        {label}
-      </p>
-      <p className="mt-1.5 break-words text-sm leading-6 whitespace-pre-wrap text-foreground">
-        {display}
-      </p>
-    </div>
-  );
-}
 
 export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
   const router = useAppRouter();
   const [current, setCurrent] = useState(item);
   const [editOpen, setEditOpen] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const displayTitle = getCatalogueDisplayTitle(current);
-  const altText = getCatalogueAltText(current);
+  const lightboxImage =
+    lightboxIndex !== null ? current.images[lightboxIndex] : null;
+  const publicUrl = getCataloguePageUrl(current.id);
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteCatalogueImage(current.id);
+      const result = await deleteCatalogueGroup(current.id);
 
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Image deleted.");
+      toast.success("Group deleted.");
       setConfirmOpen(false);
       router.push("/admin/catalogue");
       router.refresh();
@@ -81,7 +63,7 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
 
   async function handleSaved() {
     setEditOpen(false);
-    const fresh = await getCatalogueImageById(current.id);
+    const fresh = await getCatalogueGroupById(current.id);
 
     if (fresh) {
       setCurrent(fresh);
@@ -94,94 +76,99 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
     <>
       <CatalogueDetailHeader
         caption={displayTitle}
-        publicUrl={getCataloguePageUrl(current.id)}
+        publicUrl={publicUrl}
       />
 
       <section className="py-4 pb-8">
         <div className="overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80">
-          <button
-            className="relative block aspect-[4/3] w-full cursor-zoom-in bg-surface-muted text-left"
-            onClick={() => {
-              if (current.imageUrl) {
-                setLightboxOpen(true);
-              }
-            }}
-            type="button"
-          >
-            {current.imageUrl ? (
-              <Image
-                alt={altText}
-                className="object-cover"
-                fill
-                priority
-                sizes="560px"
-                src={current.imageUrl}
-                title={displayTitle}
-                unoptimized={current.imageUrl.startsWith("http")}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-muted">
-                <Images size={32} strokeWidth={1.75} />
-              </div>
-            )}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-4 pb-4 pt-12">
-              <p className="text-base font-medium leading-snug text-white">
-                {current.caption}
+          <div className="border-b border-border-soft px-4 py-4">
+            {current.description?.trim() ? (
+              <p className="text-sm leading-6 text-muted">
+                {current.description}
               </p>
-            </div>
-          </button>
-
-          <div className="flex flex-wrap items-center gap-2 border-b border-border-soft px-4 py-3">
-            <span
+            ) : null}
+            <div
               className={
-                current.published
-                  ? "rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700"
-                  : "rounded-full border border-border-soft px-2.5 py-0.5 text-[11px] font-medium text-muted"
+                current.description?.trim()
+                  ? "mt-3 flex flex-wrap items-center gap-2"
+                  : "flex flex-wrap items-center gap-2"
               }
             >
-              {current.published ? "Published" : "Draft"}
-            </span>
-            <span className="rounded-full border border-border-soft px-2.5 py-0.5 text-[11px] font-medium text-muted">
-              Order {current.sortOrder}
-            </span>
+              <span
+                className={
+                  current.published
+                    ? "rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700"
+                    : "rounded-full border border-border-soft px-2.5 py-0.5 text-[11px] font-medium text-muted"
+                }
+              >
+                {current.published ? "Published" : "Draft"}
+              </span>
+              <span className="rounded-full border border-border-soft px-2.5 py-0.5 text-[11px] font-medium text-muted">
+                Order {current.sortOrder}
+              </span>
+              <span className="rounded-full border border-border-soft px-2.5 py-0.5 text-[11px] font-medium text-muted">
+                {current.images.length}{" "}
+                {current.images.length === 1 ? "photo" : "photos"}
+              </span>
+            </div>
           </div>
 
-          <div className="px-4">
-            <DetailRow label="Caption" value={current.caption} />
-            <DetailRow
-              empty="Same as caption"
-              label="Alt text"
-              value={current.altText}
-            />
-            <DetailRow
-              empty="Not set"
-              label="SEO description"
-              value={current.seoDescription}
-            />
-            <DetailRow
-              label="Display order"
-              value={String(current.sortOrder)}
-            />
-            <DetailRow
-              label="Status"
-              value={
-                current.published ? "Live on homepage" : "Hidden (draft)"
-              }
-            />
-          </div>
+          {current.images.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">
+              {current.images.map((image, index) => {
+                const alt = getCatalogueImageAlt(image, displayTitle);
+
+                return (
+                  <button
+                    className="relative aspect-square overflow-hidden rounded-xl border border-border-soft bg-surface-muted text-left transition hover:border-border-strong"
+                    key={image.id}
+                    onClick={() => setLightboxIndex(index)}
+                    type="button"
+                  >
+                    <Image
+                      alt={alt}
+                      className="object-cover"
+                      fill
+                      loading="eager"
+                      priority={index === 0}
+                      sizes="180px"
+                      src={image.imageUrl}
+                      unoptimized={image.imageUrl.startsWith("http")}
+                    />
+                    {image.isThumbnail ? (
+                      <span className="absolute left-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
+                        Thumbnail
+                      </span>
+                    ) : null}
+                    {image.subtitle?.trim() ? (
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-2 pb-2 pt-6">
+                        <span className="line-clamp-2 text-[11px] font-medium text-white">
+                          {image.subtitle}
+                        </span>
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex aspect-[4/3] items-center justify-center text-muted">
+              <Images size={32} strokeWidth={1.75} />
+            </div>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           <ShareButton
             className="w-full px-3"
-            label="Share"
+            label="Share all"
             text={
-              current.seoDescription?.trim() ||
-              current.caption ||
+              current.description?.trim() ||
+              current.title ||
               "Ceiling design from Perfect Ceiling"
             }
             title={displayTitle}
-            url={getCataloguePageUrl(current.id)}
+            url={publicUrl}
           />
           <button
             className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border-strong text-sm font-medium transition hover:border-primary"
@@ -203,19 +190,29 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
       </section>
 
       <CatalogueFormModal
-        imageId={current.id}
+        groupId={current.id}
         initialItem={current}
         onClose={() => setEditOpen(false)}
         onSaved={handleSaved}
         open={editOpen}
       />
 
-      {current.imageUrl ? (
+      {lightboxImage ? (
         <ImageLightbox
-          alt={altText}
-          onClose={() => setLightboxOpen(false)}
-          open={lightboxOpen}
-          src={current.imageUrl}
+          alt={getCatalogueImageAlt(lightboxImage, displayTitle)}
+          caption={lightboxImage.subtitle}
+          downloadName={lightboxImage.subtitle?.trim() || displayTitle}
+          onClose={() => setLightboxIndex(null)}
+          open={lightboxIndex !== null}
+          share={{
+            title: lightboxImage.subtitle?.trim() || displayTitle,
+            text:
+              lightboxImage.subtitle?.trim()
+                ? `${lightboxImage.subtitle.trim()} — ${displayTitle}`
+                : displayTitle,
+            url: getCatalogueImageShareUrl(current.id, lightboxImage.id),
+          }}
+          src={lightboxImage.imageUrl}
         />
       ) : null}
 
@@ -224,11 +221,11 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
             <div className={confirmOverlayClass}>
               <div className="w-full max-w-sm rounded-2xl border border-border-soft bg-surface-raised p-5 shadow-popover">
                 <h3 className="font-primary text-lg font-medium">
-                  Delete image?
+                  Delete group?
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  This removes “{current.caption}” from the catalogue and
-                  homepage.
+                  This removes “{displayTitle}” and all of its photos from the
+                  catalogue.
                 </p>
                 <div className="mt-5 flex gap-2">
                   <button

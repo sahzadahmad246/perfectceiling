@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/admin";
-import {
-  catalogueItemToForm,
-  type CatalogueFormInput,
-  type CatalogueImageItem,
+import type {
+  CatalogueFormInput,
+  CatalogueGroupImage,
+  CatalogueGroupItem,
 } from "@/lib/catalogue";
+import { normalizeThumbnailFlags } from "@/lib/catalogue";
 import { createServiceClient } from "@/lib/supabase/admin";
 import {
   getImageMimeType,
@@ -16,15 +17,12 @@ import {
   normalizeUploadFileName,
 } from "@/lib/upload-image";
 
-const CATALOGUE_TABLE = "catalogue_images";
+const GROUPS_TABLE = "catalogue_groups";
+const IMAGES_TABLE = "catalogue_group_images";
 const ASSETS_BUCKET = "business-assets";
 
 export type CatalogueActionResult =
   | { success: true; id: string }
-  | { success: false; error: string };
-
-export type CatalogueBatchActionResult =
-  | { success: true; ids: string[] }
   | { success: false; error: string };
 
 export type CatalogueUploadResult =
@@ -34,25 +32,37 @@ export type CatalogueUploadResult =
     }
   | { success: false; error: string };
 
-type CatalogueRow = {
+type GroupRow = {
   id: string;
-  image_url: string;
-  storage_path: string;
-  caption: string;
-  alt_text: string | null;
-  seo_description: string | null;
+  title: string;
+  description: string | null;
   published: boolean;
   sort_order: number | null;
 };
 
-type ValidatedCatalogueData = {
+type ImageRow = {
+  id: string;
+  group_id: string;
   image_url: string;
   storage_path: string;
-  caption: string;
-  alt_text: string | null;
-  seo_title: string | null;
-  seo_description: string | null;
+  subtitle: string | null;
+  is_thumbnail: boolean | null;
+  sort_order: number | null;
+};
+
+type ValidatedGroupData = {
+  title: string;
+  description: string | null;
   published: boolean;
+  sort_order: number;
+};
+
+type ValidatedImageData = {
+  id?: string;
+  image_url: string;
+  storage_path: string;
+  subtitle: string | null;
+  is_thumbnail: boolean;
   sort_order: number;
 };
 
@@ -61,222 +71,403 @@ function parseSortOrder(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function mapCatalogueItem(row: CatalogueRow): CatalogueImageItem {
+function mapImage(row: ImageRow): CatalogueGroupImage {
   return {
     id: row.id,
     imageUrl: row.image_url,
     storagePath: row.storage_path,
-    caption: row.caption,
-    altText: row.alt_text,
-    seoDescription: row.seo_description,
-    published: row.published,
+    subtitle: row.subtitle,
+    isThumbnail: Boolean(row.is_thumbnail),
     sortOrder: row.sort_order ?? 0,
   };
 }
 
-function validateCatalogueInput(
-  input: CatalogueFormInput,
-): { error: string } | { data: ValidatedCatalogueData } {
-  const imageUrl = input.imageUrl.trim();
-  const storagePath = input.storagePath.trim();
-  const caption = input.caption.trim();
-  const altText = input.altText.trim();
-  const seoDescription = input.seoDescription.trim();
-  const sortOrder = parseSortOrder(input.sortOrder);
-
-  if (!imageUrl) {
-    return { error: "Please upload an image." };
-  }
-
-  if (!caption) {
-    return { error: "Caption is required." };
-  }
-
+function mapGroup(
+  row: GroupRow,
+  images: CatalogueGroupImage[],
+): CatalogueGroupItem {
   return {
-    data: {
-      image_url: imageUrl,
-      storage_path: storagePath,
-      caption,
-      alt_text: altText || null,
-      // Caption is the SEO title; keep column in sync for older readers.
-      seo_title: caption,
-      seo_description: seoDescription || null,
-      published: input.published,
-      sort_order: sortOrder,
-    },
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    published: row.published,
+    sortOrder: row.sort_order ?? 0,
+    images,
   };
 }
 
-const SELECT_COLUMNS =
-  "id, image_url, storage_path, caption, alt_text, seo_description, published, sort_order";
-
-export async function listCatalogueImages(): Promise<CatalogueImageItem[]> {
-  const { supabase } = await requireAdmin();
-
-  const { data, error } = await supabase
-    .from(CATALOGUE_TABLE)
-    .select(SELECT_COLUMNS)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? []).map((row) => mapCatalogueItem(row as CatalogueRow));
-}
-
-export async function getCatalogueImageById(
-  id: string,
-): Promise<CatalogueImageItem | null> {
-  const { supabase } = await requireAdmin();
-
-  const { data, error } = await supabase
-    .from(CATALOGUE_TABLE)
-    .select(SELECT_COLUMNS)
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data ? mapCatalogueItem(data as CatalogueRow) : null;
-}
-
-export async function createCatalogueImage(
+function validateGroupInput(
   input: CatalogueFormInput,
-): Promise<CatalogueActionResult> {
-  const batch = await createCatalogueImages([input]);
+): { error: string } | { group: ValidatedGroupData; images: ValidatedImageData[] } {
+  const title = input.title.trim();
+  const description = input.description.trim();
+  const sortOrder = parseSortOrder(input.sortOrder);
 
-  if (!batch.success) {
-    return { success: false, error: batch.error };
+  if (!title) {
+    return { error: "Title is required." };
   }
 
-  return { success: true, id: batch.ids[0] ?? "" };
-}
-
-export async function createCatalogueImages(
-  inputs: CatalogueFormInput[],
-): Promise<CatalogueBatchActionResult> {
-  if (!inputs.length) {
-    return { success: false, error: "Add at least one image." };
+  if (!input.images.length) {
+    return { error: "Add at least one image." };
   }
 
-  const { supabase, user } = await requireAdmin();
-  const rows: ValidatedCatalogueData[] = [];
+  const normalized = normalizeThumbnailFlags(input.images);
+  const images: ValidatedImageData[] = [];
+  let thumbnailCount = 0;
 
-  for (let index = 0; index < inputs.length; index += 1) {
-    const validated = validateCatalogueInput(inputs[index]);
+  for (let index = 0; index < normalized.length; index += 1) {
+    const image = normalized[index];
+    const imageUrl = image.imageUrl.trim();
+    const storagePath = image.storagePath.trim();
+    const subtitle = image.subtitle.trim();
 
-    if ("error" in validated) {
-      return {
-        success: false,
-        error: `Image ${index + 1}: ${validated.error}`,
-      };
+    if (!imageUrl) {
+      return { error: `Image ${index + 1}: please add a photo.` };
     }
 
-    rows.push(validated.data);
+    if (image.isThumbnail) {
+      thumbnailCount += 1;
+    }
+
+    images.push({
+      id: image.id?.trim() || undefined,
+      image_url: imageUrl,
+      storage_path: storagePath,
+      subtitle: subtitle || null,
+      is_thumbnail: Boolean(image.isThumbnail),
+      sort_order: parseSortOrder(image.sortOrder) || index,
+    });
   }
 
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from(CATALOGUE_TABLE)
-    .insert(
-      rows.map((row) => ({
-        ...row,
-        created_by: user.id,
-        updated_at: now,
-      })),
-    )
-    .select("id");
-
-  if (error || !data?.length) {
-    return {
-      success: false,
-      error: error?.message ?? "Could not save images.",
-    };
+  if (thumbnailCount !== 1) {
+    // Keep first as sole thumbnail if flags were messy.
+    images.forEach((image, index) => {
+      image.is_thumbnail = index === 0;
+    });
   }
 
+  return {
+    group: {
+      title,
+      description: description || null,
+      published: input.published,
+      sort_order: sortOrder,
+    },
+    images,
+  };
+}
+
+function revalidateCatalogue(id?: string) {
   revalidatePath("/admin/catalogue");
   revalidatePath("/catalogue");
   revalidatePath("/");
 
-  return { success: true, ids: data.map((row) => row.id as string) };
+  if (id) {
+    revalidatePath(`/admin/catalogue/${id}`);
+    revalidatePath(`/catalogue/${id}`);
+  }
 }
 
-export async function updateCatalogueImage(
+async function removeStoragePaths(paths: string[]) {
+  const cleaned = paths.map((path) => path.trim()).filter(Boolean);
+
+  if (!cleaned.length) {
+    return;
+  }
+
+  try {
+    const { supabase } = await requireAdmin();
+    const storageClient = createServiceClient() ?? supabase;
+    await storageClient.storage.from(ASSETS_BUCKET).remove(cleaned);
+  } catch {
+    // Storage cleanup is best-effort.
+  }
+}
+
+export async function listCatalogueGroups(): Promise<CatalogueGroupItem[]> {
+  const { supabase } = await requireAdmin();
+
+  const { data: groups, error: groupsError } = await supabase
+    .from(GROUPS_TABLE)
+    .select("id, title, description, published, sort_order")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (groupsError) {
+    throw new Error(groupsError.message);
+  }
+
+  if (!groups?.length) {
+    return [];
+  }
+
+  const groupIds = groups.map((row) => row.id as string);
+
+  const { data: images, error: imagesError } = await supabase
+    .from(IMAGES_TABLE)
+    .select(
+      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order",
+    )
+    .in("group_id", groupIds)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (imagesError) {
+    throw new Error(imagesError.message);
+  }
+
+  const imagesByGroup = new Map<string, CatalogueGroupImage[]>();
+
+  for (const row of (images ?? []) as ImageRow[]) {
+    const list = imagesByGroup.get(row.group_id) ?? [];
+    list.push(mapImage(row));
+    imagesByGroup.set(row.group_id, list);
+  }
+
+  return (groups as GroupRow[]).map((row) =>
+    mapGroup(row, imagesByGroup.get(row.id) ?? []),
+  );
+}
+
+export async function getCatalogueGroupById(
   id: string,
+): Promise<CatalogueGroupItem | null> {
+  const { supabase } = await requireAdmin();
+
+  const { data: group, error: groupError } = await supabase
+    .from(GROUPS_TABLE)
+    .select("id, title, description, published, sort_order")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (groupError) {
+    throw new Error(groupError.message);
+  }
+
+  if (!group) {
+    return null;
+  }
+
+  const { data: images, error: imagesError } = await supabase
+    .from(IMAGES_TABLE)
+    .select(
+      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order",
+    )
+    .eq("group_id", id)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (imagesError) {
+    throw new Error(imagesError.message);
+  }
+
+  return mapGroup(
+    group as GroupRow,
+    ((images ?? []) as ImageRow[]).map(mapImage),
+  );
+}
+
+export async function createCatalogueGroup(
   input: CatalogueFormInput,
 ): Promise<CatalogueActionResult> {
-  const { supabase } = await requireAdmin();
-  const validated = validateCatalogueInput(input);
+  const validated = validateGroupInput(input);
 
   if ("error" in validated) {
     return { success: false, error: validated.error };
   }
 
-  const { data, error } = await supabase
-    .from(CATALOGUE_TABLE)
-    .update({
-      ...validated.data,
-      updated_at: new Date().toISOString(),
+  const { supabase, user } = await requireAdmin();
+  const now = new Date().toISOString();
+
+  const { data: group, error: groupError } = await supabase
+    .from(GROUPS_TABLE)
+    .insert({
+      ...validated.group,
+      created_by: user.id,
+      updated_at: now,
     })
-    .eq("id", id)
     .select("id")
     .single();
 
-  if (error || !data) {
+  if (groupError || !group) {
     return {
       success: false,
-      error: error?.message ?? "Could not update image.",
+      error: groupError?.message ?? "Could not save group.",
     };
   }
 
-  revalidatePath("/admin/catalogue");
-  revalidatePath(`/admin/catalogue/${id}`);
-  revalidatePath("/catalogue");
-  revalidatePath(`/catalogue/${id}`);
-  revalidatePath("/");
+  const groupId = group.id as string;
 
-  return { success: true, id: data.id };
+  const { error: imagesError } = await supabase.from(IMAGES_TABLE).insert(
+    validated.images.map((image, index) => ({
+      group_id: groupId,
+      image_url: image.image_url,
+      storage_path: image.storage_path,
+      subtitle: image.subtitle,
+      is_thumbnail: image.is_thumbnail,
+      sort_order: image.sort_order || index,
+    })),
+  );
+
+  if (imagesError) {
+    await supabase.from(GROUPS_TABLE).delete().eq("id", groupId);
+    return { success: false, error: imagesError.message };
+  }
+
+  revalidateCatalogue(groupId);
+  return { success: true, id: groupId };
 }
 
-export async function deleteCatalogueImage(
+export async function updateCatalogueGroup(
+  id: string,
+  input: CatalogueFormInput,
+): Promise<CatalogueActionResult> {
+  const validated = validateGroupInput(input);
+
+  if ("error" in validated) {
+    return { success: false, error: validated.error };
+  }
+
+  const { supabase } = await requireAdmin();
+
+  const { data: existingImages, error: existingError } = await supabase
+    .from(IMAGES_TABLE)
+    .select("id, storage_path")
+    .eq("group_id", id);
+
+  if (existingError) {
+    return { success: false, error: existingError.message };
+  }
+
+  const existingById = new Map(
+    (existingImages ?? []).map((row) => [
+      row.id as string,
+      typeof row.storage_path === "string" ? row.storage_path : "",
+    ]),
+  );
+
+  const keptIds = new Set(
+    validated.images
+      .map((image) => image.id)
+      .filter((imageId): imageId is string => Boolean(imageId)),
+  );
+
+  const removedPaths: string[] = [];
+
+  for (const [imageId, storagePath] of existingById) {
+    if (!keptIds.has(imageId)) {
+      removedPaths.push(storagePath);
+    }
+  }
+
+  const { error: groupError } = await supabase
+    .from(GROUPS_TABLE)
+    .update({
+      ...validated.group,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (groupError) {
+    return { success: false, error: groupError.message };
+  }
+
+  const toDelete = [...existingById.keys()].filter(
+    (imageId) => !keptIds.has(imageId),
+  );
+
+  if (toDelete.length) {
+    const { error: deleteError } = await supabase
+      .from(IMAGES_TABLE)
+      .delete()
+      .in("id", toDelete);
+
+    if (deleteError) {
+      return { success: false, error: deleteError.message };
+    }
+  }
+
+  // Clear all thumbnails first so the unique partial index never conflicts mid-update.
+  await supabase
+    .from(IMAGES_TABLE)
+    .update({ is_thumbnail: false })
+    .eq("group_id", id);
+
+  for (let index = 0; index < validated.images.length; index += 1) {
+    const image = validated.images[index];
+    const sortOrder = image.sort_order || index;
+
+    if (image.id && existingById.has(image.id)) {
+      const previousPath = existingById.get(image.id) ?? "";
+      const { error: updateError } = await supabase
+        .from(IMAGES_TABLE)
+        .update({
+          image_url: image.image_url,
+          storage_path: image.storage_path,
+          subtitle: image.subtitle,
+          is_thumbnail: image.is_thumbnail,
+          sort_order: sortOrder,
+        })
+        .eq("id", image.id)
+        .eq("group_id", id);
+
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+
+      // If the photo was replaced, drop the old file.
+      if (
+        previousPath &&
+        image.storage_path &&
+        previousPath !== image.storage_path
+      ) {
+        removedPaths.push(previousPath);
+      }
+    } else {
+      const { error: insertError } = await supabase.from(IMAGES_TABLE).insert({
+        group_id: id,
+        image_url: image.image_url,
+        storage_path: image.storage_path,
+        subtitle: image.subtitle,
+        is_thumbnail: image.is_thumbnail,
+        sort_order: sortOrder,
+      });
+
+      if (insertError) {
+        return { success: false, error: insertError.message };
+      }
+    }
+  }
+
+  await removeStoragePaths(removedPaths);
+  revalidateCatalogue(id);
+  return { success: true, id };
+}
+
+export async function deleteCatalogueGroup(
   id: string,
 ): Promise<CatalogueActionResult> {
   const { supabase } = await requireAdmin();
 
-  const { data: existing } = await supabase
-    .from(CATALOGUE_TABLE)
+  const { data: images } = await supabase
+    .from(IMAGES_TABLE)
     .select("storage_path")
-    .eq("id", id)
-    .maybeSingle();
+    .eq("group_id", id);
 
-  const storagePath =
-    typeof existing?.storage_path === "string" ? existing.storage_path.trim() : "";
+  const storagePaths = (images ?? [])
+    .map((row) =>
+      typeof row.storage_path === "string" ? row.storage_path.trim() : "",
+    )
+    .filter(Boolean);
 
-  const { error } = await supabase.from(CATALOGUE_TABLE).delete().eq("id", id);
+  const { error } = await supabase.from(GROUPS_TABLE).delete().eq("id", id);
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  if (storagePath) {
-    try {
-      const storageClient = createServiceClient() ?? supabase;
-      await storageClient.storage.from(ASSETS_BUCKET).remove([storagePath]);
-    } catch {
-      // Row is gone; storage cleanup is best-effort.
-    }
-  }
-
-  revalidatePath("/admin/catalogue");
-  revalidatePath(`/admin/catalogue/${id}`);
-  revalidatePath("/catalogue");
-  revalidatePath(`/catalogue/${id}`);
-  revalidatePath("/");
-
+  await removeStoragePaths(storagePaths);
+  revalidateCatalogue(id);
   return { success: true, id };
 }
 
@@ -343,4 +534,17 @@ export async function uploadCatalogueImage(
   }
 }
 
-export { catalogueItemToForm };
+/** @deprecated Use listCatalogueGroups */
+export async function listCatalogueImages() {
+  return listCatalogueGroups();
+}
+
+/** @deprecated Use getCatalogueGroupById */
+export async function getCatalogueImageById(id: string) {
+  return getCatalogueGroupById(id);
+}
+
+/** @deprecated Use deleteCatalogueGroup */
+export async function deleteCatalogueImage(id: string) {
+  return deleteCatalogueGroup(id);
+}

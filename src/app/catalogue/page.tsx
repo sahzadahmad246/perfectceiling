@@ -3,15 +3,15 @@ import type { Metadata } from "next";
 import { PublicCataloguePage } from "@/components/public-catalogue-page";
 import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { buildCatalogueListMetadata } from "@/lib/catalogue-seo";
-import { getAllPublicCatalogueImages } from "@/lib/public-content";
+import { getAllPublicCatalogueGroups } from "@/lib/public-content";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [settings, images] = await Promise.all([
+  const [settings, groups] = await Promise.all([
     getPublicBusinessSettings(),
-    getAllPublicCatalogueImages(),
+    getAllPublicCatalogueGroups(),
   ]);
 
-  return buildCatalogueListMetadata(settings, images);
+  return buildCatalogueListMetadata(settings, groups);
 }
 
 export default function CataloguePage() {

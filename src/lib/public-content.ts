@@ -109,14 +109,25 @@ export type PublicBlogPost = {
   updatedAt: string | null;
 };
 
-export type PublicCatalogueImage = {
+export type PublicCatalogueGroupImage = {
   id: string;
   imageUrl: string;
-  caption: string;
-  altText: string | null;
-  seoDescription: string | null;
+  subtitle: string | null;
+  isThumbnail: boolean;
+};
+
+/** Public catalogue group (e.g. "Moldings") with gallery photos. */
+export type PublicCatalogueGroup = {
+  id: string;
+  title: string;
+  description: string | null;
+  previewImageUrl: string;
+  images: PublicCatalogueGroupImage[];
   updatedAt: string | null;
 };
+
+/** @deprecated Use PublicCatalogueGroup */
+export type PublicCatalogueImage = PublicCatalogueGroup;
 
 type ServiceRow = {
   id: string;
@@ -230,19 +241,19 @@ function mapProject(row: ProjectRow): PublicProject {
   };
 }
 
-function catalogueToHeroSlides(images: PublicCatalogueImage[]): HeroSlide[] {
-  return images
-    .filter((image) => image.imageUrl?.trim())
-    .map((image) => ({
-      id: `catalogue-${image.id}`,
+function catalogueToHeroSlides(groups: PublicCatalogueGroup[]): HeroSlide[] {
+  return groups
+    .filter((group) => group.previewImageUrl?.trim())
+    .map((group) => ({
+      id: `catalogue-${group.id}`,
       mediaType: "image" as const,
-      mediaUrl: image.imageUrl,
+      mediaUrl: group.previewImageUrl,
       posterUrl: null,
       theme: undefined,
-      overlayTitle: image.caption,
-      overlaySubtitle: image.seoDescription?.trim() || "Design catalogue",
+      overlayTitle: group.title,
+      overlaySubtitle: group.description?.trim() || "Design catalogue",
       durationMs: 8000,
-      href: getCataloguePublicPath(image.id),
+      href: getCataloguePublicPath(group.id),
     }));
 }
 
@@ -383,8 +394,8 @@ export const getPublicHeroSlides = cache(async (): Promise<HeroSlide[]> => {
     }
 
     // Then catalogue designs (best visual for design-led hero).
-    const catalogueImages = await fetchPublishedCatalogueImages(8);
-    const catalogueSlides = catalogueToHeroSlides(catalogueImages);
+    const catalogueGroups = await fetchPublishedCatalogueGroups(8);
+    const catalogueSlides = catalogueToHeroSlides(catalogueGroups);
 
     if (catalogueSlides.length > 0) {
       return catalogueSlides;
@@ -592,29 +603,47 @@ export function getPublicServicePageUrl(slug: string) {
   return `${siteConfig.url}/services/${slug}`;
 }
 
-type CatalogueImageRow = {
+type CatalogueGroupRow = {
   id: string;
-  image_url: string;
-  caption: string;
-  alt_text: string | null;
-  seo_description: string | null;
+  title: string;
+  description: string | null;
   updated_at: string | null;
 };
 
-function mapPublicCatalogueImage(row: CatalogueImageRow): PublicCatalogueImage {
+type CatalogueGroupImageRow = {
+  id: string;
+  group_id: string;
+  image_url: string;
+  subtitle: string | null;
+  is_thumbnail: boolean | null;
+  sort_order: number | null;
+};
+
+function mapPublicCatalogueGroup(
+  row: CatalogueGroupRow,
+  images: PublicCatalogueGroupImage[],
+): PublicCatalogueGroup | null {
+  const thumb = images.find((image) => image.isThumbnail);
+  const previewImageUrl =
+    thumb?.imageUrl?.trim() || images[0]?.imageUrl?.trim() || "";
+
+  if (!previewImageUrl) {
+    return null;
+  }
+
   return {
     id: row.id,
-    imageUrl: row.image_url,
-    caption: row.caption,
-    altText: row.alt_text,
-    seoDescription: row.seo_description,
+    title: row.title,
+    description: row.description,
+    previewImageUrl,
+    images,
     updatedAt: row.updated_at,
   };
 }
 
-async function fetchPublishedCatalogueImages(
+async function fetchPublishedCatalogueGroups(
   limit?: number,
-): Promise<PublicCatalogueImage[]> {
+): Promise<PublicCatalogueGroup[]> {
   const supabase = createPublicClient();
 
   if (!supabase) {
@@ -622,8 +651,8 @@ async function fetchPublishedCatalogueImages(
   }
 
   let query = supabase
-    .from("catalogue_images")
-    .select("id, image_url, caption, alt_text, seo_description, updated_at")
+    .from("catalogue_groups")
+    .select("id, title, description, updated_at")
     .eq("published", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
@@ -632,83 +661,144 @@ async function fetchPublishedCatalogueImages(
     query = query.limit(limit);
   }
 
-  const { data, error } = await query;
+  const { data: groups, error: groupsError } = await query;
 
-  if (error || !data?.length) {
+  if (groupsError || !groups?.length) {
     return [];
   }
 
-  return data.map((row) => mapPublicCatalogueImage(row as CatalogueImageRow));
+  const groupIds = groups.map((row) => row.id as string);
+
+  const { data: imageRows, error: imagesError } = await supabase
+    .from("catalogue_group_images")
+    .select("id, group_id, image_url, subtitle, is_thumbnail, sort_order")
+    .in("group_id", groupIds)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (imagesError) {
+    return [];
+  }
+
+  const imagesByGroup = new Map<string, PublicCatalogueGroupImage[]>();
+
+  for (const row of (imageRows ?? []) as CatalogueGroupImageRow[]) {
+    if (!row.image_url?.trim()) {
+      continue;
+    }
+
+    const list = imagesByGroup.get(row.group_id) ?? [];
+    list.push({
+      id: row.id,
+      imageUrl: row.image_url,
+      subtitle: row.subtitle,
+      isThumbnail: Boolean(row.is_thumbnail),
+    });
+    imagesByGroup.set(row.group_id, list);
+  }
+
+  return (groups as CatalogueGroupRow[])
+    .map((row) => mapPublicCatalogueGroup(row, imagesByGroup.get(row.id) ?? []))
+    .filter((group): group is PublicCatalogueGroup => Boolean(group));
 }
 
-async function fetchPublishedCatalogueImageById(
+async function fetchPublishedCatalogueGroupById(
   id: string,
-): Promise<PublicCatalogueImage | null> {
+): Promise<PublicCatalogueGroup | null> {
   const supabase = createPublicClient();
 
   if (!supabase) {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("catalogue_images")
-    .select("id, image_url, caption, alt_text, seo_description, updated_at")
+  const { data: group, error: groupError } = await supabase
+    .from("catalogue_groups")
+    .select("id, title, description, updated_at")
     .eq("published", true)
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !data) {
+  if (groupError || !group) {
     return null;
   }
 
-  return mapPublicCatalogueImage(data as CatalogueImageRow);
+  const { data: imageRows, error: imagesError } = await supabase
+    .from("catalogue_group_images")
+    .select("id, group_id, image_url, subtitle, is_thumbnail, sort_order")
+    .eq("group_id", id)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (imagesError) {
+    return null;
+  }
+
+  const images = ((imageRows ?? []) as CatalogueGroupImageRow[])
+    .filter((row) => row.image_url?.trim())
+    .map((row) => ({
+      id: row.id,
+      imageUrl: row.image_url,
+      subtitle: row.subtitle,
+      isThumbnail: Boolean(row.is_thumbnail),
+    }));
+
+  return mapPublicCatalogueGroup(group as CatalogueGroupRow, images);
 }
 
-export const getPublicCatalogueImages = cache(
-  async (limit = 12): Promise<PublicCatalogueImage[]> => {
+export const getPublicCatalogueGroups = cache(
+  async (limit = 12): Promise<PublicCatalogueGroup[]> => {
     if (!hasSupabaseEnv()) {
       return [];
     }
 
     try {
-      return await fetchPublishedCatalogueImages(limit);
+      return await fetchPublishedCatalogueGroups(limit);
     } catch {
       return [];
     }
   },
 );
 
-export const getAllPublicCatalogueImages = cache(
-  async (): Promise<PublicCatalogueImage[]> => {
+export const getAllPublicCatalogueGroups = cache(
+  async (): Promise<PublicCatalogueGroup[]> => {
     if (!hasSupabaseEnv()) {
       return [];
     }
 
     try {
-      return await fetchPublishedCatalogueImages();
+      return await fetchPublishedCatalogueGroups();
     } catch {
       return [];
     }
   },
 );
 
-export const getPublicCatalogueImageById = cache(
-  async (id: string): Promise<PublicCatalogueImage | null> => {
+export const getPublicCatalogueGroupById = cache(
+  async (id: string): Promise<PublicCatalogueGroup | null> => {
     if (!hasSupabaseEnv()) {
       return null;
     }
 
     try {
-      return await fetchPublishedCatalogueImageById(id);
+      return await fetchPublishedCatalogueGroupById(id);
     } catch {
       return null;
     }
   },
 );
+
+/** @deprecated Use getPublicCatalogueGroups */
+export const getPublicCatalogueImages = getPublicCatalogueGroups;
+
+/** @deprecated Use getAllPublicCatalogueGroups */
+export const getAllPublicCatalogueImages = getAllPublicCatalogueGroups;
+
+/** @deprecated Use getPublicCatalogueGroupById */
+export const getPublicCatalogueImageById = getPublicCatalogueGroupById;
 
 export async function getPublicCatalogueIds() {
-  const images = await getAllPublicCatalogueImages();
-  return images.map((image) => image.id);
+  const groups = await getAllPublicCatalogueGroups();
+  return groups.map((group) => group.id);
 }
 
 async function fetchPublishedProjectBySlug(

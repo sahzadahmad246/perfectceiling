@@ -40,10 +40,10 @@ export function CataloguePageHeader({ onAddImage }: CataloguePageHeaderProps) {
               variant="icon"
             />
             <button
-              aria-label="Add catalogue image"
+              aria-label="Add catalogue group"
               className="inline-flex size-9 items-center justify-center rounded-full border border-transparent text-muted transition hover:border-border-soft hover:bg-surface-muted hover:text-foreground"
               onClick={onAddImage}
-              title="Add image"
+              title="Add group"
               type="button"
             >
               <Plus size={18} />

@@ -248,14 +248,10 @@ create table if not exists public.blog_posts (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.catalogue_images (
+create table if not exists public.catalogue_groups (
   id uuid primary key default gen_random_uuid(),
-  image_url text not null,
-  storage_path text not null,
-  caption text not null,
-  alt_text text,
-  seo_title text,
-  seo_description text,
+  title text not null,
+  description text,
   published boolean not null default true,
   sort_order int not null default 0,
   created_by uuid references auth.users(id) on delete set null,
@@ -263,8 +259,26 @@ create table if not exists public.catalogue_images (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists catalogue_images_sort_idx
-  on public.catalogue_images (sort_order, created_at desc);
+create index if not exists catalogue_groups_sort_idx
+  on public.catalogue_groups (sort_order, created_at desc);
+
+create table if not exists public.catalogue_group_images (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.catalogue_groups(id) on delete cascade,
+  image_url text not null,
+  storage_path text not null,
+  subtitle text,
+  is_thumbnail boolean not null default false,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists catalogue_group_images_group_id_idx
+  on public.catalogue_group_images (group_id, sort_order, created_at);
+
+create unique index if not exists catalogue_group_images_one_thumbnail_idx
+  on public.catalogue_group_images (group_id)
+  where is_thumbnail = true;
 
 alter table public.customers enable row level security;
 alter table public.quotations enable row level security;
@@ -278,7 +292,8 @@ alter table public.projects enable row level security;
 alter table public.hero_slides enable row level security;
 alter table public.services enable row level security;
 alter table public.blog_posts enable row level security;
-alter table public.catalogue_images enable row level security;
+alter table public.catalogue_groups enable row level security;
+alter table public.catalogue_group_images enable row level security;
 
 drop policy if exists "Authenticated users can manage customers" on public.customers;
 create policy "Authenticated users can manage customers"
@@ -412,16 +427,40 @@ for select
 to anon, authenticated
 using (published = true);
 
-drop policy if exists "Anyone can read published catalogue images" on public.catalogue_images;
-create policy "Anyone can read published catalogue images"
-on public.catalogue_images
+drop policy if exists "Anyone can read published catalogue groups" on public.catalogue_groups;
+create policy "Anyone can read published catalogue groups"
+on public.catalogue_groups
 for select
 to anon, authenticated
 using (published = true);
 
-drop policy if exists "Authenticated users can manage catalogue images" on public.catalogue_images;
-create policy "Authenticated users can manage catalogue images"
-on public.catalogue_images
+drop policy if exists "Authenticated users can manage catalogue groups" on public.catalogue_groups;
+create policy "Authenticated users can manage catalogue groups"
+on public.catalogue_groups
+for all
+to authenticated
+using (true)
+with check (true);
+
+drop policy if exists "Anyone can read published catalogue group images"
+  on public.catalogue_group_images;
+create policy "Anyone can read published catalogue group images"
+on public.catalogue_group_images
+for select
+to anon, authenticated
+using (
+  exists (
+    select 1
+    from public.catalogue_groups g
+    where g.id = group_id
+      and g.published = true
+  )
+);
+
+drop policy if exists "Authenticated users can manage catalogue group images"
+  on public.catalogue_group_images;
+create policy "Authenticated users can manage catalogue group images"
+on public.catalogue_group_images
 for all
 to authenticated
 using (true)
@@ -433,7 +472,8 @@ grant select on table public.projects to anon, authenticated;
 grant select on table public.hero_slides to anon, authenticated;
 grant select on table public.services to anon, authenticated;
 grant select on table public.blog_posts to anon, authenticated;
-grant select on table public.catalogue_images to anon, authenticated;
+grant select on table public.catalogue_groups to anon, authenticated;
+grant select on table public.catalogue_group_images to anon, authenticated;
 
 insert into storage.buckets (
   id,

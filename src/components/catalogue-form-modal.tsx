@@ -13,17 +13,16 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
-  createCatalogueImages,
-  updateCatalogueImage,
+  createCatalogueGroup,
+  updateCatalogueGroup,
   uploadCatalogueImage,
 } from "@/app/admin/catalogue/actions";
 import {
-  catalogueItemToDraft,
-  draftToFormInput,
-  emptyCatalogueDraft,
+  emptyCatalogueImageDraft,
+  groupItemToImageDrafts,
   type CatalogueFormInput,
+  type CatalogueGroupItem,
   type CatalogueImageDraft,
-  type CatalogueImageItem,
 } from "@/lib/catalogue";
 import {
   getImageMimeType,
@@ -34,9 +33,9 @@ import { cn } from "@/lib/utils";
 type CatalogueFormModalProps = {
   open: boolean;
   onClose: () => void;
-  imageId?: string;
-  /** Edit mode: existing item. Create mode: omit. */
-  initialItem?: CatalogueImageItem | null;
+  groupId?: string;
+  /** Edit mode: existing group. Create mode: omit. */
+  initialItem?: CatalogueGroupItem | null;
   onSaved?: () => void;
 };
 
@@ -65,7 +64,7 @@ function validateLocalImage(file: File): string | null {
 export function CatalogueFormModal({
   open,
   onClose,
-  imageId,
+  groupId,
   initialItem,
   onSaved,
 }: CatalogueFormModalProps) {
@@ -75,9 +74,9 @@ export function CatalogueFormModal({
 
   return (
     <CatalogueFormModalInner
-      imageId={imageId}
+      groupId={groupId}
       initialItem={initialItem}
-      key={imageId ?? "create"}
+      key={groupId ?? "create"}
       onClose={onClose}
       onSaved={onSaved}
     />
@@ -86,26 +85,38 @@ export function CatalogueFormModal({
 
 function CatalogueFormModalInner({
   onClose,
-  imageId,
+  groupId,
   initialItem,
   onSaved,
 }: Omit<CatalogueFormModalProps, "open">) {
-  const isEditing = Boolean(imageId && initialItem);
+  const isEditing = Boolean(groupId && initialItem);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbScrollRef = useRef<HTMLDivElement>(null);
   const draftsRef = useRef<CatalogueImageDraft[]>([]);
-  const [drafts, setDrafts] = useState<CatalogueImageDraft[]>(() =>
-    initialItem ? [catalogueItemToDraft(initialItem)] : [],
+  const [title, setTitle] = useState(() => initialItem?.title ?? "");
+  const [description, setDescription] = useState(
+    () => initialItem?.description ?? "",
+  );
+  const [published, setPublished] = useState(
+    () => initialItem?.published ?? true,
+  );
+  const [sortOrder, setSortOrder] = useState(() =>
+    String(initialItem?.sortOrder ?? 0),
+  );
+  const [imageDrafts, setImageDrafts] = useState<CatalogueImageDraft[]>(() =>
+    initialItem ? groupItemToImageDrafts(initialItem) : [],
   );
   const [selectedId, setSelectedId] = useState<string | null>(() =>
-    initialItem ? initialItem.id : null,
+    initialItem?.images[0]?.id ?? null,
   );
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const selected =
-    drafts.find((draft) => draft.clientId === selectedId) ?? drafts[0] ?? null;
+    imageDrafts.find((draft) => draft.clientId === selectedId) ??
+    imageDrafts[0] ??
+    null;
 
   function updateThumbScrollState() {
     const el = thumbScrollRef.current;
@@ -136,8 +147,8 @@ function CatalogueFormModalInner({
   }
 
   useEffect(() => {
-    draftsRef.current = drafts;
-  }, [drafts]);
+    draftsRef.current = imageDrafts;
+  }, [imageDrafts]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -175,7 +186,7 @@ function CatalogueFormModalInner({
       el.removeEventListener("scroll", onScroll);
       observer?.disconnect();
     };
-  }, [drafts.length]);
+  }, [imageDrafts.length]);
 
   function openFilePicker() {
     if (isPending) {
@@ -185,7 +196,7 @@ function CatalogueFormModalInner({
     fileInputRef.current?.click();
   }
 
-  function updateSelectedField<K extends keyof CatalogueImageDraft>(
+  function updateSelectedImageField<K extends keyof CatalogueImageDraft>(
     key: K,
     value: CatalogueImageDraft[K],
   ) {
@@ -195,7 +206,7 @@ function CatalogueFormModalInner({
 
     const id = selected.clientId;
 
-    setDrafts((current) =>
+    setImageDrafts((current) =>
       current.map((draft) =>
         draft.clientId === id ? { ...draft, [key]: value } : draft,
       ),
@@ -211,6 +222,9 @@ function CatalogueFormModalInner({
     }
 
     const accepted: CatalogueImageDraft[] = [];
+    const makeFirstThumbnail =
+      imageDrafts.length === 0 ||
+      !imageDrafts.some((draft) => draft.isThumbnail);
 
     for (const file of files) {
       const error = validateLocalImage(file);
@@ -220,55 +234,44 @@ function CatalogueFormModalInner({
         continue;
       }
 
-      const nextOrder = String(drafts.length + accepted.length);
+      const nextOrder = String(imageDrafts.length + accepted.length);
       const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
       const previewUrl = URL.createObjectURL(file);
 
       accepted.push({
-        ...emptyCatalogueDraft(nextOrder),
+        ...emptyCatalogueImageDraft(nextOrder),
         imageUrl: previewUrl,
         storagePath: "",
         file,
-        caption: baseName.trim() || "",
-        sortOrder: isEditing ? (selected?.sortOrder ?? "0") : nextOrder,
+        subtitle: baseName.trim() || "",
+        isThumbnail: makeFirstThumbnail && accepted.length === 0,
       });
-
-      if (isEditing) {
-        break;
-      }
     }
 
     if (!accepted.length) {
       return;
     }
 
-    if (isEditing && selected) {
-      revokePreviewUrl(selected.imageUrl);
-      const next = accepted[0];
-      setDrafts([
-        {
-          ...selected,
-          imageUrl: next.imageUrl,
-          storagePath: "",
-          file: next.file,
-        },
-      ]);
-      return;
-    }
-
-    setDrafts((current) => [...current, ...accepted]);
+    setImageDrafts((current) => [...current, ...accepted]);
     setSelectedId(accepted[accepted.length - 1].clientId);
   }
 
-  function removeDraft(clientId: string) {
-    setDrafts((current) => {
+  function removeImageDraft(clientId: string) {
+    setImageDrafts((current) => {
       const removed = current.find((draft) => draft.clientId === clientId);
 
       if (removed) {
         revokePreviewUrl(removed.imageUrl);
       }
 
-      const next = current.filter((draft) => draft.clientId !== clientId);
+      let next = current.filter((draft) => draft.clientId !== clientId);
+
+      if (removed?.isThumbnail && next.length > 0) {
+        next = next.map((draft, index) => ({
+          ...draft,
+          isThumbnail: index === 0,
+        }));
+      }
 
       if (selectedId === clientId) {
         setSelectedId(next[0]?.clientId ?? null);
@@ -278,13 +281,27 @@ function CatalogueFormModalInner({
     });
   }
 
-  async function resolveDraftForSave(
-    draft: CatalogueImageDraft,
-  ): Promise<{ error: string } | { input: CatalogueFormInput }> {
-    if (!draft.caption.trim()) {
-      return { error: "Caption is required." };
+  function setSelectedAsThumbnail() {
+    if (!selected) {
+      return;
     }
 
+    const id = selected.clientId;
+
+    setImageDrafts((current) =>
+      current.map((draft) => ({
+        ...draft,
+        isThumbnail: draft.clientId === id,
+      })),
+    );
+  }
+
+  async function resolveImageDraft(
+    draft: CatalogueImageDraft,
+  ): Promise<
+    | { error: string }
+    | { image: CatalogueFormInput["images"][number] }
+  > {
     if (draft.file) {
       const formData = new FormData();
       formData.append("file", draft.file);
@@ -296,11 +313,14 @@ function CatalogueFormModalInner({
       }
 
       return {
-        input: draftToFormInput({
-          ...draft,
+        image: {
+          id: draft.id,
           imageUrl: upload.image.url,
           storagePath: upload.image.storagePath,
-        }),
+          subtitle: draft.subtitle,
+          isThumbnail: draft.isThumbnail,
+          sortOrder: draft.sortOrder,
+        },
       };
     }
 
@@ -308,62 +328,65 @@ function CatalogueFormModalInner({
       return { error: "Please add an image." };
     }
 
-    return { input: draftToFormInput(draft) };
+    return {
+      image: {
+        id: draft.id,
+        imageUrl: draft.imageUrl,
+        storagePath: draft.storagePath,
+        subtitle: draft.subtitle,
+        isThumbnail: draft.isThumbnail,
+        sortOrder: draft.sortOrder,
+      },
+    };
   }
 
   function handleSubmit() {
-    if (!drafts.length) {
+    if (!title.trim()) {
+      toast.error("Title is required.");
+      return;
+    }
+
+    if (!imageDrafts.length) {
       toast.error("Add at least one image.");
       return;
     }
 
     startTransition(async () => {
-      if (isEditing && imageId && drafts[0]) {
-        const resolved = await resolveDraftForSave(drafts[0]);
+      const images: CatalogueFormInput["images"] = [];
 
-        if ("error" in resolved) {
-          toast.error(resolved.error);
-          return;
-        }
-
-        const result = await updateCatalogueImage(imageId, resolved.input);
-
-        if (!result.success) {
-          toast.error(result.error);
-          return;
-        }
-
-        toast.success("Image updated.");
-        onSaved?.();
-        onClose();
-        return;
-      }
-
-      const inputs: CatalogueFormInput[] = [];
-
-      for (let index = 0; index < drafts.length; index += 1) {
-        const resolved = await resolveDraftForSave(drafts[index]);
+      for (let index = 0; index < imageDrafts.length; index += 1) {
+        const resolved = await resolveImageDraft(imageDrafts[index]);
 
         if ("error" in resolved) {
           toast.error(`Image ${index + 1}: ${resolved.error}`);
           return;
         }
 
-        inputs.push(resolved.input);
+        images.push({
+          ...resolved.image,
+          sortOrder: String(index),
+        });
       }
 
-      const result = await createCatalogueImages(inputs);
+      const input: CatalogueFormInput = {
+        title,
+        description,
+        published,
+        sortOrder,
+        images,
+      };
+
+      const result =
+        isEditing && groupId
+          ? await updateCatalogueGroup(groupId, input)
+          : await createCatalogueGroup(input);
 
       if (!result.success) {
         toast.error(result.error);
         return;
       }
 
-      toast.success(
-        result.ids.length === 1
-          ? "Image added."
-          : `${result.ids.length} images added.`,
-      );
+      toast.success(isEditing ? "Group updated." : "Catalogue group added.");
       onSaved?.();
       onClose();
     });
@@ -375,10 +398,10 @@ function CatalogueFormModalInner({
         <header className="flex items-center justify-between border-b border-border-soft px-4 py-3 sm:px-8">
           <div>
             <div className="text-xs text-muted">
-              {isEditing ? "Edit image" : "New images"}
+              {isEditing ? "Edit group" : "New group"}
             </div>
             <h2 className="font-primary text-lg font-medium">
-              {isEditing ? "Update catalogue image" : "Add catalogue images"}
+              {isEditing ? "Update catalogue group" : "Add catalogue group"}
             </h2>
           </div>
           <button
@@ -393,52 +416,85 @@ function CatalogueFormModalInner({
         </header>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-8">
+          <label className="block">
+            <span className="text-sm font-medium">Title</span>
+            <input
+              className="mt-2 h-11 w-full rounded-xl border border-border-soft bg-surface px-3 text-sm outline-none transition focus:border-border-strong"
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Moldings"
+              value={title}
+            />
+            <span className="mt-1 block text-xs text-muted">
+              Group name shown on the catalogue (e.g. False ceiling, Moldings).
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium">
+              Description{" "}
+              <span className="font-normal text-muted">(optional)</span>
+            </span>
+            <textarea
+              className="mt-2 min-h-20 w-full rounded-xl border border-border-soft bg-surface px-3 py-3 text-sm outline-none transition focus:border-border-strong"
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Short note about this design collection"
+              value={description}
+            />
+          </label>
+
           <input
             accept="image/png,image/jpeg,image/webp"
             className="sr-only"
             disabled={isPending}
-            multiple={!isEditing}
+            multiple
             onChange={handleFilesSelected}
             ref={fileInputRef}
             type="file"
           />
 
-          <button
-            className="relative block w-full overflow-hidden rounded-2xl border border-border-soft bg-surface-muted text-left transition hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-70"
-            disabled={isPending}
-            onClick={openFilePicker}
-            type="button"
-          >
-            {selected?.imageUrl ? (
-              <div className="relative aspect-[4/3]">
-                <Image
-                  alt={selected.altText || selected.caption || "Catalogue image"}
-                  className="object-cover"
-                  fill
-                  sizes="560px"
-                  src={selected.imageUrl}
-                  unoptimized
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-3">
-                  <p className="line-clamp-2 text-sm font-medium text-white">
-                    {selected.caption || "Caption preview"}
-                  </p>
+          <div>
+            <span className="text-sm font-medium">Photos</span>
+            <button
+              className="relative mt-2 block w-full overflow-hidden rounded-2xl border border-border-soft bg-surface-muted text-left transition hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-70"
+              disabled={isPending}
+              onClick={openFilePicker}
+              type="button"
+            >
+              {selected?.imageUrl ? (
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    alt={
+                      selected.subtitle ||
+                      title ||
+                      "Catalogue image"
+                    }
+                    className="object-cover"
+                    fill
+                    loading="eager"
+                    priority
+                    sizes="560px"
+                    src={selected.imageUrl}
+                    unoptimized
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-3">
+                    <p className="line-clamp-2 text-sm font-medium text-white">
+                      {selected.subtitle || "Subtitle preview"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 text-muted">
-                <ImageUp size={28} strokeWidth={1.75} />
-                <p className="text-sm font-medium text-foreground">
-                  Tap to add photos
-                </p>
-                <p className="text-xs">
-                  {isEditing ? "PNG, JPG, or WEBP" : "Select one or more"}
-                </p>
-              </div>
-            )}
-          </button>
+              ) : (
+                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 text-muted">
+                  <ImageUp size={28} strokeWidth={1.75} />
+                  <p className="text-sm font-medium text-foreground">
+                    Tap to add photos
+                  </p>
+                  <p className="text-xs">Select one or more PNG, JPG, or WEBP</p>
+                </div>
+              )}
+            </button>
+          </div>
 
-          {drafts.length > 0 ? (
+          {imageDrafts.length > 0 ? (
             <div className="relative pt-2.5">
               {canScrollLeft ? (
                 <button
@@ -471,7 +527,7 @@ function CatalogueFormModalInner({
                 onScroll={updateThumbScrollState}
                 ref={thumbScrollRef}
               >
-                {drafts.map((draft) => {
+                {imageDrafts.map((draft) => {
                   const isActive = draft.clientId === selected?.clientId;
 
                   return (
@@ -491,50 +547,41 @@ function CatalogueFormModalInner({
                             alt=""
                             className="object-cover"
                             fill
+                            loading="eager"
                             sizes="64px"
                             src={draft.imageUrl}
                             unoptimized
                           />
                         ) : null}
+                        {draft.isThumbnail ? (
+                          <span className="absolute inset-x-0 bottom-0 bg-primary/90 py-0.5 text-center text-[9px] font-medium text-primary-foreground">
+                            Thumb
+                          </span>
+                        ) : null}
                       </button>
-                      {!isEditing || drafts.length > 1 ? (
-                        <button
-                          aria-label="Remove image"
-                          className="absolute -right-1.5 -top-1.5 z-20 flex size-5 items-center justify-center rounded-full bg-foreground text-background shadow-md ring-2 ring-surface"
-                          disabled={isPending}
-                          onClick={() => removeDraft(draft.clientId)}
-                          type="button"
-                        >
-                          <X size={12} strokeWidth={2.5} />
-                        </button>
-                      ) : null}
+                      <button
+                        aria-label="Remove image"
+                        className="absolute -right-1.5 -top-1.5 z-20 flex size-5 items-center justify-center rounded-full bg-foreground text-background shadow-md ring-2 ring-surface"
+                        disabled={isPending}
+                        onClick={() => removeImageDraft(draft.clientId)}
+                        type="button"
+                      >
+                        <X size={12} strokeWidth={2.5} />
+                      </button>
                     </div>
                   );
                 })}
 
-                {!isEditing ? (
-                  <button
-                    aria-label="Add more images"
-                    className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border-strong text-muted transition hover:border-primary hover:text-foreground"
-                    disabled={isPending}
-                    onClick={openFilePicker}
-                    type="button"
-                  >
-                    <ImagePlus size={18} />
-                    <span className="text-[10px] font-medium">Add</span>
-                  </button>
-                ) : (
-                  <button
-                    aria-label="Replace image"
-                    className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border-strong text-muted transition hover:border-primary hover:text-foreground"
-                    disabled={isPending}
-                    onClick={openFilePicker}
-                    type="button"
-                  >
-                    <ImagePlus size={18} />
-                    <span className="text-[10px] font-medium">Replace</span>
-                  </button>
-                )}
+                <button
+                  aria-label="Add more images"
+                  className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-border-strong text-muted transition hover:border-primary hover:text-foreground"
+                  disabled={isPending}
+                  onClick={openFilePicker}
+                  type="button"
+                >
+                  <ImagePlus size={18} />
+                  <span className="text-[10px] font-medium">Add</span>
+                </button>
               </div>
             </div>
           ) : null}
@@ -542,90 +589,79 @@ function CatalogueFormModalInner({
           {selected ? (
             <>
               <label className="block">
-                <span className="text-sm font-medium">Caption</span>
+                <span className="text-sm font-medium">
+                  Subtitle{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </span>
                 <input
                   className="mt-2 h-11 w-full rounded-xl border border-border-soft bg-surface px-3 text-sm outline-none transition focus:border-border-strong"
                   onChange={(event) =>
-                    updateSelectedField("caption", event.target.value)
+                    updateSelectedImageField("subtitle", event.target.value)
                   }
-                  placeholder="Cove lighting POP ceiling"
-                  value={selected.caption}
+                  placeholder="Crown molding — living room"
+                  value={selected.subtitle}
                 />
                 <span className="mt-1 block text-xs text-muted">
-                  Short label on the photo (e.g. design style or room).
+                  Shown on the photo; also used as alt text.
                 </span>
               </label>
 
-              <label className="block">
-                <span className="text-sm font-medium">Alt text</span>
-                <input
-                  className="mt-2 h-11 w-full rounded-xl border border-border-soft bg-surface px-3 text-sm outline-none transition focus:border-border-strong"
-                  onChange={(event) =>
-                    updateSelectedField("altText", event.target.value)
-                  }
-                  placeholder={selected.caption || "Describe the photo"}
-                  value={selected.altText}
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-medium">SEO description</span>
-                <textarea
-                  className="mt-2 min-h-20 w-full rounded-xl border border-border-soft bg-surface px-3 py-3 text-sm outline-none transition focus:border-border-strong"
-                  onChange={(event) =>
-                    updateSelectedField("seoDescription", event.target.value)
-                  }
-                  placeholder="Optional — longer text for search engines"
-                  value={selected.seoDescription}
-                />
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="text-sm font-medium">Display order</span>
-                  <input
-                    className="mt-2 h-11 w-full rounded-xl border border-border-soft bg-surface px-3 text-sm outline-none transition focus:border-border-strong"
-                    inputMode="numeric"
-                    onChange={(event) =>
-                      updateSelectedField("sortOrder", event.target.value)
-                    }
-                    value={selected.sortOrder}
-                  />
-                  <span className="mt-1 block text-xs text-muted">
-                    Lower numbers show first on the homepage.
-                  </span>
-                </label>
-
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Published</span>
-                  <button
-                    className={cn(
-                      "mt-2 h-11 rounded-xl border text-sm font-medium transition",
-                      selected.published
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : "border-border-soft bg-surface text-muted",
-                    )}
-                    onClick={() =>
-                      updateSelectedField("published", !selected.published)
-                    }
-                    type="button"
-                  >
-                    {selected.published ? "Live on homepage" : "Hidden (draft)"}
-                  </button>
-                </div>
-              </div>
+              <button
+                className={cn(
+                  "h-11 w-full rounded-xl border text-sm font-medium transition",
+                  selected.isThumbnail
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border-soft bg-surface text-foreground hover:border-border-strong",
+                )}
+                onClick={setSelectedAsThumbnail}
+                type="button"
+              >
+                {selected.isThumbnail
+                  ? "Thumbnail for list card"
+                  : "Use as thumbnail"}
+              </button>
+              <p className="-mt-3 text-xs text-muted">
+                This photo is shown as the cover on catalogue list pages.
+              </p>
             </>
-          ) : (
-            <p className="text-sm text-muted">
-              Tap the preview area to choose design photos.
-            </p>
-          )}
+          ) : null}
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-sm font-medium">Display order</span>
+              <input
+                className="mt-2 h-11 w-full rounded-xl border border-border-soft bg-surface px-3 text-sm outline-none transition focus:border-border-strong"
+                inputMode="numeric"
+                onChange={(event) => setSortOrder(event.target.value)}
+                value={sortOrder}
+              />
+              <span className="mt-1 block text-xs text-muted">
+                Lower numbers show first.
+              </span>
+            </label>
+
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Published</span>
+              <button
+                className={cn(
+                  "mt-2 h-11 rounded-xl border text-sm font-medium transition",
+                  published
+                    ? "border-green-200 bg-green-50 text-green-700"
+                    : "border-border-soft bg-surface text-muted",
+                )}
+                onClick={() => setPublished((value) => !value)}
+                type="button"
+              >
+                {published ? "Live on site" : "Hidden (draft)"}
+              </button>
+            </div>
+          </div>
         </div>
 
         <footer className="border-t border-border-soft px-4 py-3 sm:px-8">
           <button
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground transition hover:bg-primary-hover disabled:opacity-70"
-            disabled={isPending || !drafts.length}
+            disabled={isPending || !imageDrafts.length}
             onClick={handleSubmit}
             type="button"
           >
@@ -636,8 +672,6 @@ function CatalogueFormModalInner({
               </>
             ) : isEditing ? (
               "Save changes"
-            ) : drafts.length > 1 ? (
-              `Add ${drafts.length} images`
             ) : (
               "Add to catalogue"
             )}

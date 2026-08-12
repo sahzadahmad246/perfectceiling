@@ -32,7 +32,7 @@ export function CatalogueDetailHeader({
           </div>
 
           <h1 className="truncate text-center font-primary text-base font-medium">
-            {caption || "Catalogue image"}
+            {caption || "Catalogue group"}
           </h1>
 
           <div className="flex justify-end">
@@ -50,7 +50,7 @@ export function CatalogueDetailHeader({
       </header>
 
       <AdminDetailBreadcrumbBar
-        items={getCatalogueDetailBreadcrumb(caption || "Image")}
+        items={getCatalogueDetailBreadcrumb(caption || "Group")}
       />
     </div>
   );
