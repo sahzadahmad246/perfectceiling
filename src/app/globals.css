@@ -351,19 +351,21 @@ a {
   );
 }
 
+/* First block under hero: solid edge, no soft/white fade or blur at the joint */
+.landing-section-flush-top {
+  margin-top: 0;
+  padding-top: 2rem;
+  background: var(--surface);
+}
+
+.landing-section-flush-top > .landing-section-bg {
+  display: none;
+}
+
+/* Solid hero edge — never fade the image into the next section */
 .hero-carousel-shell {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 72%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 72%,
-    transparent 100%
-  );
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 .landing-bg-shade .landing-section-bg {
@@ -435,6 +437,50 @@ a {
   );
 }
 
+/* Soft multi-color wash + light grid for Google reviews section */
+.landing-bg-reviews .landing-section-bg {
+  background-color: #fbfaf7;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, #d4d4d8 28%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, #d4d4d8 28%, transparent) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      ellipse 70% 55% at 8% 20%,
+      color-mix(in srgb, #fbbf24 14%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 65% 50% at 92% 12%,
+      color-mix(in srgb, #93c5fd 16%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 48% at 50% 100%,
+      color-mix(in srgb, #c4b5fd 12%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      165deg,
+      #fffdf8 0%,
+      #f8fafc 42%,
+      #f5f3ff 100%
+    );
+  background-size:
+    36px 36px,
+    36px 36px,
+    auto,
+    auto,
+    auto,
+    auto;
+}
+
 @keyframes hero-theme-drift {
   from {
     transform: scale(1);
@@ -444,16 +490,10 @@ a {
   }
 }
 
+/* No white surface fade on hero media bottoms */
 .hero-grid::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent 58%,
-    color-mix(in srgb, var(--surface) 88%, transparent) 100%
-  );
-  pointer-events: none;
+  content: none;
+  display: none;
 }
 
 .article-editor-content,

@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 
-/** Cache Google Places responses for 7 days — reviews rarely change daily. */
-export const GOOGLE_REVIEWS_REVALIDATE_SECONDS = 60 * 60 * 24 * 7;
+/** Cache Google Places responses for 48 hours (refresh at most twice a day). */
+export const GOOGLE_REVIEWS_REVALIDATE_SECONDS = 60 * 60 * 48;
 
 export type GoogleReview = {
   id: string;
@@ -176,7 +176,7 @@ async function fetchGoogleBusinessReviewsFromApi(): Promise<GoogleBusinessReview
 
 /**
  * Google Business rating + sample reviews.
- * Cached for 7 days — Google is not called on every page view.
+ * Cached for 48 hours — Google is not called on every page view.
  */
 export const getGoogleBusinessReviews = unstable_cache(
   async () => {
@@ -187,7 +187,7 @@ export const getGoogleBusinessReviews = unstable_cache(
       return null;
     }
   },
-  ["google-business-reviews-legacy-7d"],
+  ["google-business-reviews-legacy-48h"],
   {
     revalidate: GOOGLE_REVIEWS_REVALIDATE_SECONDS,
     tags: ["google-reviews"],

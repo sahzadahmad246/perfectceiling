@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -10,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { HeroHeading } from "@/components/hero-heading";
 import type { HeroSlide } from "@/lib/public-content";
 import { cn } from "@/lib/utils";
 
@@ -183,6 +183,7 @@ export function HeroMediaCarousel({
                       "animate-hero-ken-burns",
                   )}
                   fill
+                  loading={index === 0 ? "eager" : "lazy"}
                   priority={index === 0}
                   sizes="560px"
                   src={slide.mediaUrl}
@@ -191,7 +192,11 @@ export function HeroMediaCarousel({
               )}
 
               {slide.mediaType !== "animated" ? (
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/15" />
+                // Black shade only along the bottom title/CTA band — image stays clear above
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black from-15% via-black/75 via-55% to-transparent"
+                />
               ) : null}
             </div>
           );
@@ -199,7 +204,7 @@ export function HeroMediaCarousel({
 
         <div
           className={cn(
-            "relative z-10 flex h-full flex-col justify-end px-4 pb-5 sm:px-8 sm:pb-6",
+            "relative z-10 flex h-full flex-col justify-end px-4 pb-4 sm:px-8 sm:pb-5",
             shellMinHeight,
             extendUnderHeader ? "pt-16" : "pt-8",
           )}
@@ -207,7 +212,7 @@ export function HeroMediaCarousel({
           {badge ? (
             <div
               className={cn(
-                "mb-4 inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs backdrop-blur-sm",
+                "mb-3 inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs backdrop-blur-sm",
                 isPhotoSlide
                   ? "border border-white/20 bg-black/45 text-white/85"
                   : "border border-border-strong bg-surface-raised/85 text-muted",
@@ -224,63 +229,18 @@ export function HeroMediaCarousel({
             </div>
           ) : null}
 
-          <div className="relative min-h-[6.5rem]">
-            {slides.map((slide, index) => {
-              const isActive = index === activeIndex;
-              const slideIsPhoto =
-                slide.mediaType === "image" || slide.mediaType === "video";
-
-              return (
-                <div
-                  className={cn(
-                    "transition-all duration-500",
-                    isActive
-                      ? "translate-y-0 opacity-100"
-                      : "pointer-events-none absolute inset-x-0 translate-y-2 opacity-0",
-                  )}
-                  key={`copy-${slide.id}`}
-                >
-                  {slide.href ? (
-                    <Link
-                      className={cn(
-                        "font-primary text-[27px] font-semibold leading-[1.12] tracking-[-0.02em] transition hover:opacity-90 sm:text-[32px]",
-                        slideIsPhoto ? "text-white" : "text-foreground",
-                      )}
-                      href={slide.href}
-                    >
-                      {slide.overlayTitle}
-                    </Link>
-                  ) : (
-                    <h1
-                      className={cn(
-                        "font-primary text-[27px] font-semibold leading-[1.12] tracking-[-0.02em] sm:text-[32px]",
-                        slideIsPhoto ? "text-white" : "text-foreground",
-                      )}
-                    >
-                      {slide.overlayTitle}
-                    </h1>
-                  )}
-                  {slide.overlaySubtitle ? (
-                    <p
-                      className={cn(
-                        "mt-3 max-w-[34rem] text-[15px] leading-7 sm:text-[16px]",
-                        slideIsPhoto ? "text-white/80" : "text-muted",
-                      )}
-                    >
-                      {slide.overlaySubtitle}
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
+          {/* Title block sits tight above CTAs */}
+          <div className="mt-auto">
+            <HeroHeading onDark={isPhotoSlide} />
           </div>
 
           {children ? (
             <div
               className={cn(
-                "mt-6",
+                "mt-5",
+                // Keep WhatsApp brand green; only restyle secondary (call) action on photos.
                 isPhotoSlide &&
-                  "[&_a:first-child]:bg-white [&_a:first-child]:text-primary [&_a:first-child]:hover:bg-white/90 [&_a:last-child]:border-white/70 [&_a:last-child]:bg-white/10 [&_a:last-child]:text-white [&_a:last-child]:backdrop-blur-sm [&_a:last-child]:hover:border-white [&_a:last-child]:hover:bg-white/20",
+                  "[&_a:last-child]:border-white/70 [&_a:last-child]:bg-white/10 [&_a:last-child]:text-white [&_a:last-child]:backdrop-blur-sm [&_a:last-child]:hover:border-white [&_a:last-child]:hover:bg-white/20",
               )}
             >
               {children}
@@ -288,11 +248,11 @@ export function HeroMediaCarousel({
           ) : null}
 
           {slideCount > 1 ? (
-            <div className="mt-5 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2">
               {slides.map((slide, index) => (
                 <button
                   aria-current={index === activeIndex}
-                  aria-label={`Show slide ${index + 1}: ${slide.overlayTitle}`}
+                  aria-label={`Show slide ${index + 1}`}
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-300",
                     index === activeIndex

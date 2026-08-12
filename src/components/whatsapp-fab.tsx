@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 
 type WhatsAppFabProps = {
   href: string;
@@ -19,7 +19,7 @@ export function WhatsAppFab({
     >
       <span aria-hidden className="whatsapp-fab-ring" />
       <span aria-hidden className="whatsapp-fab-ring whatsapp-fab-ring-delay" />
-      <MessageCircle className="relative z-[1]" size={26} strokeWidth={2} />
+      <FaWhatsapp aria-hidden className="relative z-[1]" size={28} />
     </a>
   );
 }

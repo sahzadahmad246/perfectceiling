@@ -25,10 +25,13 @@ export function PublicGoogleReviewsSection({
   const ratingLabel = data.rating.toFixed(1);
   const profileHref = data.profileUrl;
   const updatedLabel = formatReviewsUpdatedAt(data.fetchedAt);
+  const reviewCountLabel = `${formatRatingCount(data.userRatingCount)} review${
+    data.userRatingCount === 1 ? "" : "s"
+  }`;
 
   return (
     <section
-      className="landing-section landing-bg-shade-cool px-4 sm:px-8"
+      className="landing-section landing-bg-reviews px-4 sm:px-8"
       id="reviews"
     >
       <div aria-hidden className="landing-section-bg" />
@@ -49,58 +52,38 @@ export function PublicGoogleReviewsSection({
           </a>
         </div>
 
-        {/* Rating hero */}
-        <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-border-soft bg-surface-raised shadow-[0_16px_48px_rgba(24,24,27,0.07)]">
-          <div className="relative bg-[radial-gradient(120%_90%_at_0%_0%,rgba(251,191,36,0.18),transparent_55%),linear-gradient(160deg,#fffdf8_0%,#ffffff_48%,#f8fafc_100%)] px-5 py-6">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="flex size-[5.5rem] shrink-0 flex-col items-center justify-center rounded-[1.35rem] border border-amber-100/80 bg-white shadow-[0_8px_24px_rgba(245,158,11,0.12)]">
-                <p className="font-primary text-[2.5rem] font-semibold leading-none tracking-tight text-foreground">
-                  {ratingLabel}
-                </p>
-                <StarRating className="mt-2" rating={data.rating} size={13} />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-border-soft bg-white/90 px-2.5 py-1 text-[11px] font-medium text-muted shadow-sm">
-                  <span
-                    aria-hidden
-                    className="inline-flex size-4 items-center justify-center rounded-full bg-white text-[10px] font-bold leading-none text-[#4285F4] shadow-sm ring-1 ring-border-soft"
-                  >
-                    G
-                  </span>
-                  Google
-                </div>
-
-                <p className="mt-2.5 font-primary text-lg font-medium leading-snug text-foreground">
-                  {formatRatingCount(data.userRatingCount)} review
-                  {data.userRatingCount === 1 ? "" : "s"}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  {data.placeName}
-                </p>
-              </div>
+        <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/80 shadow-[0_18px_50px_rgba(24,24,27,0.08)] backdrop-blur-sm">
+          <div className="px-5 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <StarRating rating={data.rating} size={18} />
+              <p className="font-primary text-3xl font-semibold leading-none tracking-tight text-foreground">
+                {ratingLabel}
+              </p>
+              <p className="text-sm text-muted">{reviewCountLabel}</p>
             </div>
 
+            <div className="mt-4 border-t border-border-soft" />
+
+            <GoogleReviewsCarousel reviews={data.reviews} />
+          </div>
+
+          <div className="border-t border-border-soft px-5 py-3 sm:px-6">
             <a
-              className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#4285F4] px-5 text-sm font-medium text-white shadow-[0_8px_20px_rgba(66,133,244,0.28)] transition hover:bg-[#3367d6]"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4285F4] transition hover:text-[#3367d6]"
               href={profileHref}
               rel="noopener noreferrer"
               target="_blank"
             >
               See all on Google
-              <ArrowUpRight size={16} />
+              <ArrowUpRight size={14} />
             </a>
+            {updatedLabel ? (
+              <p className="mt-1 text-[11px] leading-5 text-muted">
+                Last updated: {updatedLabel}
+              </p>
+            ) : null}
           </div>
         </div>
-
-        {/* Side-by-side review carousel */}
-        <GoogleReviewsCarousel reviews={data.reviews} />
-
-        {updatedLabel ? (
-          <p className="mt-4 text-[11px] leading-5 text-muted">
-            Last updated: {updatedLabel}
-          </p>
-        ) : null}
       </div>
     </section>
   );

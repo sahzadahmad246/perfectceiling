@@ -1,4 +1,5 @@
-import { MessageCircle, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 
 import { HeroHeading } from "@/components/hero-heading";
 import {
@@ -44,12 +45,12 @@ export function HeroSection({ city, phone, whatsapp }: HeroSectionProps) {
 
           <div className="mt-7 flex flex-wrap gap-3 sm:mt-8">
             <a
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition duration-200 hover:bg-[#1ebe57]"
               href={whatsappHref}
               rel="noopener noreferrer"
               target="_blank"
             >
-              <MessageCircle size={17} />
+              <FaWhatsapp aria-hidden size={18} />
               WhatsApp
             </a>
             <a

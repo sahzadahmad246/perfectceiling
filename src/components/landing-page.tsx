@@ -1,9 +1,6 @@
-import {
-  ArrowUpRight,
-  MessageCircle,
-  Phone,
-} from "lucide-react";
+import { ArrowUpRight, Phone } from "lucide-react";
 import Link from "next/link";
+import { FaWhatsapp } from "react-icons/fa";
 
 import { HeroMediaCarousel } from "@/components/hero-media-carousel";
 import { JsonLd } from "@/components/json-ld";
@@ -113,19 +110,18 @@ export async function LandingPage() {
 
       <div className="grid -mx-4 sm:-mx-8">
         <HeroMediaCarousel
-          badge={`False ceiling contractor in ${settings.city}`}
           className="col-start-1 row-start-1"
           extendUnderHeader
           slides={slides}
         >
         <div className="flex flex-wrap gap-3">
           <a
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white transition duration-200 hover:bg-[#1ebe57]"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition duration-200 hover:bg-[#1ebe57]"
             href={whatsappHref}
             rel="noopener noreferrer"
             target="_blank"
           >
-            <MessageCircle size={17} />
+            <FaWhatsapp aria-hidden size={18} />
             WhatsApp
           </a>
           <a
@@ -145,8 +141,7 @@ export async function LandingPage() {
       </div>
 
       <div className="landing-flow -mx-4 sm:-mx-8">
-        <section className="landing-section landing-bg-shade -mt-3 px-4 sm:px-8">
-          <div aria-hidden className="landing-section-bg" />
+        <section className="landing-section landing-section-flush-top px-4 sm:px-8">
           <div className="landing-section-content">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl bg-surface-muted px-3 py-4">
@@ -370,12 +365,12 @@ export async function LandingPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <a
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white transition duration-200 hover:bg-[#1ebe57]"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition duration-200 hover:bg-[#1ebe57]"
                 href={whatsappHref}
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <MessageCircle size={17} />
+                <FaWhatsapp aria-hidden size={18} />
                 WhatsApp
               </a>
               <a

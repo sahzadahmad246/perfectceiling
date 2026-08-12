@@ -241,20 +241,47 @@ function mapProject(row: ProjectRow): PublicProject {
   };
 }
 
+const HERO_SLIDE_DURATION_MS = 5500;
+const HERO_MAX_SLIDES = 16;
+
 function catalogueToHeroSlides(groups: PublicCatalogueGroup[]): HeroSlide[] {
-  return groups
-    .filter((group) => group.previewImageUrl?.trim())
-    .map((group) => ({
-      id: `catalogue-${group.id}`,
-      mediaType: "image" as const,
-      mediaUrl: group.previewImageUrl,
-      posterUrl: null,
-      theme: undefined,
-      overlayTitle: group.title,
-      overlaySubtitle: group.description?.trim() || "Design catalogue",
-      durationMs: 8000,
-      href: getCataloguePublicPath(group.id),
-    }));
+  const slides: HeroSlide[] = [];
+
+  for (const group of groups) {
+    const images =
+      group.images.length > 0
+        ? group.images
+        : group.previewImageUrl
+          ? [
+              {
+                id: "preview",
+                imageUrl: group.previewImageUrl,
+                subtitle: null,
+                isThumbnail: true,
+              },
+            ]
+          : [];
+
+    for (const [index, image] of images.entries()) {
+      if (!image.imageUrl?.trim()) {
+        continue;
+      }
+
+      slides.push({
+        id: `catalogue-${group.id}-${image.id}-${index}`,
+        mediaType: "image",
+        mediaUrl: image.imageUrl,
+        posterUrl: null,
+        theme: undefined,
+        overlayTitle: group.title,
+        overlaySubtitle: image.subtitle?.trim() || null,
+        durationMs: HERO_SLIDE_DURATION_MS,
+        href: getCataloguePublicPath(group.id),
+      });
+    }
+  }
+
+  return slides;
 }
 
 function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
@@ -269,6 +296,10 @@ function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
           : [];
 
     for (const [index, image] of images.entries()) {
+      if (!image.url?.trim()) {
+        continue;
+      }
+
       slides.push({
         id: `project-${project.id}-${index}`,
         mediaType: "image",
@@ -279,7 +310,7 @@ function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
         overlaySubtitle:
           [project.serviceType, project.location].filter(Boolean).join(" · ") ||
           null,
-        durationMs: 8000,
+        durationMs: HERO_SLIDE_DURATION_MS,
         href: getProjectPublicPath(project.slug),
       });
     }
@@ -299,8 +330,13 @@ function servicesToHeroSlides(services: PublicService[]): HeroSlide[] {
     const images =
       service.galleryImages.length > 0
         ? service.galleryImages
-        : service.imageUrl
-          ? [{ url: service.imageUrl, caption: "" }]
+        : service.featuredImageUrl || service.imageUrl
+          ? [
+              {
+                url: service.featuredImageUrl || service.imageUrl || "",
+                caption: "",
+              },
+            ]
           : [];
 
     for (const [index, image] of images.entries()) {
@@ -316,13 +352,45 @@ function servicesToHeroSlides(services: PublicService[]): HeroSlide[] {
         theme: undefined,
         overlayTitle: service.title,
         overlaySubtitle: service.shortDescription || null,
-        durationMs: 8000,
+        durationMs: HERO_SLIDE_DURATION_MS,
         href: getServicePublicPath(service.slug),
       });
     }
   }
 
   return slides;
+}
+
+/** Prefer real photos; drop animated placeholders when we have media. */
+function mergeHeroSlides(sources: HeroSlide[][]): HeroSlide[] {
+  const seen = new Set<string>();
+  const merged: HeroSlide[] = [];
+
+  for (const batch of sources) {
+    for (const slide of batch) {
+      if (slide.mediaType === "animated") {
+        continue;
+      }
+
+      const key = slide.mediaUrl?.trim();
+
+      if (!key || seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      merged.push({
+        ...slide,
+        durationMs: slide.durationMs || HERO_SLIDE_DURATION_MS,
+      });
+
+      if (merged.length >= HERO_MAX_SLIDES) {
+        return merged;
+      }
+    }
+  }
+
+  return merged;
 }
 
 async function fetchPublishedHeroSlides(): Promise<HeroSlide[]> {
@@ -386,35 +454,24 @@ export const getPublicHeroSlides = cache(async (): Promise<HeroSlide[]> => {
   }
 
   try {
-    // Prefer dedicated hero_slides table when configured.
-    const slides = await fetchPublishedHeroSlides();
+    // Merge all image sources so the hero actually carousels multiple photos.
+    const [configured, catalogueGroups, projects, services] =
+      await Promise.all([
+        fetchPublishedHeroSlides(),
+        fetchPublishedCatalogueGroups(12),
+        fetchPublishedProjects(12),
+        fetchPublishedServices(),
+      ]);
 
-    if (slides.length > 0) {
-      return slides;
-    }
+    const merged = mergeHeroSlides([
+      configured,
+      catalogueToHeroSlides(catalogueGroups),
+      projectsToHeroSlides(projects),
+      servicesToHeroSlides(services),
+    ]);
 
-    // Then catalogue designs (best visual for design-led hero).
-    const catalogueGroups = await fetchPublishedCatalogueGroups(8);
-    const catalogueSlides = catalogueToHeroSlides(catalogueGroups);
-
-    if (catalogueSlides.length > 0) {
-      return catalogueSlides;
-    }
-
-    // Then real project photos.
-    const projects = await fetchPublishedProjects(8);
-    const projectSlides = projectsToHeroSlides(projects);
-
-    if (projectSlides.length > 0) {
-      return projectSlides;
-    }
-
-    // Then service photos.
-    const services = await fetchPublishedServices();
-    const serviceSlides = servicesToHeroSlides(services);
-
-    if (serviceSlides.length > 0) {
-      return serviceSlides.slice(0, 8);
+    if (merged.length > 0) {
+      return merged;
     }
 
     return fallbackHeroSlides;
