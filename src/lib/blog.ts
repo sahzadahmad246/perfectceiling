@@ -23,6 +23,7 @@ export type BlogListItem = {
   publishedAt: string | null;
   seoTitle: string | null;
   imageUrl: string | null;
+  viewCount: number;
 };
 
 export type BlogDetail = BlogListItem & {

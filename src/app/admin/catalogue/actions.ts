@@ -15,6 +15,7 @@ import {
   isUploadFile,
   MAX_UPLOAD_IMAGE_SIZE,
   normalizeUploadFileName,
+  slugifyUploadStem,
 } from "@/lib/upload-image";
 
 const GROUPS_TABLE = "catalogue_groups";
@@ -48,6 +49,7 @@ type ImageRow = {
   subtitle: string | null;
   is_thumbnail: boolean | null;
   sort_order: number | null;
+  view_count?: number | null;
 };
 
 type ValidatedGroupData = {
@@ -79,6 +81,7 @@ function mapImage(row: ImageRow): CatalogueGroupImage {
     subtitle: row.subtitle,
     isThumbnail: Boolean(row.is_thumbnail),
     sortOrder: row.sort_order ?? 0,
+    viewCount: row.view_count ?? 0,
   };
 }
 
@@ -206,7 +209,7 @@ export async function listCatalogueGroups(): Promise<CatalogueGroupItem[]> {
   const { data: images, error: imagesError } = await supabase
     .from(IMAGES_TABLE)
     .select(
-      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order",
+      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order, view_count",
     )
     .in("group_id", groupIds)
     .order("sort_order", { ascending: true })
@@ -251,7 +254,7 @@ export async function getCatalogueGroupById(
   const { data: images, error: imagesError } = await supabase
     .from(IMAGES_TABLE)
     .select(
-      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order",
+      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order, view_count",
     )
     .eq("group_id", id)
     .order("sort_order", { ascending: true })
@@ -495,7 +498,11 @@ export async function uploadCatalogueImage(
     const extension =
       normalizeUploadFileName(file.name).split(".").pop() || "jpg";
     const imageId = crypto.randomUUID();
-    const path = `catalogue/${imageId}.${extension}`;
+    const titleHint = String(formData.get("title") ?? "");
+    const subtitleHint = String(formData.get("subtitle") ?? "");
+    const seoStem =
+      slugifyUploadStem(subtitleHint || titleHint) || "ceiling-design";
+    const path = `catalogue/${seoStem}-${imageId.slice(0, 8)}.${extension}`;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const storageClient = createServiceClient() ?? supabase;
 

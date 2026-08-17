@@ -8,6 +8,8 @@ import {
   getPublicBlogSlugs,
 } from "@/lib/public-content";
 
+export const revalidate = 60;
+
 type BlogDetailPageProps = {
   params: Promise<{ slug: string }>;
 };

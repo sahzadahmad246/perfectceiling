@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getBlogPageUrl } from "@/lib/blog-seo";
 import {
+  getCatalogueImageShareUrl,
   getCatalogueListUrl,
   getCataloguePageUrl,
 } from "@/lib/catalogue-seo";
@@ -148,15 +149,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const catalogueEntries = catalogueGroups.map((group) => ({
     url: getCataloguePageUrl(group.id),
     lastModified: group.updatedAt ? new Date(group.updatedAt) : new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.7,
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
     images: sitemapImages(
       resolveSeoImageUrls({
         featuredUrls: [group.previewImageUrl],
         galleryUrls: group.images.map((image) => image.imageUrl),
+        limit: 50,
       }),
     ),
   }));
+
+  const catalogueImageEntries = catalogueGroups.flatMap((group) =>
+    group.images.map((image) => ({
+      url: getCatalogueImageShareUrl(group.id, image.id),
+      lastModified: group.updatedAt ? new Date(group.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.65,
+      images: sitemapImages([image.imageUrl]),
+    })),
+  );
 
   return [
     ...staticEntries,
@@ -164,5 +176,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...projectEntries,
     ...blogEntries,
     ...catalogueEntries,
+    ...catalogueImageEntries,
   ];
 }

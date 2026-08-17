@@ -5,6 +5,8 @@ import { getPublicBusinessSettings } from "@/lib/business-settings";
 import { buildBlogListMetadata } from "@/lib/blog-seo";
 import { getPublicBlogPosts } from "@/lib/public-content";
 
+export const revalidate = 60;
+
 export async function generateMetadata(): Promise<Metadata> {
   const [settings, posts] = await Promise.all([
     getPublicBusinessSettings(),

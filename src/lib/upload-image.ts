@@ -8,6 +8,17 @@ export function normalizeUploadFileName(name: string) {
     .replace(/-+/g, "-");
 }
 
+/** SEO-friendly filename stem from a title or caption. */
+export function slugifyUploadStem(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
+
 export function isUploadFile(
   value: FormDataEntryValue | null,
 ): value is File {

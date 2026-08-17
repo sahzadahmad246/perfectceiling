@@ -8,6 +8,7 @@ export type CatalogueGroupImage = {
   /** List-card cover for this group. */
   isThumbnail: boolean;
   sortOrder: number;
+  viewCount: number;
 };
 
 /** Admin catalogue group (e.g. "Moldings") with its photos. */
@@ -60,12 +61,37 @@ export function getCatalogueDisplayTitle(item: { title: string }) {
 export function getCatalogueImageAlt(
   image: { subtitle?: string | null },
   groupTitle?: string,
+  options?: { city?: string | null; businessName?: string | null },
 ) {
-  return (
+  const subject =
     image.subtitle?.trim() ||
     groupTitle?.trim() ||
-    "Catalogue design photo"
-  );
+    "Ceiling design";
+  const city = options?.city?.trim();
+  const business = options?.businessName?.trim();
+
+  if (city && business) {
+    return `${subject} false ceiling design in ${city} by ${business}`;
+  }
+
+  if (city) {
+    return `${subject} false ceiling design in ${city}`;
+  }
+
+  return `${subject} false ceiling design`;
+}
+
+export function getCatalogueImageSeoTitle(
+  image: { subtitle?: string | null },
+  groupTitle: string,
+  city?: string | null,
+) {
+  const subject = image.subtitle?.trim() || groupTitle.trim();
+  const place = city?.trim();
+
+  return place
+    ? `${subject} | ${groupTitle} ceiling design in ${place}`
+    : `${subject} | ${groupTitle} ceiling design`;
 }
 
 export function getCataloguePublicPath(id: string) {

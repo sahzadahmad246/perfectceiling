@@ -5,6 +5,7 @@ import {
   getCatalogueDisplayTitle,
   getCatalogueImageAlt,
   getCatalogueImagePublicPath,
+  getCatalogueImageSeoTitle,
   getCataloguePublicPath,
 } from "@/lib/catalogue";
 import type {
@@ -48,11 +49,15 @@ export function buildCatalogueListMetadata(
   groups: PublicCatalogueGroup[],
 ): Metadata {
   const title = `Ceiling Design Catalogue in ${settings.city}`;
-  const description = `Browse ${groups.length > 0 ? `${groups.length} ` : ""}false ceiling design collections from ${settings.businessName} in ${settings.city}. POP, PVC, gypsum, and modern finishes to choose from.`;
+  const imageCount = groups.reduce(
+    (total, group) => total + group.images.length,
+    0,
+  );
+  const description = `Browse ${imageCount > 0 ? `${imageCount} ` : ""}false ceiling design photos from ${settings.businessName} in ${settings.city}. POP, PVC, gypsum, and modern finishes to choose from.`;
   const previewImages = collectPreviewImageUrls(
     groups.map((group) => ({ imageUrl: group.previewImageUrl })),
     {
-      limit: 4,
+      limit: 8,
       fallbackLogo: settings.logoUrl,
     },
   );
@@ -65,8 +70,12 @@ export function buildCatalogueListMetadata(
     keywords: [
       "ceiling designs",
       "false ceiling catalogue",
+      "false ceiling photos",
       "POP ceiling designs",
+      "PVC ceiling designs",
+      "gypsum ceiling designs",
       "ceiling design ideas",
+      "ceiling design images",
       settings.city,
       settings.businessName,
     ],
@@ -85,14 +94,22 @@ export function buildCatalogueDetailMetadata(
     ? item.images.find((image) => image.id === options.imageId)
     : undefined;
 
+  const seoContext = {
+    city: settings.city,
+    businessName: settings.businessName,
+  };
+
   if (sharedImage) {
-    const imageTitle =
-      sharedImage.subtitle?.trim() || groupTitle;
+    const imageTitle = getCatalogueImageSeoTitle(
+      sharedImage,
+      groupTitle,
+      settings.city,
+    );
     const description =
       sharedImage.subtitle?.trim()
-        ? `${sharedImage.subtitle.trim()} — ${groupTitle} | ${settings.businessName}`
+        ? `${sharedImage.subtitle.trim()} — ${groupTitle} false ceiling design by ${settings.businessName} in ${settings.city}.`
         : getGroupDescription(item, settings);
-    const alt = getCatalogueImageAlt(sharedImage, groupTitle);
+    const alt = getCatalogueImageAlt(sharedImage, groupTitle, seoContext);
     const url = getCatalogueImageShareUrl(item.id, sharedImage.id);
 
     return buildPublicPageMetadata({
@@ -101,10 +118,11 @@ export function buildCatalogueDetailMetadata(
       url,
       settings,
       keywords: [
-        imageTitle,
+        sharedImage.subtitle?.trim() || groupTitle,
         groupTitle,
-        "ceiling design",
-        "false ceiling",
+        "ceiling design photo",
+        "false ceiling design",
+        "false ceiling images",
         "design catalogue",
         settings.city,
         settings.businessName,
@@ -116,13 +134,14 @@ export function buildCatalogueDetailMetadata(
     });
   }
 
-  const title = groupTitle;
+  const title = `${groupTitle} ceiling designs in ${settings.city}`;
   const description = getGroupDescription(item, settings);
   const cover =
     item.images.find((image) => image.isThumbnail) ?? item.images[0];
   const alt = getCatalogueImageAlt(
     { subtitle: cover?.subtitle },
-    title,
+    groupTitle,
+    seoContext,
   );
 
   return buildPublicPageMetadata({
@@ -131,14 +150,16 @@ export function buildCatalogueDetailMetadata(
     url: getCataloguePageUrl(item.id),
     settings,
     keywords: [
-      title,
-      "ceiling design",
+      groupTitle,
+      `${groupTitle} ceiling design`,
+      "ceiling design photos",
       "false ceiling",
+      "false ceiling images",
       "design catalogue",
       settings.city,
       settings.businessName,
     ],
-    images: item.previewImageUrl ? [item.previewImageUrl] : [],
+    images: item.images.map((image) => image.imageUrl).slice(0, 8),
     imageAlt: alt,
     openGraphType: "article",
     modifiedTime: item.updatedAt ?? undefined,
@@ -193,18 +214,50 @@ export function buildCatalogueDetailJsonLd(
     const imageUrl = image.imageUrl
       ? toAbsoluteUrl(image.imageUrl)
       : undefined;
-    const alt = getCatalogueImageAlt(image, title);
+    const alt = getCatalogueImageAlt(image, title, {
+      city: settings.city,
+      businessName: settings.businessName,
+    });
     const imagePageUrl = getCatalogueImageShareUrl(item.id, image.id);
+    const caption = image.subtitle?.trim() || `${title} ceiling design`;
+    const extension = image.imageUrl.split("?")[0]?.split(".").pop()?.toLowerCase();
+    const encodingFormat =
+      extension === "png"
+        ? "image/png"
+        : extension === "webp"
+          ? "image/webp"
+          : extension === "gif"
+            ? "image/gif"
+            : "image/jpeg";
 
     return {
       "@type": "ImageObject",
       "@id": `${pageUrl}#image-${index + 1}`,
-      name: image.subtitle?.trim() || title,
+      name: caption,
+      description: alt,
       contentUrl: imageUrl,
       thumbnailUrl: imageUrl,
-      caption: image.subtitle?.trim() || title,
+      caption,
       url: imagePageUrl,
+      encodingFormat,
+      inLanguage: "en-IN",
+      isFamilyFriendly: true,
+      creator: { "@id": `${siteConfig.url}/#business` },
+      copyrightHolder: { "@id": `${siteConfig.url}/#business` },
+      creditText: settings.businessName,
+      acquireLicensePage: pageUrl,
+      license: pageUrl,
+      representativeOfPage: image.id === cover?.id,
       ...(alt ? { alternateName: alt } : {}),
+      ...(image.viewCount > 0
+        ? {
+            interactionStatistic: {
+              "@type": "InteractionCounter",
+              interactionType: "https://schema.org/ViewAction",
+              userInteractionCount: image.viewCount,
+            },
+          }
+        : {}),
     };
   });
 
@@ -228,6 +281,15 @@ export function buildCatalogueDetailJsonLd(
       ]),
       ...imageNodes,
       {
+        "@type": "ImageGallery",
+        "@id": `${pageUrl}#gallery`,
+        name: title,
+        description,
+        url: pageUrl,
+        image: imageNodes.map((node) => ({ "@id": node["@id"] })),
+        associatedMedia: imageNodes.map((node) => ({ "@id": node["@id"] })),
+      },
+      {
         "@type": "CollectionPage",
         "@id": `${pageUrl}#webpage`,
         name: title,
@@ -235,8 +297,10 @@ export function buildCatalogueDetailJsonLd(
         url: pageUrl,
         primaryImageOfPage: primary ? { "@id": primary["@id"] } : undefined,
         hasPart: imageNodes.map((node) => ({ "@id": node["@id"] })),
+        mainEntity: { "@id": `${pageUrl}#gallery` },
         isPartOf: { "@id": `${siteConfig.url}/#website` },
         about: { "@id": `${siteConfig.url}/#business` },
+        inLanguage: "en-IN",
       },
     ],
   };

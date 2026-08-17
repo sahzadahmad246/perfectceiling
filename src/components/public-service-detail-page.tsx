@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { RecordContentView } from "@/components/record-content-view";
+import { ServiceImageCarousel } from "@/components/service-image-carousel";
 import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
-import { ServiceImageCarousel } from "@/components/service-image-carousel";
+import { ViewCount } from "@/components/view-count";
 import {
   getPublicBusinessSettings,
   toTelLink,
@@ -55,6 +57,9 @@ export async function PublicServiceDetailPage({
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
       <JsonLd data={buildServiceDetailJsonLd(service, settings)} />
+      {service.id.startsWith("fallback-") ? null : (
+        <RecordContentView id={service.id} kind="service" />
+      )}
 
       <SiteHeader />
 
@@ -87,6 +92,9 @@ export async function PublicServiceDetailPage({
         <header className="mt-5">
           <p className="text-sm text-muted">{settings.city}</p>
           <h1 className="mt-2 font-primary text-3xl font-medium">{service.title}</h1>
+          <div className="mt-2">
+            <ViewCount count={service.viewCount} />
+          </div>
         </header>
 
         <ServiceImageCarousel images={galleryImages} title={service.title} />

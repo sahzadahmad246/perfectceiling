@@ -206,6 +206,15 @@ export function buildBlogDetailJsonLd(
       mainEntityOfPage: {
         "@id": `${pageUrl}#webpage`,
       },
+      ...(post.viewCount > 0
+        ? {
+            interactionStatistic: {
+              "@type": "InteractionCounter",
+              interactionType: "https://schema.org/ViewAction",
+              userInteractionCount: post.viewCount,
+            },
+          }
+        : {}),
     },
   ];
 }

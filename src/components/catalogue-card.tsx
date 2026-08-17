@@ -10,12 +10,14 @@ import { toast } from "sonner";
 import { deleteCatalogueGroup } from "@/app/admin/catalogue/actions";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { getCatalogueAdminPath } from "@/lib/admin-nav";
+import { ViewCount } from "@/components/view-count";
 import {
   getCatalogueDisplayTitle,
   getCatalogueImageAlt,
   getCataloguePreviewImage,
   type CatalogueGroupItem,
 } from "@/lib/catalogue";
+import { getCatalogueGroupViewCount } from "@/lib/views";
 
 const confirmOverlayClass =
   "fixed inset-0 z-[9980] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm";
@@ -50,6 +52,7 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
   );
   const detailHref = getCatalogueAdminPath(item.id);
   const imageCount = item.images.length;
+  const viewCount = getCatalogueGroupViewCount(item);
 
   function updateMenuPosition() {
     const button = buttonRef.current;
@@ -185,11 +188,16 @@ export function CatalogueCard({ item, onEdit }: CatalogueCardProps) {
               <p className="line-clamp-2 text-sm font-medium text-white">
                 {displayTitle}
               </p>
-              {imageCount > 0 ? (
-                <p className="mt-1 text-xs text-white/80">
-                  {imageCount} {imageCount === 1 ? "photo" : "photos"}
-                </p>
-              ) : null}
+              <div className="mt-1 flex items-center justify-between gap-2 text-xs text-white/80">
+                {imageCount > 0 ? (
+                  <p>
+                    {imageCount} {imageCount === 1 ? "photo" : "photos"}
+                  </p>
+                ) : (
+                  <span />
+                )}
+                <ViewCount className="text-white/85" count={viewCount} />
+              </div>
             </div>
           </div>
         </Link>

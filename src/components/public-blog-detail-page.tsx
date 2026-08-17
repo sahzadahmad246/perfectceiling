@@ -4,8 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/json-ld";
+import { RecordContentView } from "@/components/record-content-view";
 import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
+import { ViewCount } from "@/components/view-count";
 import {
   getPublicBusinessSettings,
   toTelLink,
@@ -53,6 +55,7 @@ export async function PublicBlogDetailPage({ slug }: PublicBlogDetailPageProps) 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
       <JsonLd data={buildBlogDetailJsonLd(post, settings)} />
+      <RecordContentView id={post.id} kind="blog" />
 
       <SiteHeader />
 
@@ -90,6 +93,7 @@ export async function PublicBlogDetailPage({ slug }: PublicBlogDetailPageProps) 
               </span>
             ) : null}
             {publishedLabel ? <span>{publishedLabel}</span> : null}
+            <ViewCount count={post.viewCount} />
           </div>
           <h1 className="mt-3 font-primary text-3xl font-medium">{post.title}</h1>
           {post.excerpt ? (

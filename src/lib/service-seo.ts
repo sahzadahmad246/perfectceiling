@@ -195,6 +195,15 @@ export function buildServiceDetailJsonLd(
     },
     areaServed: settings.city,
     serviceType: service.title,
+    ...(service.viewCount > 0
+      ? {
+          interactionStatistic: {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/ViewAction",
+            userInteractionCount: service.viewCount,
+          },
+        }
+      : {}),
   };
 
   if (service.startingPrice !== null && Number.isFinite(service.startingPrice)) {

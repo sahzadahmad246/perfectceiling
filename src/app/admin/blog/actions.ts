@@ -43,6 +43,7 @@ type BlogRow = {
   seo_description: string | null;
   published: boolean;
   published_at: string | null;
+  view_count?: number | null;
 };
 
 function mapBlogListItem(row: BlogRow): BlogListItem {
@@ -56,6 +57,7 @@ function mapBlogListItem(row: BlogRow): BlogListItem {
     publishedAt: row.published_at,
     seoTitle: row.seo_title,
     imageUrl: resolveBlogCardImageUrl(row.featured_image_url, row.content),
+    viewCount: row.view_count ?? 0,
   };
 }
 
@@ -142,7 +144,7 @@ export async function listBlogPosts(): Promise<BlogListItem[]> {
   const { data, error } = await supabase
     .from(BLOG_TABLE)
     .select(
-      "id, title, slug, excerpt, content, featured_image_url, category, seo_title, published, published_at",
+      "id, title, slug, excerpt, content, featured_image_url, category, seo_title, published, published_at, view_count",
     )
     .order("published_at", { ascending: false, nullsFirst: true })
     .order("title", { ascending: true });
@@ -160,7 +162,7 @@ export async function getBlogPostById(id: string): Promise<BlogDetail | null> {
   const { data, error } = await supabase
     .from(BLOG_TABLE)
     .select(
-      "id, title, slug, excerpt, content, featured_image_url, category, seo_title, seo_description, published, published_at",
+      "id, title, slug, excerpt, content, featured_image_url, category, seo_title, seo_description, published, published_at, view_count",
     )
     .eq("id", id)
     .maybeSingle();

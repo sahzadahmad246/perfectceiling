@@ -8,6 +8,8 @@ import {
   getPublicCatalogueIds,
 } from "@/lib/public-content";
 
+export const revalidate = 60;
+
 type CatalogueDetailPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ image?: string }>;

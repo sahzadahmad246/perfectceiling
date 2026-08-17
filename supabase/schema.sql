@@ -226,6 +226,7 @@ create table if not exists public.services (
   featured_image_url text,
   published boolean not null default false,
   sort_order int not null default 0,
+  view_count integer not null default 0,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -243,6 +244,7 @@ create table if not exists public.blog_posts (
   seo_description text,
   published boolean not null default false,
   published_at timestamptz,
+  view_count integer not null default 0,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -270,11 +272,21 @@ create table if not exists public.catalogue_group_images (
   subtitle text,
   is_thumbnail boolean not null default false,
   sort_order int not null default 0,
+  view_count integer not null default 0,
   created_at timestamptz not null default now()
 );
 
 create index if not exists catalogue_group_images_group_id_idx
   on public.catalogue_group_images (group_id, sort_order, created_at);
+
+create index if not exists catalogue_group_images_view_count_idx
+  on public.catalogue_group_images (view_count desc);
+
+create index if not exists blog_posts_view_count_idx
+  on public.blog_posts (view_count desc);
+
+create index if not exists services_view_count_idx
+  on public.services (view_count desc);
 
 create unique index if not exists catalogue_group_images_one_thumbnail_idx
   on public.catalogue_group_images (group_id)
@@ -474,6 +486,49 @@ grant select on table public.services to anon, authenticated;
 grant select on table public.blog_posts to anon, authenticated;
 grant select on table public.catalogue_groups to anon, authenticated;
 grant select on table public.catalogue_group_images to anon, authenticated;
+
+create or replace function public.increment_content_view(
+  p_kind text,
+  p_id uuid
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_count integer;
+begin
+  if p_kind = 'catalogue_image' then
+    update public.catalogue_group_images as image
+    set view_count = image.view_count + 1
+    from public.catalogue_groups as grp
+    where image.id = p_id
+      and image.group_id = grp.id
+      and grp.published = true
+    returning image.view_count into new_count;
+  elsif p_kind = 'blog' then
+    update public.blog_posts
+    set view_count = view_count + 1
+    where id = p_id
+      and published = true
+    returning view_count into new_count;
+  elsif p_kind = 'service' then
+    update public.services
+    set view_count = view_count + 1
+    where id = p_id
+      and published = true
+    returning view_count into new_count;
+  else
+    return null;
+  end if;
+
+  return new_count;
+end;
+$$;
+
+revoke all on function public.increment_content_view(text, uuid) from public;
+grant execute on function public.increment_content_view(text, uuid) to anon, authenticated;
 
 insert into storage.buckets (
   id,

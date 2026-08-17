@@ -34,21 +34,32 @@ export async function PublicCataloguePage() {
         </ol>
       </nav>
 
-      <section className="mt-6 flex items-center justify-between gap-3">
-        <h1 className="font-primary text-3xl font-medium">Portfolio</h1>
-        <ShareButton
-          label="Share"
-          text={`Design portfolio — ${settings.businessName}`}
-          title={`Portfolio — ${settings.businessName}`}
-          url={getCatalogueListUrl()}
-          variant="icon"
-        />
+      <section className="mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-primary text-3xl font-medium">Portfolio</h1>
+          <ShareButton
+            label="Share"
+            text={`Design portfolio — ${settings.businessName}`}
+            title={`Portfolio — ${settings.businessName}`}
+            url={getCatalogueListUrl()}
+            variant="icon"
+          />
+        </div>
+        <p className="sr-only">
+          Ceiling design photos from {settings.businessName} in {settings.city}.
+          Open a collection to browse every image.
+        </p>
       </section>
 
       {groups.length > 0 ? (
         <section aria-label="Catalogue gallery" className="mt-6 space-y-4">
           {groups.map((item) => (
-            <PublicCatalogueCard item={item} key={item.id} />
+            <PublicCatalogueCard
+              businessName={settings.businessName}
+              city={settings.city}
+              item={item}
+              key={item.id}
+            />
           ))}
         </section>
       ) : (

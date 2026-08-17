@@ -305,6 +305,8 @@ function CatalogueFormModalInner({
     if (draft.file) {
       const formData = new FormData();
       formData.append("file", draft.file);
+      formData.append("title", title);
+      formData.append("subtitle", draft.subtitle);
 
       const upload = await uploadCatalogueImage(formData);
 

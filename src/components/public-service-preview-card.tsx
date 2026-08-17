@@ -2,6 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 import { PublicServiceCardMedia } from "@/components/public-service-card-media";
+import { ViewCount } from "@/components/view-count";
 import { formatServiceRate, getServicePublicPath } from "@/lib/services";
 import { getServiceSeoDescription } from "@/lib/service-seo";
 import type { PublicService } from "@/lib/public-content";
@@ -31,9 +32,12 @@ export function PublicServicePreviewCard({
             {service.title}
           </h3>
 
-          <span className="mt-3 inline-flex max-w-full items-center rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-            <span className="truncate">{rateLabel}</span>
-          </span>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex max-w-full items-center rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+              <span className="truncate">{rateLabel}</span>
+            </span>
+            <ViewCount count={service.viewCount} />
+          </div>
 
           <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">
             {service.shortDescription}

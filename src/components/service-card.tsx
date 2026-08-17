@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { deleteService } from "@/app/admin/services/actions";
+import { ViewCount } from "@/components/view-count";
 import {
   formatServiceRate,
   getServicePublicPath,
@@ -217,9 +218,12 @@ export function ServiceCard({ service, onEdit }: ServiceCardProps) {
                 {service.shortDescription}
               </p>
 
-              <p className="mt-2 text-sm font-medium text-foreground">
-                {formatServiceRate(service.startingPrice, service.rateUnit)}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium text-foreground">
+                  {formatServiceRate(service.startingPrice, service.rateUnit)}
+                </p>
+                <ViewCount count={service.viewCount} />
+              </div>
             </div>
 
             <div className="flex min-w-0 items-center gap-2">

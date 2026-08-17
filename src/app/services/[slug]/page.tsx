@@ -10,6 +10,8 @@ import {
   buildServiceDetailMetadata,
 } from "@/lib/service-seo";
 
+export const revalidate = 60;
+
 type ServiceDetailPageProps = {
   params: Promise<{ slug: string }>;
 };

@@ -2,6 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { ViewCount } from "@/components/view-count";
 import { formatBlogPublishedDate, getBlogPublicPath } from "@/lib/blog";
 import { getBlogSeoDescription } from "@/lib/blog-seo";
 import type { PublicBlogPost } from "@/lib/public-content";
@@ -38,6 +39,7 @@ export function PublicBlogPreviewCard({ post }: PublicBlogPreviewCardProps) {
               </span>
             ) : null}
             {publishedLabel ? <span>{publishedLabel}</span> : null}
+            <ViewCount count={post.viewCount} />
           </div>
 
           <h3 className="mt-3 font-primary text-xl font-semibold leading-snug text-foreground">

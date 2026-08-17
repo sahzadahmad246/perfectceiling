@@ -14,12 +14,14 @@ import { CatalogueDetailHeader } from "@/components/catalogue-detail-header";
 import { CatalogueFormModal } from "@/components/catalogue-form-modal";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { ShareButton } from "@/components/share-button";
+import { ViewCount } from "@/components/view-count";
 import { useAppRouter } from "@/hooks/use-app-router";
 import {
   getCatalogueDisplayTitle,
   getCatalogueImageAlt,
   type CatalogueGroupItem,
 } from "@/lib/catalogue";
+import { getCatalogueGroupViewCount } from "@/lib/views";
 import {
   getCatalogueImageShareUrl,
   getCataloguePageUrl,
@@ -110,6 +112,7 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
                 {current.images.length}{" "}
                 {current.images.length === 1 ? "photo" : "photos"}
               </span>
+              <ViewCount count={getCatalogueGroupViewCount(current)} variant="chip" />
             </div>
           </div>
 
@@ -134,6 +137,11 @@ export function CatalogueDetailView({ item }: CatalogueDetailViewProps) {
                       sizes="180px"
                       src={image.imageUrl}
                       unoptimized={image.imageUrl.startsWith("http")}
+                    />
+                    <ViewCount
+                      className="absolute right-1.5 top-1.5"
+                      count={image.viewCount}
+                      variant="on-image"
                     />
                     {image.isThumbnail ? (
                       <span className="absolute left-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">

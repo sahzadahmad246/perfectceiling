@@ -23,6 +23,7 @@ export type ServiceListItem = {
   sortOrder: number;
   seoTitle: string | null;
   imageUrl: string | null;
+  viewCount: number;
 };
 
 export type ServiceDetail = ServiceListItem & {

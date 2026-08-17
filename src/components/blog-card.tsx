@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { deleteBlogPost } from "@/app/admin/blog/actions";
+import { ViewCount } from "@/components/view-count";
 import {
   formatBlogPublishedDate,
   getBlogPublicPath,
@@ -237,9 +238,12 @@ export function BlogCard({ post, onEdit }: BlogCardProps) {
                 {post.published ? "Live" : "Draft"}
               </span>
             </div>
-            {publishedLabel ? (
-              <p className="text-xs text-muted">Published {publishedLabel}</p>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {publishedLabel ? (
+                <p className="text-xs text-muted">Published {publishedLabel}</p>
+              ) : null}
+              <ViewCount count={post.viewCount} />
+            </div>
           </div>
         </Link>
 

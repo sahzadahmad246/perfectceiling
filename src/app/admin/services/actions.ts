@@ -44,6 +44,7 @@ type ServiceRow = {
   featured_image_url: string | null;
   published: boolean;
   sort_order: number;
+  view_count?: number | null;
 };
 
 function parsePrice(value: string) {
@@ -94,6 +95,7 @@ function mapServiceListItem(row: ServiceRow): ServiceListItem {
       row.featured_image_url,
       row.content,
     ),
+    viewCount: row.view_count ?? 0,
   };
 }
 
@@ -177,7 +179,7 @@ export async function listServices(): Promise<ServiceListItem[]> {
   const { data, error } = await supabase
     .from(SERVICES_TABLE)
     .select(
-      "id, title, slug, short_description, content, starting_price, rate_unit, featured_image_url, published, sort_order, seo_title",
+      "id, title, slug, short_description, content, starting_price, rate_unit, featured_image_url, published, sort_order, seo_title, view_count",
     )
     .order("sort_order", { ascending: true })
     .order("title", { ascending: true });
@@ -195,7 +197,7 @@ export async function getServiceById(id: string): Promise<ServiceDetail | null> 
   const { data, error } = await supabase
     .from(SERVICES_TABLE)
     .select(
-      "id, title, slug, short_description, content, starting_price, rate_unit, seo_title, seo_description, featured_image_url, published, sort_order",
+      "id, title, slug, short_description, content, starting_price, rate_unit, seo_title, seo_description, featured_image_url, published, sort_order, view_count",
     )
     .eq("id", id)
     .maybeSingle();
