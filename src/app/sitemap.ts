@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 
 import { getBlogPageUrl } from "@/lib/blog-seo";
 import {
-  getCatalogueImageShareUrl,
   getCatalogueListUrl,
   getCataloguePageUrl,
 } from "@/lib/catalogue-seo";
@@ -15,9 +14,11 @@ import {
 import { getProjectPageUrl } from "@/lib/project-seo";
 import { getHomePageUrl } from "@/lib/home-seo";
 import { getServicePageUrl } from "@/lib/service-seo";
-import { resolveSeoImageUrls, toAbsoluteUrl } from "@/lib/seo";
+import { getLatestContentDate, resolveSeoImageUrls, toAbsoluteUrl } from "@/lib/seo";
 import { getServiceGalleryImages } from "@/lib/services";
 import { siteConfig } from "@/lib/site";
+
+export const revalidate = 3600;
 
 function sitemapImages(urls: string[]) {
   const absolute = urls.map((url) => toAbsoluteUrl(url));
@@ -40,13 +41,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     {
       url: getHomePageUrl(),
-      lastModified: new Date(),
+      lastModified: getLatestContentDate([...publishedServices, ...projects, ...blogPosts, ...catalogueGroups].map((item) => item.updatedAt)),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
       url: `${siteConfig.url}/services`,
-      lastModified: new Date(),
+      lastModified: getLatestContentDate(publishedServices.map((item) => item.updatedAt)),
       changeFrequency: "weekly",
       priority: 0.9,
       images: sitemapImages(
@@ -61,7 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${siteConfig.url}/projects`,
-      lastModified: new Date(),
+      lastModified: getLatestContentDate(projects.map((item) => item.updatedAt)),
       changeFrequency: "weekly",
       priority: 0.9,
       images: sitemapImages(
@@ -74,7 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${siteConfig.url}/blog`,
-      lastModified: new Date(),
+      lastModified: getLatestContentDate(blogPosts.map((item) => item.updatedAt)),
       changeFrequency: "weekly",
       priority: 0.85,
       images: sitemapImages(
@@ -85,7 +86,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: getCatalogueListUrl(),
-      lastModified: new Date(),
+      lastModified: getLatestContentDate(catalogueGroups.map((item) => item.updatedAt)),
       changeFrequency: "weekly",
       priority: 0.85,
       images: sitemapImages(
@@ -106,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return {
       url: getServicePageUrl(service.slug),
-      lastModified: service.updatedAt ? new Date(service.updatedAt) : new Date(),
+      lastModified: getLatestContentDate([service.updatedAt]),
       changeFrequency: "monthly" as const,
       priority: 0.8,
       images: sitemapImages(
@@ -121,7 +122,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const projectEntries = projects.map((project) => ({
     url: getProjectPageUrl(project.slug),
-    lastModified: project.updatedAt ? new Date(project.updatedAt) : new Date(),
+    lastModified: getLatestContentDate([project.updatedAt]),
     changeFrequency: "monthly" as const,
     priority: 0.75,
     images: sitemapImages(
@@ -135,7 +136,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const blogEntries = blogPosts.map((post) => ({
     url: getBlogPageUrl(post.slug),
-    lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(),
+    lastModified: getLatestContentDate([post.updatedAt, post.publishedAt]),
     changeFrequency: "monthly" as const,
     priority: 0.7,
     images: sitemapImages(
@@ -148,7 +149,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const catalogueEntries = catalogueGroups.map((group) => ({
     url: getCataloguePageUrl(group.id),
-    lastModified: group.updatedAt ? new Date(group.updatedAt) : new Date(),
+    lastModified: getLatestContentDate([group.updatedAt]),
     changeFrequency: "weekly" as const,
     priority: 0.75,
     images: sitemapImages(
@@ -160,22 +161,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
   }));
 
-  const catalogueImageEntries = catalogueGroups.flatMap((group) =>
-    group.images.map((image) => ({
-      url: getCatalogueImageShareUrl(group.id, image.id),
-      lastModified: group.updatedAt ? new Date(group.updatedAt) : new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.65,
-      images: sitemapImages([image.imageUrl]),
-    })),
-  );
-
   return [
     ...staticEntries,
     ...serviceEntries,
     ...projectEntries,
     ...blogEntries,
     ...catalogueEntries,
-    ...catalogueImageEntries,
   ];
 }

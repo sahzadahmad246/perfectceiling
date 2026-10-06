@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Loader2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
@@ -22,6 +22,7 @@ type ImageLightboxProps = {
     text: string;
     url: string;
   } | null;
+  navigation?: { onPrevious: () => void; onNext: () => void; label: string };
   onClose: () => void;
 };
 
@@ -83,6 +84,7 @@ export function ImageLightbox({
   caption,
   downloadName,
   share,
+  navigation,
   onClose,
 }: ImageLightboxProps) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -101,6 +103,8 @@ export function ImageLightbox({
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "ArrowLeft" && navigation) { event.preventDefault(); navigation.onPrevious(); }
+      if (event.key === "ArrowRight" && navigation) { event.preventDefault(); navigation.onNext(); }
       if (event.key === "Escape") {
         onClose();
       }
@@ -112,7 +116,7 @@ export function ImageLightbox({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose, open]);
+  }, [onClose, open, navigation]);
 
   async function handleDownload(event: React.MouseEvent) {
     event.stopPropagation();
@@ -195,6 +199,12 @@ export function ImageLightbox({
         </button>
       </div>
 
+      {navigation ? <>
+        <button type="button" aria-label="Previous image" onClick={navigation.onPrevious} className="absolute left-3 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/60"><ChevronLeft aria-hidden size={22} /></button>
+        <button type="button" aria-label="Next image" onClick={navigation.onNext} className="absolute right-3 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/60"><ChevronRight aria-hidden size={22} /></button>
+        <span className="absolute left-4 top-4 z-10 text-xs tabular-nums text-white/75">{navigation.label}</span>
+      </> : null}
+
       <div className="relative z-[1] flex h-full w-full max-w-5xl flex-col">
         <div className="relative min-h-0 flex-1">
           <Image
@@ -202,7 +212,6 @@ export function ImageLightbox({
             className="object-contain"
             fill
             loading="eager"
-            priority
             sizes="100vw"
             src={src}
             unoptimized={src.startsWith("http") || src.startsWith("blob:")}

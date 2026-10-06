@@ -1,7 +1,11 @@
+import { randomUUID } from "node:crypto";
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
-/** Cache Google Places responses for 48 hours (refresh at most twice a day). */
-export const GOOGLE_REVIEWS_REVALIDATE_SECONDS = 60 * 60 * 48;
+import { GOOGLE_REVIEWS_REVALIDATE_SECONDS, readCachedGoogleReviews } from "@/lib/google-reviews-cache";
+import { createServiceClient } from "@/lib/supabase/admin";
+
+export { GOOGLE_REVIEWS_REVALIDATE_SECONDS } from "@/lib/google-reviews-cache";
 
 export type GoogleReview = {
   id: string;
@@ -107,8 +111,7 @@ function mapLegacyReview(review: LegacyReview, index: number): GoogleReview | nu
  * Place Details (legacy Places API) — works with standard Maps API keys.
  * Returns rating, total count, and up to 5 sample reviews.
  */
-async function fetchGoogleBusinessReviewsFromApi(): Promise<GoogleBusinessReviews | null> {
-  const config = getGooglePlacesConfig();
+async function fetchGoogleBusinessReviewsFromApi(config = getGooglePlacesConfig()): Promise<GoogleBusinessReviews | null> {
 
   if (!config) {
     return null;
@@ -126,8 +129,8 @@ async function fetchGoogleBusinessReviewsFromApi(): Promise<GoogleBusinessReview
 
   const response = await fetch(url.toString(), {
     method: "GET",
-    // Long cache layer (in addition to unstable_cache)
-    next: { revalidate: GOOGLE_REVIEWS_REVALIDATE_SECONDS },
+    cache: "no-store",
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!response.ok) {
@@ -174,25 +177,56 @@ async function fetchGoogleBusinessReviewsFromApi(): Promise<GoogleBusinessReview
   };
 }
 
-/**
- * Google Business rating + sample reviews.
- * Cached for 48 hours — Google is not called on every page view.
- */
-export const getGoogleBusinessReviews = unstable_cache(
-  async () => {
-    try {
-      return await fetchGoogleBusinessReviewsFromApi();
-    } catch (error) {
-      console.error("[google-reviews] fetch failed", error);
-      return null;
-    }
+// Compatibility fallback until the persistent-cache SQL migration is applied.
+// The Place ID and profile URL are arguments, so configuration changes use a new key.
+const getFrameworkCachedReviews = unstable_cache(
+  async (placeId: string, businessUrl: string | null) => {
+    const config = getGooglePlacesConfig();
+    return config ? fetchGoogleBusinessReviewsFromApi({ ...config, placeId, businessUrl }) : null;
   },
-  ["google-business-reviews-legacy-48h"],
-  {
-    revalidate: GOOGLE_REVIEWS_REVALIDATE_SECONDS,
-    tags: ["google-reviews"],
-  },
+  ["google-business-reviews-72h-v2"],
+  { revalidate: GOOGLE_REVIEWS_REVALIDATE_SECONDS, tags: ["google-reviews"] },
 );
+
+let reportedMissingCache = false;
+
+export const getGoogleBusinessReviews = cache(async (): Promise<GoogleBusinessReviews | null> => {
+  const config = getGooglePlacesConfig();
+  if (!config) return null;
+  const placeId = config.placeId.replace(/^places\//, "");
+  const client = createServiceClient();
+  if (client) {
+    const token = randomUUID();
+    const { data, error } = await client.rpc("claim_google_reviews_refresh", { p_place_id: placeId, p_token: token });
+    if (!error && data?.[0]) {
+      const snapshot = data[0] as { acquired: boolean; payload: GoogleBusinessReviews | null };
+      try {
+        const result = await readCachedGoogleReviews({
+          claim: async () => snapshot,
+          complete: async (payload) => {
+            const { error: saveError } = await client.rpc("complete_google_reviews_refresh", { p_place_id: placeId, p_token: token, p_payload: payload });
+            if (saveError) throw new Error(saveError.message);
+          },
+        }, fetchGoogleBusinessReviewsFromApi);
+        return result ? { ...result, profileUrl: resolveProfileUrl(result.googleMapsUri, config.businessUrl) } : null;
+      } catch (cacheError) {
+        console.error("[google-reviews] persistent cache failed", cacheError instanceof Error ? cacheError.message : "Unknown error");
+        // Do not make a second Google request when saving the refresh failed.
+        return snapshot.payload;
+      }
+    }
+    if (!reportedMissingCache) {
+      reportedMissingCache = true;
+      console.warn("[google-reviews] persistent cache unavailable; apply the Google reviews cache migration.");
+    }
+  }
+  try {
+    return await getFrameworkCachedReviews(placeId, config.businessUrl);
+  } catch (error) {
+    console.error("[google-reviews] fetch failed", error instanceof Error ? error.message : "Unknown error");
+    return null;
+  }
+});
 
 export function formatReviewsUpdatedAt(iso: string) {
   const date = new Date(iso);
@@ -201,11 +235,10 @@ export function formatReviewsUpdatedAt(iso: string) {
     return null;
   }
 
-  return date.toLocaleString(undefined, {
+  return date.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    timeZone: "Asia/Kolkata",
   });
 }

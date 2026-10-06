@@ -1,171 +1,42 @@
-import { MessageCircle, Phone } from "lucide-react";
+import { ArrowUpRight, Clock3 } from "lucide-react";
 import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-
 import { JsonLd } from "@/components/json-ld";
+import { PublicBlogPreviewCard } from "@/components/public-blog-preview-card";
+import { PublicInquiry, PublicPageHeading, PublicPageLayout } from "@/components/public-page-layout";
 import { RecordContentView } from "@/components/record-content-view";
 import { ShareButton } from "@/components/share-button";
-import { SiteHeader } from "@/components/site-header";
-import { ViewCount } from "@/components/view-count";
-import {
-  getPublicBusinessSettings,
-  toTelLink,
-  toWhatsAppLink,
-} from "@/lib/business-settings";
-import {
-  formatBlogPublishedDate,
-  prepareBlogPageContent,
-} from "@/lib/blog";
-import {
-  buildBlogDetailJsonLd,
-  getBlogPageUrl,
-  getBlogSeoDescription,
-} from "@/lib/blog-seo";
-import { getPublicBlogPostBySlug } from "@/lib/public-content";
+import { getPublicBusinessSettings, toWhatsAppLink } from "@/lib/business-settings";
+import { formatBlogPublishedDate, prepareBlogPageContent } from "@/lib/blog";
+import { buildBlogDetailJsonLd, getBlogPageUrl, getBlogSeoDescription } from "@/lib/blog-seo";
+import { getPublicBlogPostBySlug, getPublicBlogPosts } from "@/lib/public-content";
 
-type PublicBlogDetailPageProps = {
-  slug: string;
-};
-
-export async function PublicBlogDetailPage({ slug }: PublicBlogDetailPageProps) {
-  const [post, settings] = await Promise.all([
-    getPublicBlogPostBySlug(slug),
-    getPublicBusinessSettings(),
-  ]);
-
-  if (!post) {
-    notFound();
-  }
-
-  const whatsappHref = toWhatsAppLink(
-    settings.whatsapp,
-    `Hi Perfect Ceiling, I read your article "${post.title}" and have a question.`,
-  );
-  const telHref = toTelLink(settings.phone);
-  const contentHtml = prepareBlogPageContent(post.content, {
-    title: post.title,
-    excerpt: post.excerpt,
-    seoTitle: post.seoTitle,
-    seoDescription: post.seoDescription,
-  });
-  const hasContent = Boolean(contentHtml.trim());
+export async function PublicBlogDetailPage({ slug }: { slug: string }) {
+  const [post, settings, posts] = await Promise.all([getPublicBlogPostBySlug(slug), getPublicBusinessSettings(), getPublicBlogPosts()]);
+  if (!post) notFound();
+  const whatsappHref = toWhatsAppLink(settings.whatsapp, `Hi, I read your article "${post.title}" and have a question about my space.`);
+  const contentHtml = prepareBlogPageContent(post.content, { title: post.title, excerpt: post.excerpt, seoTitle: post.seoTitle, seoDescription: post.seoDescription });
+  const text = contentHtml.replace(/<[^>]*>/g, " ").replace(/&[^;]+;/g, " ").trim();
+  const readingMinutes = Math.max(1, Math.ceil(text.split(/\s+/).length / 200));
   const publishedLabel = formatBlogPublishedDate(post.publishedAt);
-
-  return (
-    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
-      <JsonLd data={buildBlogDetailJsonLd(post, settings)} />
-      <RecordContentView id={post.id} kind="blog" />
-
-      <SiteHeader />
-
-      <nav aria-label="Breadcrumb" className="mt-4 text-sm text-muted">
-        <ol className="flex flex-wrap items-center gap-2">
-          <li>
-            <Link className="minimal-link" href="/">
-              Home
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li>
-            <Link className="minimal-link" href="/blog">
-              Blog
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li className="line-clamp-1 text-foreground">{post.title}</li>
-        </ol>
-      </nav>
-
-      <article itemScope itemType="https://schema.org/BlogPosting">
-        <meta content={post.title} itemProp="headline" />
-        <meta content={getBlogSeoDescription(post)} itemProp="description" />
-        <meta content={getBlogPageUrl(post.slug)} itemProp="url" />
-        {post.publishedAt ? (
-          <meta content={post.publishedAt} itemProp="datePublished" />
-        ) : null}
-
-        <header className="mt-5">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-            {post.category ? (
-              <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium">
-                {post.category}
-              </span>
-            ) : null}
-            {publishedLabel ? <span>{publishedLabel}</span> : null}
-            <ViewCount count={post.viewCount} />
-          </div>
-          <h1 className="mt-3 font-primary text-3xl font-medium">{post.title}</h1>
-          {post.excerpt ? (
-            <p className="mt-4 text-sm leading-7 text-foreground">{post.excerpt}</p>
-          ) : null}
-          <div className="mt-5">
-            <ShareButton
-              text={getBlogSeoDescription(post)}
-              title={`${post.title} — ${settings.businessName}`}
-              url={getBlogPageUrl(post.slug)}
-            />
-          </div>
-        </header>
-
-        {post.imageUrl ? (
-          <div className="relative mt-6 aspect-[16/10] overflow-hidden rounded-2xl bg-surface-muted">
-            <Image
-              alt={post.title}
-              className="object-cover"
-              fill
-              itemProp="image"
-              priority
-              sizes="560px"
-              src={post.imageUrl}
-              unoptimized={post.imageUrl.startsWith("http")}
-            />
-          </div>
-        ) : null}
-
-        {hasContent ? (
-          <section className="mt-8 border-t border-border-soft pt-8">
-            <div
-              className="article-editor-preview text-sm leading-7 text-foreground"
-              dangerouslySetInnerHTML={{ __html: contentHtml }}
-              itemProp="articleBody"
-            />
-          </section>
-        ) : null}
-      </article>
-
-      <section className="mt-10 rounded-2xl bg-surface-muted/80 px-4 py-5">
-        <p className="text-sm text-muted">Need a quote?</p>
-        <h2 className="mt-2 text-2xl font-medium">Talk to us about your ceiling work.</h2>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          Share room photos and measurements on WhatsApp. We will send a measured
-          quotation for work in {settings.city}.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
-            href={whatsappHref}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <MessageCircle size={17} />
-            WhatsApp
-          </a>
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-border-strong px-5 text-sm font-medium text-foreground transition duration-200 hover:border-primary"
-            href={telHref}
-          >
-            <Phone size={17} />
-            Call now
-          </a>
-        </div>
-      </section>
-
-      <footer className="mt-8 border-t border-border-soft pt-5 text-sm text-muted">
-        <Link className="minimal-link" href="/blog">
-          Back to all articles
-        </Link>
-      </footer>
-    </main>
-  );
+  const related = posts.filter((item) => item.id !== post.id).sort((a, b) => Number(b.category === post.category) - Number(a.category === post.category)).slice(0, 2);
+  const cover = post.featuredImageUrl || post.imageUrl;
+  return <PublicPageLayout settings={settings} whatsappHref={whatsappHref}>
+    <JsonLd data={buildBlogDetailJsonLd(post, settings)} />
+    <RecordContentView id={post.id} kind="blog" />
+    <article itemScope itemType="https://schema.org/BlogPosting">
+      <meta content={post.title} itemProp="headline" /><meta content={getBlogSeoDescription(post)} itemProp="description" /><meta content={getBlogPageUrl(post.slug)} itemProp="url" />{post.publishedAt ? <meta content={post.publishedAt} itemProp="datePublished" /> : null}
+      <PublicPageHeading href="/blog" backLabel="The design journal" eyebrow={post.category || "Ideas & advice"} title={post.title} share={<ShareButton variant="icon" label="Share article" title={`${post.title} — ${settings.businessName}`} text={getBlogSeoDescription(post)} url={getBlogPageUrl(post.slug)} className="border-[#d8d0c3] bg-transparent" />}>
+        {post.excerpt ? <p className="mt-4 text-sm leading-7 text-[#746e63]">{post.excerpt}</p> : null}
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-[#827563]"><span className="font-medium text-[#4d493f]">{settings.businessName}</span>{publishedLabel ? <span>{publishedLabel}</span> : null}{text ? <span className="inline-flex items-center gap-1.5"><Clock3 aria-hidden size={12} />{readingMinutes} min read</span> : null}</div>
+      </PublicPageHeading>
+      {cover ? <figure className="relative mt-6 aspect-[16/10] overflow-hidden rounded-lg bg-[#e8e2d8]"><Image alt={post.title} className="object-cover" fill itemProp="image" loading="eager" fetchPriority="high" sizes="(max-width: 560px) calc(100vw - 32px), 496px" src={cover} unoptimized={shouldBypassImageOptimization(cover)} /></figure> : null}
+      {contentHtml.trim() ? <div className="article-editor-preview public-reading-content mt-8" dangerouslySetInnerHTML={{ __html: contentHtml }} itemProp="articleBody" /> : null}
+      <div className="mt-8 flex items-center justify-between gap-3 border-y border-[#e1dbcf] py-4"><p className="text-xs text-[#827563]">An idea worth sharing?</p><ShareButton label="Share story" title={post.title} text={getBlogSeoDescription(post)} url={getBlogPageUrl(post.slug)} className="border-[#d8d0c3] bg-transparent text-xs" /></div>
+    </article>
+    {related.length ? <section className="mt-10"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="font-primary text-xl font-medium tracking-tight">Keep reading</h2><Link href="/blog" className="inline-flex min-h-10 items-center gap-1 text-[11px] text-[#91704a]">All articles<ArrowUpRight aria-hidden size={14} /></Link></div>{related.map((item) => <PublicBlogPreviewCard key={item.id} post={item} />)}</section> : null}
+    <PublicInquiry settings={settings} whatsappHref={whatsappHref} title="Bring the idea home." />
+  </PublicPageLayout>;
 }

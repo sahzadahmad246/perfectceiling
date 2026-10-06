@@ -1,137 +1,39 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useState } from "react";
-
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
+import { useState } from "react";
 import { ServiceImageLightbox } from "@/components/service-image-lightbox";
 import type { ServiceGalleryImage } from "@/lib/services";
-import { cn } from "@/lib/utils";
 
-type ServiceImageCarouselProps = {
-  images: ServiceGalleryImage[];
-  title: string;
-};
-
-export function ServiceImageCarousel({
-  images,
-  title,
-}: ServiceImageCarouselProps) {
+export function ServiceImageCarousel({ images, title }: { images: ServiceGalleryImage[]; title: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
-  const slideCount = images.length;
-
-  const goToPrevious = useCallback(() => {
-    if (slideCount <= 1) {
-      return;
-    }
-
-    setActiveIndex((current) => (current - 1 + slideCount) % slideCount);
-  }, [slideCount]);
-
-  const goToNext = useCallback(() => {
-    if (slideCount <= 1) {
-      return;
-    }
-
-    setActiveIndex((current) => (current + 1) % slideCount);
-  }, [slideCount]);
-
-  const openViewer = useCallback((index: number) => {
-    setViewerIndex(index);
-    setViewerOpen(true);
-  }, []);
-
-  if (slideCount === 0) {
-    return null;
-  }
-
-  const activeImage = images[activeIndex];
-  const activeCaption =
-    activeImage.caption.trim() ||
-    `${title} — photo ${activeIndex + 1} of ${slideCount}`;
-
-  return (
-    <>
-      <section
-        aria-label={`${title} photos`}
-        aria-roledescription="carousel"
-        className="mt-5"
-      >
-        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-border-soft bg-surface-muted">
-          <button
-            aria-label={`View ${activeCaption} fullscreen`}
-            className="absolute inset-0 z-[1] cursor-zoom-in"
-            onClick={() => openViewer(activeIndex)}
-            type="button"
-          />
-
-          <Image
-            alt={activeCaption}
-            itemProp="image"
-            className="pointer-events-none object-cover"
-            fill
-            priority={activeIndex === 0}
-            sizes="560px"
-            src={activeImage.url}
-            unoptimized={activeImage.url.startsWith("http")}
-          />
-
-          {slideCount > 1 ? (
-            <>
-              <button
-                aria-label="Previous photo"
-                className="absolute left-3 top-1/2 z-[2] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border-soft bg-surface/90 text-foreground backdrop-blur-sm transition hover:bg-surface"
-                onClick={goToPrevious}
-                type="button"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                aria-label="Next photo"
-                className="absolute right-3 top-1/2 z-[2] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border-soft bg-surface/90 text-foreground backdrop-blur-sm transition hover:bg-surface"
-                onClick={goToNext}
-                type="button"
-              >
-                <ChevronRight size={18} />
-              </button>
-
-              <div className="absolute bottom-3 left-1/2 z-[2] flex -translate-x-1/2 items-center gap-2 rounded-full border border-border-soft bg-surface/90 px-3 py-1.5 backdrop-blur-sm">
-                {images.map((image, index) => (
-                  <button
-                    aria-current={index === activeIndex}
-                    aria-label={`Show photo ${index + 1}`}
-                    className={cn(
-                      "h-1.5 rounded-full transition-all duration-300",
-                      index === activeIndex
-                        ? "w-6 bg-primary"
-                        : "w-1.5 bg-border-strong hover:bg-muted",
-                    )}
-                    key={image.url}
-                    onClick={() => setActiveIndex(index)}
-                    type="button"
-                  />
-                ))}
-              </div>
-            </>
-          ) : null}
-        </div>
-
-        {slideCount > 1 ? (
-          <p className="mt-2 text-center text-xs text-muted">
-            {activeIndex + 1} / {slideCount}
-          </p>
-        ) : null}
-      </section>
-
-      <ServiceImageLightbox
-        images={images}
-        initialIndex={viewerIndex}
-        onClose={() => setViewerOpen(false)}
-        open={viewerOpen}
-        title={title}
-      />
-    </>
-  );
+  if (!images.length) return null;
+  const index = Math.min(activeIndex, images.length - 1);
+  const activeImage = images[index];
+  const rawCaption = activeImage.caption.trim();
+  const displayCaption = /^\d+\.(?:png|jpe?g|webp|avif)$/i.test(rawCaption) ? "" : rawCaption;
+  const caption = displayCaption || `${title} — photo ${index + 1}`;
+  const move = (direction: number) => setActiveIndex((current) => (current + direction + images.length) % images.length);
+  const start = Math.floor(index / 4) * 4;
+  return <>
+    <section aria-label={`${title} photos`} aria-roledescription="carousel" className="mt-6" onKeyDown={(event) => {
+      if (images.length < 2) return;
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); move(event.key === "ArrowLeft" ? -1 : 1); }
+    }}>
+      <button type="button" aria-label={`Open ${caption} fullscreen`} onClick={() => { setViewerIndex(index); setViewerOpen(true); }} className="group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-lg bg-[#e8e2d8] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#91704a]">
+        <Image key={activeImage.url} alt={caption} itemProp="image" fill src={activeImage.url} sizes="(max-width: 560px) calc(100vw - 32px), 496px" className="object-contain" loading="eager" fetchPriority={index === 0 ? "high" : "auto"} unoptimized={shouldBypassImageOptimization(activeImage.url)} />
+        <span className="absolute bottom-3 right-3 flex size-9 items-center justify-center rounded-full bg-[#f3f0e9]/95 text-[#292720]"><Maximize2 aria-hidden size={15} /></span>
+      </button>
+      <div className="mt-3 flex min-h-11 items-center justify-between gap-3">
+        <p aria-live="polite" className="min-w-0 text-[11px] leading-5 text-[#827563]"><span className="font-medium tabular-nums text-[#292720]">{index + 1} / {images.length}</span>{displayCaption ? <span className="ml-3">{displayCaption}</span> : null}</p>
+        {images.length > 1 ? <div className="flex shrink-0 items-center gap-1"><button aria-label="Previous photo" type="button" onClick={() => move(-1)} className="flex size-11 items-center justify-center rounded-full text-[#746e63] transition hover:bg-[#eee7db]"><ArrowLeft aria-hidden size={18} /></button><button aria-label="Next photo" type="button" onClick={() => move(1)} className="flex size-11 items-center justify-center rounded-full text-[#746e63] transition hover:bg-[#eee7db]"><ArrowRight aria-hidden size={18} /></button></div> : null}
+      </div>
+      {images.length > 1 ? <div className="mt-2 grid grid-cols-4 gap-2">{images.slice(start, start + 4).map((image, offset) => <button key={`${image.url}-${start + offset}`} type="button" aria-label={`Show photo ${start + offset + 1}`} aria-current={index === start + offset ? "true" : undefined} onClick={() => setActiveIndex(start + offset)} className={`relative aspect-[4/3] overflow-hidden rounded-md bg-[#e8e2d8] transition ${index === start + offset ? "outline-2 outline-offset-2 outline-[#91704a]" : "opacity-65 hover:opacity-100"}`}><Image alt={image.caption || `${title} photo ${start + offset + 1}`} src={image.url} fill sizes="120px" className="object-cover" unoptimized={shouldBypassImageOptimization(image.url)} /></button>)}</div> : null}
+    </section>
+    <ServiceImageLightbox images={images} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} open={viewerOpen} title={title} />
+  </>;
 }

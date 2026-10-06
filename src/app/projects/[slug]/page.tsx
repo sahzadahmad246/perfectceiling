@@ -1,3 +1,4 @@
+import { NON_INDEXABLE_ROBOTS } from "@/lib/seo";
 import type { Metadata } from "next";
 
 import { PublicProjectDetailPage } from "@/components/public-project-detail-page";
@@ -30,10 +31,7 @@ export async function generateMetadata({
   if (!project) {
     return {
       title: "Project not found",
-      robots: {
-        index: false,
-        follow: false,
-      },
+      robots: NON_INDEXABLE_ROBOTS,
     };
   }
 

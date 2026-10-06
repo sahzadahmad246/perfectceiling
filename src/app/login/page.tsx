@@ -1,3 +1,4 @@
+import { NON_INDEXABLE_ROBOTS } from "@/lib/seo";
 import { LockKeyhole, LogIn } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -8,10 +9,7 @@ import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Admin Login",
-  robots: {
-    index: false,
-    follow: false,
-  },
+  robots: NON_INDEXABLE_ROBOTS,
 };
 
 type LoginPageProps = {

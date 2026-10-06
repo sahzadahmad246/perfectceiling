@@ -1,69 +1,34 @@
-import Image from "next/image";
+import { ArrowUpRight, Images } from "lucide-react";
 import Link from "next/link";
 
-import { ViewCount } from "@/components/view-count";
-import {
-  getCatalogueDisplayTitle,
-  getCatalogueImageAlt,
-  getCataloguePublicPath,
-} from "@/lib/catalogue";
+import { CatalogueAlbumMosaic } from "@/components/catalogue-album-mosaic";
+import { getCatalogueDisplayTitle, getCatalogueImageAlt, getCataloguePublicPath } from "@/lib/catalogue";
+import type { CatalogueMosaicPhoto } from "@/lib/catalogue-mosaic";
 import type { PublicCatalogueGroup } from "@/lib/public-content";
-import { getCatalogueGroupViewCount } from "@/lib/views";
 
-type PublicCatalogueCardProps = {
-  item: PublicCatalogueGroup;
-  city?: string | null;
-  businessName?: string | null;
-};
+type PublicCatalogueCardProps = { item: PublicCatalogueGroup; city?: string | null; businessName?: string | null; delayMs?: number; lcpImage?: boolean };
 
-export function PublicCatalogueCard({
-  item,
-  city,
-  businessName,
-}: PublicCatalogueCardProps) {
+export function PublicCatalogueCard({ item, city, businessName, delayMs, lcpImage }: PublicCatalogueCardProps) {
   const title = getCatalogueDisplayTitle(item);
-  const cover =
-    item.images.find((image) => image.isThumbnail) ?? item.images[0];
-  const alt = getCatalogueImageAlt(
-    { subtitle: cover?.subtitle },
-    title,
-    { city, businessName },
-  );
   const href = getCataloguePublicPath(item.id);
-  const imageCount = item.images.length;
-  const viewCount = getCatalogueGroupViewCount(item);
+  const ordered = [...item.images].sort((a, b) => Number(b.isThumbnail) - Number(a.isThumbnail));
+  const seen = new Set<string>();
+  const photos: CatalogueMosaicPhoto[] = [];
+  for (const image of ordered) {
+    const url = image.imageUrl.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    photos.push({ id: image.id, url, alt: getCatalogueImageAlt(image, title, { city, businessName }) });
+  }
+  if (!photos.length && item.previewImageUrl) photos.push({ id: item.id, url: item.previewImageUrl, alt: title });
+  if (!photos.length) return null;
 
-  return (
-    <figure className="overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80 transition hover:border-border-strong">
-      <Link className="block" href={href}>
-        <div className="relative aspect-[4/3] bg-surface-muted">
-          <Image
-            alt={alt}
-            className="object-cover"
-            fill
-            loading="eager"
-            priority
-            sizes="(max-width: 560px) 100vw, 560px"
-            src={item.previewImageUrl}
-            unoptimized={item.previewImageUrl.startsWith("http")}
-          />
-          <ViewCount
-            className="absolute right-3 top-3"
-            count={viewCount}
-            variant="on-image"
-          />
-          <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/45 to-transparent px-3 pb-3 pt-10">
-            <p className="line-clamp-2 text-sm font-medium leading-snug text-white">
-              {title}
-            </p>
-            {imageCount > 1 ? (
-              <p className="mt-1 text-xs text-white/80">
-                {imageCount} photos
-              </p>
-            ) : null}
-          </figcaption>
-        </div>
-      </Link>
-    </figure>
-  );
+  return <figure>
+    <CatalogueAlbumMosaic photos={photos} href={href} title={title} delayMs={delayMs} lcpImage={lcpImage} />
+    <figcaption><Link href={href} className="mt-3 flex items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#91704a]">
+      <h3 className="min-w-0 flex-1 truncate font-primary text-base font-medium leading-snug text-[#292720]">{title}</h3>
+      <span aria-label={`${photos.length} photos`} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eee9df] px-2.5 py-1 text-[10px] font-medium text-[#746e63]"><Images aria-hidden size={11} />{photos.length}</span>
+      <ArrowUpRight aria-hidden className="shrink-0 text-[#91704a]" size={18} />
+    </Link></figcaption>
+  </figure>;
 }

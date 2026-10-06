@@ -7,16 +7,16 @@ import "./globals.css";
 
 const primaryFont = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  display: "swap",
   variable: "--font-plus-jakarta",
-  fallback: [],
+  fallback: ["Arial", "sans-serif"],
 });
 
 const secondaryFont = Montserrat({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  display: "swap",
   variable: "--font-montserrat",
-  fallback: [],
+  fallback: ["Arial", "sans-serif"],
 });
 
 export const metadata: Metadata = {

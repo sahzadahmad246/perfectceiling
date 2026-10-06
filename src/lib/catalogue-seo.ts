@@ -116,6 +116,7 @@ export function buildCatalogueDetailMetadata(
       title: imageTitle,
       description,
       url,
+      canonicalUrl: getCataloguePageUrl(item.id),
       settings,
       keywords: [
         sharedImage.subtitle?.trim() || groupTitle,

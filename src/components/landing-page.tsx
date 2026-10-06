@@ -1,13 +1,14 @@
-import { ArrowUpRight, Phone } from "lucide-react";
-import Link from "next/link";
+import { Suspense } from "react";
+import type { PublicBusinessSettings } from "@/lib/business-settings";
+import { Phone } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
+import { CeilingDesignGuide } from "@/components/ceiling-design-guide";
+import { HomeFooter } from "@/components/home-footer";
 import { HeroMediaCarousel } from "@/components/hero-media-carousel";
 import { JsonLd } from "@/components/json-ld";
-import { PublicBlogPreviewCard } from "@/components/public-blog-preview-card";
-import { PublicCatalogueCard } from "@/components/public-catalogue-card";
-import { PublicProjectPreviewCard } from "@/components/public-project-preview-card";
-import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
+import { HomeArticlesSection, HomeCatalogueSection, HomeProjectsSection } from "@/components/home-content-sections";
+import { HomeServicesSection } from "@/components/home-services-section";
 import { SiteHeader } from "@/components/site-header";
 import { PublicGoogleReviewsSection } from "@/components/public-google-reviews-section";
 import { WhatsAppFab } from "@/components/whatsapp-fab";
@@ -26,18 +27,10 @@ import {
   getPublicBlogPosts,
   getPublicCatalogueImages,
   getPublicHeroSlides,
-  getPublicProjectCount,
   getPublicProjects,
   getPublicServices,
 } from "@/lib/public-content";
 
-import { siteConfig } from "@/lib/site";
-
-const serviceHighlights = [
-  ["01", "POP false ceiling for homes, shops, offices & halls"],
-  ["02", "PVC ceiling for kitchens, bathrooms & utility spaces"],
-  ["03", "Gypsum ceiling with cove lighting & modern designs"],
-] as const;
 
 const processSteps = [
   {
@@ -54,26 +47,35 @@ const processSteps = [
   },
 ] as const;
 
+type ReviewsPromise = ReturnType<typeof getGoogleBusinessReviews>;
+
+async function StreamedReviews({ data }: { data: ReviewsPromise }) {
+  const reviews = await data;
+  return reviews ? <PublicGoogleReviewsSection data={reviews} /> : null;
+}
+
+async function StreamedFooter({ settings, data, showAdminLogin }: { settings: PublicBusinessSettings; data: ReviewsPromise; showAdminLogin: boolean }) {
+  const reviews = await data;
+  return <HomeFooter settings={settings} showAdminLogin={showAdminLogin} hasReviews={Boolean(reviews)} />;
+}
+
 export async function LandingPage() {
+  const reviewsPromise = getGoogleBusinessReviews();
   const [
     settings,
     slides,
     projects,
-    projectCount,
     services,
     catalogueImages,
     blogPosts,
-    googleReviews,
     adminSession,
   ] = await Promise.all([
     getPublicBusinessSettings(),
     getPublicHeroSlides(),
     getPublicProjects(6),
-    getPublicProjectCount(),
     getPublicServices(),
     getPublicCatalogueImages(4),
     getPublicBlogPosts(),
-    getGoogleBusinessReviews(),
     getAdminClient(),
   ]);
 
@@ -97,7 +99,7 @@ export async function LandingPage() {
   const telHref = toTelLink(settings.phone);
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-24 text-foreground sm:px-8">
+    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 text-foreground sm:px-8">
       <JsonLd
         data={buildHomeJsonLd(
           settings,
@@ -108,254 +110,83 @@ export async function LandingPage() {
         )}
       />
 
-      <div className="grid -mx-4 sm:-mx-8">
-        <HeroMediaCarousel
-          className="col-start-1 row-start-1"
-          extendUnderHeader
-          slides={slides}
-        >
-        <div className="flex flex-wrap gap-3">
+      <SiteHeader className="border-b-0 bg-[#f3f0e9]" />
+
+      <section className="-mx-4 bg-[#f3f0e9] px-4 pb-7 pt-9 sm:-mx-8 sm:px-8 sm:pb-9 sm:pt-12">
+        <div>
+        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#706454]">
+          <span aria-hidden className="size-1.5 rounded-full bg-[#9a7549]" />
+          Ceiling specialists · {settings.city}
+        </p>
+        <h1 className="mt-5 max-w-lg font-primary text-[clamp(2.25rem,8vw,3.25rem)] font-semibold leading-[1.08] tracking-[-0.045em] text-[#292720]">
+          A beautiful space<br />starts <span className="font-normal text-[#91704a]">above.</span>
+        </h1>
+        <p className="mt-5 max-w-md text-sm leading-7 text-[#746e63]">
+          Thoughtfully designed POP, gypsum, PVC and wooden ceilings.
+          From your first idea to the finishing touches, we bring it together.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2.5">
           <a
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition duration-200 hover:bg-[#1ebe57]"
+            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#292720] px-5 text-sm font-medium text-white transition hover:bg-[#4a4439] focus-visible:outline-2 focus-visible:outline-offset-4"
             href={whatsappHref}
             rel="noopener noreferrer"
             target="_blank"
           >
-            <FaWhatsapp aria-hidden size={18} />
-            WhatsApp
+            <FaWhatsapp aria-hidden size={18} /> Get a quotation
           </a>
           <a
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-border-strong px-5 text-sm font-medium text-foreground transition duration-200 hover:border-primary"
+            className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[#ccc4b7] px-4 text-sm font-medium text-[#292720] transition hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-4"
             href={telHref}
           >
-            <Phone size={17} />
-            Call now
+            <Phone aria-hidden size={15} /> Call us
           </a>
         </div>
-        </HeroMediaCarousel>
-
-        <SiteHeader
-          className="col-start-1 row-start-1 self-start"
-          overlay
-        />
-      </div>
+        </div>
+        <div className="mt-7">
+          <HeroMediaCarousel slides={slides} />
+        </div>
+      </section>
 
       <div className="landing-flow -mx-4 sm:-mx-8">
-        <section className="landing-section landing-section-flush-top px-4 sm:px-8">
+        <CeilingDesignGuide services={services} whatsappHref={whatsappHref} />
+        <HomeServicesSection services={services} />
+
+        <HomeCatalogueSection items={catalogueImages} />
+        <HomeProjectsSection projects={projects} />
+        <HomeArticlesSection posts={recentBlogPosts} />
+
+        <Suspense fallback={null}><StreamedReviews data={reviewsPromise} /></Suspense>
+
+        <section className="px-4 py-9 sm:px-8">
           <div className="landing-section-content">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-surface-muted px-3 py-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-                  Service area
-                </p>
-                <p className="mt-2 font-primary text-lg font-semibold leading-snug text-foreground whitespace-pre-line line-clamp-3 sm:text-xl">
-                  {settings.serviceAreas}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-surface-muted px-3 py-4">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-                  Projects
-                </p>
-                <p className="mt-2 font-primary text-2xl font-semibold leading-none text-foreground">
-                  {projectCount > 0 ? projectCount : "—"}
-                </p>
-                <p className="mt-2 text-xs text-muted">
-                  {projectCount > 0 ? "Published on site" : "Gallery coming soon"}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 overflow-hidden rounded-xl border border-border-soft bg-surface-raised/80">
-              {serviceHighlights.map(([number, label]) => (
-                <div
-                  className="grid grid-cols-[2.75rem_1fr] items-center border-b border-border-soft px-3 py-3 last:border-b-0 sm:grid-cols-[3rem_1fr] sm:px-4 sm:py-3.5"
-                  key={number}
-                >
-                  <span className="text-xs text-subtle sm:text-sm">{number}</span>
-                  <p className="text-[14px] text-foreground sm:text-[15px]">
-                    {label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section
-          className="landing-section landing-bg-grid px-4 sm:px-8"
-          id="services"
-        >
-          <div aria-hidden className="landing-section-bg" />
-          <div className="landing-section-content">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-sm text-muted">Services</p>
-                <h2 className="mt-2 text-2xl font-medium">What we do</h2>
-              </div>
-              <Link
-                className="minimal-link inline-flex items-center gap-1 text-sm"
-                href="/services"
-              >
-                View all
-                <ArrowUpRight size={14} />
-              </Link>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {services.slice(0, 4).map((service) => (
-                <PublicServicePreviewCard key={service.id} service={service} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {catalogueImages.length > 0 ? (
-          <section
-            className="landing-section landing-bg-plain px-4 sm:px-8"
-            id="catalogue"
-          >
-            <div aria-hidden className="landing-section-bg" />
-            <div className="landing-section-content">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-sm text-muted">Design ideas</p>
-                  <h2 className="mt-2 text-2xl font-medium">
-                    Ceiling catalogue
-                  </h2>
-                </div>
-                <Link
-                  className="minimal-link inline-flex items-center gap-1 text-sm"
-                  href="/catalogue"
-                >
-                  View all
-                  <ArrowUpRight size={14} />
-                </Link>
-              </div>
-              <p className="mt-4 text-sm leading-7 text-muted">
-                Real ceiling finishes and layouts — photos of styles we build.
-              </p>
-
-              <div className="mt-6 space-y-4">
-                {catalogueImages.map((item) => (
-                  <PublicCatalogueCard item={item} key={item.id} />
-                ))}
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        <section
-          className="landing-section landing-bg-shade-warm px-4 sm:px-8"
-          id="projects"
-        >
-          <div aria-hidden className="landing-section-bg" />
-          <div className="landing-section-content">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-sm text-muted">Recent work</p>
-                <h2 className="mt-2 text-2xl font-medium">Completed projects</h2>
-              </div>
-              {projectCount > 0 ? (
-                <Link
-                  className="minimal-link inline-flex items-center gap-1 text-sm"
-                  href="/projects"
-                >
-                  View all
-                  <ArrowUpRight size={14} />
-                </Link>
-              ) : null}
-            </div>
-            <p className="mt-4 text-sm leading-7 text-muted">
-              Published projects from admin appear here automatically once photos
-              are added.
-            </p>
-
-            {projects.length > 0 ? (
-              <div className="mt-6 space-y-4">
-                {projects.map((project) => (
-                  <PublicProjectPreviewCard key={project.id} project={project} />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-6 rounded-2xl bg-surface-muted px-4 py-5">
-                <p className="text-sm font-medium text-foreground">
-                  Project gallery is ready
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  Add completed work in admin and mark it published to show real
-                  photos here and in the homepage carousel.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {recentBlogPosts.length > 0 ? (
-          <section
-            className="landing-section landing-bg-grid px-4 sm:px-8"
-            id="blog"
-          >
-            <div aria-hidden className="landing-section-bg" />
-            <div className="landing-section-content">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-sm text-muted">Blog</p>
-                  <h2 className="mt-2 text-2xl font-medium">Recent articles</h2>
-                </div>
-                <Link
-                  className="minimal-link inline-flex items-center gap-1 text-sm"
-                  href="/blog"
-                >
-                  View all
-                  <ArrowUpRight size={14} />
-                </Link>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                {recentBlogPosts.map((post) => (
-                  <PublicBlogPreviewCard key={post.id} post={post} />
-                ))}
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {googleReviews ? (
-          <PublicGoogleReviewsSection data={googleReviews} />
-        ) : null}
-
-        <section className="landing-section landing-bg-plain px-4 sm:px-8">
-          <div aria-hidden className="landing-section-bg" />
-          <div className="landing-section-content">
-            <p className="text-sm text-muted">How it works</p>
-            <h2 className="mt-2 text-2xl font-medium">
-              Simple from first message to final coat
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">How it works</p>
+            <h2 className="mt-2 font-primary text-[26px] font-medium leading-tight tracking-[-0.035em] text-[#292720]">
+              Your project, in three steps.
             </h2>
 
-            <div className="mt-6 space-y-3">
+            <ol className="mt-7">
               {processSteps.map((step, index) => (
-                <article
-                  className="rounded-xl border border-border-soft bg-surface-raised/70 p-4"
-                  key={step.title}
-                >
-                  <p className="text-xs text-muted">Step {index + 1}</p>
-                  <h3 className="mt-1 text-sm font-medium">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">{step.text}</p>
-                </article>
+                <li className="relative grid grid-cols-[2rem_1fr] gap-4 pb-7 last:pb-0" key={step.title}>
+                  {index < processSteps.length - 1 ? <span aria-hidden className="absolute bottom-0 left-[15px] top-8 w-px bg-[#d6c7b1]" /> : null}
+                  <span aria-hidden className="relative z-10 flex size-8 items-center justify-center rounded-full border border-[#c9b69a] bg-[#f3eee5] text-xs font-medium text-[#91704a]">{index + 1}</span>
+                  <div className="pt-1">
+                    <h3 className="font-primary text-sm font-medium text-[#292720]">{step.title}</h3>
+                    <p className="mt-2 text-xs leading-6 text-[#746e63]">{step.text}</p>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         </section>
 
         <section
-          className="landing-section landing-bg-shade-cool px-4 sm:px-8"
+          className="bg-[#f3f0e9] px-4 py-9 sm:px-8"
           id="contact"
         >
-          <div aria-hidden className="landing-section-bg" />
-          <div className="landing-section-content rounded-2xl bg-surface-muted/80 px-4 py-5">
-            <p className="text-sm text-muted">Start a project</p>
-            <h2 className="mt-2 text-2xl font-medium">
-              Tell us about the room and we will quote it clearly.
+          <div className="landing-section-content">
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">Let’s create your space</p>
+            <h2 className="mt-2 font-primary text-[26px] font-medium leading-tight tracking-[-0.035em] text-[#292720]">
+              Have a room in mind?
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted">
               Share photos, measurements, and the finish you want. We reply with a
@@ -365,7 +196,7 @@ export async function LandingPage() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <a
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-medium text-white shadow-[0_8px_20px_rgba(37,211,102,0.35)] transition duration-200 hover:bg-[#1ebe57]"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#292720] px-5 text-sm font-medium text-white transition hover:bg-[#4a4439]"
                 href={whatsappHref}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -385,98 +216,7 @@ export async function LandingPage() {
         </section>
       </div>
 
-      <footer className="mt-10 border-t border-border-soft pt-6 text-sm text-muted">
-        <div className="flex flex-col gap-5">
-          <div>
-            <p className="font-primary text-base font-medium text-foreground">
-              {settings.businessName}
-            </p>
-            <p className="mt-1.5 leading-6">
-              False ceiling contractor in {settings.city}
-              {settings.serviceAreas ? ` · ${settings.serviceAreas}` : ""}
-            </p>
-          </div>
-
-          <nav aria-label="Footer">
-            <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3">
-              <li>
-                <Link className="minimal-link" href="/services">
-                  Services
-                </Link>
-              </li>
-              <li>
-                <Link className="minimal-link" href="/catalogue">
-                  Catalogue
-                </Link>
-              </li>
-              <li>
-                <Link className="minimal-link" href="/projects">
-                  Projects
-                </Link>
-              </li>
-              <li>
-                <Link className="minimal-link" href="/blog">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link className="minimal-link" href="/#contact">
-                  Contact
-                </Link>
-              </li>
-              {googleReviews ? (
-                <li>
-                  <Link className="minimal-link" href="/#reviews">
-                    Reviews
-                  </Link>
-                </li>
-              ) : null}
-              <li>
-                <a
-                  className="minimal-link"
-                  href={whatsappHref}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  WhatsApp
-                </a>
-              </li>
-            </ul>
-          </nav>
-
-          <div className="space-y-1.5 border-t border-border-soft pt-4">
-            {settings.phone ? (
-              <p>
-                <a className="minimal-link" href={telHref}>
-                  {settings.phone}
-                </a>
-              </p>
-            ) : null}
-            {settings.email ? (
-              <p>
-                <a className="minimal-link" href={`mailto:${settings.email}`}>
-                  {settings.email}
-                </a>
-              </p>
-            ) : null}
-            <p className="leading-6 text-muted">{settings.city}</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-soft pt-4 text-xs text-muted">
-            <span>© {new Date().getFullYear()} {settings.businessName}</span>
-            {!isAdminLoggedIn ? (
-              <Link
-                className="minimal-link inline-flex items-center gap-1"
-                href="/login"
-              >
-                Admin login
-                <ArrowUpRight size={12} />
-              </Link>
-            ) : null}
-            <span>{siteConfig.name}</span>
-          </div>
-        </div>
-      </footer>
+      <Suspense fallback={<HomeFooter settings={settings} showAdminLogin={!isAdminLoggedIn} hasReviews={false} />}><StreamedFooter settings={settings} data={reviewsPromise} showAdminLogin={!isAdminLoggedIn} /></Suspense>
 
       <WhatsAppFab href={whatsappHref} />
     </main>

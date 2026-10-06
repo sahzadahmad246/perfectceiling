@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { ServiceGalleryImage } from "@/lib/services";
 
@@ -16,46 +16,57 @@ type ServiceImageLightboxProps = {
 const controlClass =
   "inline-flex items-center justify-center rounded-full border border-white/20 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70";
 
-export function ServiceImageLightbox({
-  open,
+export function ServiceImageLightbox(props: ServiceImageLightboxProps) {
+  if (!props.open || !props.images.length) return null;
+  return <ServiceImageLightboxViewer key={`${props.initialIndex ?? 0}-${props.images.length}`} images={props.images} initialIndex={props.initialIndex} title={props.title} onClose={props.onClose} />;
+}
+
+function ServiceImageLightboxViewer({
   images,
   initialIndex = 0,
   title,
   onClose,
-}: ServiceImageLightboxProps) {
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
+}: Omit<ServiceImageLightboxProps, "open">) {
+  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, Math.min(initialIndex, images.length - 1)));
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
   const hasMultiple = images.length > 1;
   const activeImage = images[activeIndex];
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setActiveIndex(Math.min(initialIndex, Math.max(images.length - 1, 0)));
-  }, [open, initialIndex, images.length]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = "hidden";
+    closeRef.current?.focus({ preventScroll: true });
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        event.preventDefault();
         onClose();
         return;
       }
 
+      if (event.key === "Tab") {
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled]):not([tabindex='-1'])") ?? []);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault(); first?.focus();
+        }
+      }
+
       if (event.key === "ArrowLeft" && hasMultiple) {
+        event.preventDefault();
         setActiveIndex((current) =>
           current === 0 ? images.length - 1 : current - 1,
         );
       }
 
       if (event.key === "ArrowRight" && hasMultiple) {
+        event.preventDefault();
         setActiveIndex((current) =>
           current === images.length - 1 ? 0 : current + 1,
         );
@@ -67,10 +78,11 @@ export function ServiceImageLightbox({
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
     };
-  }, [hasMultiple, images.length, onClose, open]);
+  }, [hasMultiple, images.length, onClose]);
 
-  if (!open || !activeImage) {
+  if (!activeImage) {
     return null;
   }
 
@@ -86,22 +98,24 @@ export function ServiceImageLightbox({
     );
   }
 
+  const rawCaption = activeImage.caption.trim();
   const caption =
-    activeImage.caption.trim() ||
+    (/^\d+\.(?:png|jpe?g|webp|avif)$/i.test(rawCaption) ? "" : rawCaption) ||
     `${title} — photo ${activeIndex + 1} of ${images.length}`;
 
   return (
-    <div className="fixed inset-0 z-[10030] h-dvh w-full overflow-hidden bg-black/92 backdrop-blur-md">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-[10030] h-dvh w-full overflow-hidden bg-black/92 backdrop-blur-md">
       <button
         aria-label="Close image preview"
         className="absolute inset-0"
         onClick={onClose}
         type="button"
+        tabIndex={-1}
       />
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="min-w-0 rounded-full border border-white/15 bg-black/45 px-4 py-2 text-white backdrop-blur-sm">
-          <p className="truncate text-sm font-medium">{title}</p>
+          <p id={titleId} className="truncate text-sm font-medium">{title}</p>
           {hasMultiple ? (
             <p className="text-xs text-white/70">
               {activeIndex + 1} of {images.length}
@@ -110,6 +124,7 @@ export function ServiceImageLightbox({
         </div>
 
         <button
+          ref={closeRef}
           aria-label="Dismiss image preview"
           className={`${controlClass} size-11 shrink-0`}
           onClick={onClose}

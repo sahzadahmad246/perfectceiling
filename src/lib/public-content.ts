@@ -1,5 +1,7 @@
 import { cache } from "react";
 
+import { selectHeroSlides } from "@/lib/hero-slides";
+
 import { hasSupabaseEnv } from "@/lib/env";
 import { resolveBlogCardImageUrl } from "@/lib/blog";
 import {
@@ -10,7 +12,6 @@ import {
 import { getCataloguePublicPath } from "@/lib/catalogue";
 import {
   getServiceGalleryImages,
-  getServicePublicPath,
   resolveServiceCardImageUrl,
   type ServiceGalleryImage,
   type ServiceRateUnit,
@@ -39,39 +40,6 @@ async function hasContentViewColumns(
 function withViewCountColumn(columns: string, enabled: boolean) {
   return enabled ? `${columns}, view_count` : columns;
 }
-
-const fallbackHeroSlides: HeroSlide[] = [
-  {
-    id: "fallback-homes",
-    mediaType: "animated",
-    mediaUrl: "",
-    posterUrl: null,
-    theme: "homes",
-    overlayTitle: "POP false ceiling for homes",
-    overlaySubtitle: "Measured work, clean finishing, and straightforward quotes.",
-    durationMs: 8000,
-  },
-  {
-    id: "fallback-shops",
-    mediaType: "animated",
-    mediaUrl: "",
-    posterUrl: null,
-    theme: "shops",
-    overlayTitle: "Ceiling work for shops and showrooms",
-    overlaySubtitle: "PVC, gypsum, and POP installs built for daily use.",
-    durationMs: 8000,
-  },
-  {
-    id: "fallback-offices",
-    mediaType: "animated",
-    mediaUrl: "",
-    posterUrl: null,
-    theme: "offices",
-    overlayTitle: "Office ceilings with neat lighting lines",
-    overlaySubtitle: "Gypsum layouts, cove lighting prep, and repair work.",
-    durationMs: 8000,
-  },
-];
 
 export type HeroSlide = {
   id: string;
@@ -197,17 +165,6 @@ function mapPublicService(row: ServiceRow): PublicService {
   };
 }
 
-type HeroSlideRow = {
-  id: string;
-  media_type: string;
-  media_url: string;
-  poster_url: string | null;
-  overlay_title: string;
-  overlay_subtitle: string | null;
-  duration_ms: number | null;
-  sort_order: number;
-};
-
 type ProjectRow = {
   id: string;
   title: string;
@@ -226,19 +183,6 @@ type ProjectRow = {
   sort_order: number | null;
   updated_at: string | null;
 };
-
-function mapHeroSlide(row: HeroSlideRow): HeroSlide {
-  return {
-    id: row.id,
-    mediaType: row.media_type === "video" ? "video" : "image",
-    mediaUrl: row.media_url,
-    posterUrl: row.poster_url,
-    overlayTitle: row.overlay_title,
-    overlaySubtitle: row.overlay_subtitle,
-    durationMs: row.duration_ms ?? 8000,
-    theme: undefined,
-  };
-}
 
 function mapProject(row: ProjectRow): PublicProject {
   const status =
@@ -269,7 +213,6 @@ function mapProject(row: ProjectRow): PublicProject {
 }
 
 const HERO_SLIDE_DURATION_MS = 5500;
-const HERO_MAX_SLIDES = 16;
 
 function catalogueToHeroSlides(groups: PublicCatalogueGroup[]): HeroSlide[] {
   const slides: HeroSlide[] = [];
@@ -347,102 +290,6 @@ function projectsToHeroSlides(projects: PublicProject[]): HeroSlide[] {
   return slides;
 }
 
-function servicesToHeroSlides(services: PublicService[]): HeroSlide[] {
-  const slides: HeroSlide[] = [];
-
-  for (const service of services) {
-    if (service.id.startsWith("fallback-")) {
-      continue;
-    }
-
-    const images =
-      service.galleryImages.length > 0
-        ? service.galleryImages
-        : service.featuredImageUrl || service.imageUrl
-          ? [
-              {
-                url: service.featuredImageUrl || service.imageUrl || "",
-                caption: "",
-              },
-            ]
-          : [];
-
-    for (const [index, image] of images.entries()) {
-      if (!image.url?.trim()) {
-        continue;
-      }
-
-      slides.push({
-        id: `service-${service.id}-${index}`,
-        mediaType: "image",
-        mediaUrl: image.url,
-        posterUrl: null,
-        theme: undefined,
-        overlayTitle: service.title,
-        overlaySubtitle: service.shortDescription || null,
-        durationMs: HERO_SLIDE_DURATION_MS,
-        href: getServicePublicPath(service.slug),
-      });
-    }
-  }
-
-  return slides;
-}
-
-/** Prefer real photos; drop animated placeholders when we have media. */
-function mergeHeroSlides(sources: HeroSlide[][]): HeroSlide[] {
-  const seen = new Set<string>();
-  const merged: HeroSlide[] = [];
-
-  for (const batch of sources) {
-    for (const slide of batch) {
-      if (slide.mediaType === "animated") {
-        continue;
-      }
-
-      const key = slide.mediaUrl?.trim();
-
-      if (!key || seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      merged.push({
-        ...slide,
-        durationMs: slide.durationMs || HERO_SLIDE_DURATION_MS,
-      });
-
-      if (merged.length >= HERO_MAX_SLIDES) {
-        return merged;
-      }
-    }
-  }
-
-  return merged;
-}
-
-async function fetchPublishedHeroSlides(): Promise<HeroSlide[]> {
-  const supabase = createPublicClient();
-
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("hero_slides")
-    .select(
-      "id, media_type, media_url, poster_url, overlay_title, overlay_subtitle, duration_ms, sort_order",
-    )
-    .eq("published", true)
-    .order("sort_order", { ascending: true });
-
-  if (error || !data?.length) {
-    return [];
-  }
-
-  return data.map((row) => mapHeroSlide(row as HeroSlideRow));
-}
-
 async function fetchPublishedProjects(
   limit = 8,
   options?: { homepageOnly?: boolean },
@@ -478,33 +325,27 @@ async function fetchPublishedProjects(
 
 export const getPublicHeroSlides = cache(async (): Promise<HeroSlide[]> => {
   if (!hasSupabaseEnv()) {
-    return fallbackHeroSlides;
+    return [];
   }
 
   try {
-    // Merge all image sources so the hero actually carousels multiple photos.
-    const [configured, catalogueGroups, projects, services] =
-      await Promise.all([
-        fetchPublishedHeroSlides(),
-        fetchPublishedCatalogueGroups(12),
-        fetchPublishedProjects(12),
-        fetchPublishedServices(),
-      ]);
+    const [catalogueGroups, projects] = await Promise.all([
+      fetchPublishedCatalogueGroups(12),
+      fetchPublishedProjects(12),
+    ]);
 
-    const merged = mergeHeroSlides([
-      configured,
-      catalogueToHeroSlides(catalogueGroups),
+    const merged = selectHeroSlides([
       projectsToHeroSlides(projects),
-      servicesToHeroSlides(services),
+      catalogueToHeroSlides(catalogueGroups),
     ]);
 
     if (merged.length > 0) {
       return merged;
     }
 
-    return fallbackHeroSlides;
+    return [];
   } catch {
-    return fallbackHeroSlides;
+    return [];
   }
 });
 

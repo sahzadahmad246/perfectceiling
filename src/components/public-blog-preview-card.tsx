@@ -1,61 +1,23 @@
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import Link from "next/link";
 
-import { ViewCount } from "@/components/view-count";
 import { formatBlogPublishedDate, getBlogPublicPath } from "@/lib/blog";
 import { getBlogSeoDescription } from "@/lib/blog-seo";
 import type { PublicBlogPost } from "@/lib/public-content";
 
-type PublicBlogPreviewCardProps = {
-  post: PublicBlogPost;
-};
-
-export function PublicBlogPreviewCard({ post }: PublicBlogPreviewCardProps) {
-  const href = getBlogPublicPath(post.slug);
-  const publishedLabel = formatBlogPublishedDate(post.publishedAt);
-
-  return (
-    <article className="group overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80 transition duration-200 hover:border-border-strong">
-      <Link className="block" href={href}>
-        {post.imageUrl ? (
-          <div className="relative aspect-[16/10] bg-surface-muted">
-            <Image
-              alt={post.title}
-              className="object-cover"
-              fill
-              sizes="560px"
-              src={post.imageUrl}
-              unoptimized={post.imageUrl.startsWith("http")}
-            />
-          </div>
-        ) : null}
-
-        <div className="p-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-            {post.category ? (
-              <span className="rounded-full bg-surface-muted px-2 py-0.5 font-medium">
-                {post.category}
-              </span>
-            ) : null}
-            {publishedLabel ? <span>{publishedLabel}</span> : null}
-            <ViewCount count={post.viewCount} />
-          </div>
-
-          <h3 className="mt-3 font-primary text-xl font-semibold leading-snug text-foreground">
-            {post.title}
-          </h3>
-
-          <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted">
-            {getBlogSeoDescription(post)}
-          </p>
-
-          <span className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 group-hover:bg-primary-hover">
-            Read article
-            <ArrowUpRight size={15} />
-          </span>
-        </div>
-      </Link>
-    </article>
-  );
+export function PublicBlogPreviewCard({ post, featured = false, lcpImage = false }: { post: PublicBlogPost; featured?: boolean; lcpImage?: boolean }) {
+  const date = formatBlogPublishedDate(post.publishedAt);
+  return <article className={featured ? "pb-7" : "border-t border-[#e1dbcf] py-6"}>
+    <Link href={getBlogPublicPath(post.slug)} className={`group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#91704a] ${featured ? "" : "flex items-start gap-4"}`}>
+      {post.imageUrl ? <div className={`relative shrink-0 overflow-hidden rounded-lg bg-[#e8e2d8] ${featured ? "mb-5 aspect-[16/10] w-full" : "order-2 mt-1 aspect-square w-[88px] sm:w-[112px]"}`}><Image alt={post.title} fill loading={lcpImage ? "eager" : "lazy"} fetchPriority={lcpImage ? "high" : "auto"} src={post.imageUrl} sizes={featured ? "(max-width: 560px) calc(100vw - 32px), 496px" : "112px"} className="object-cover transition duration-500 group-hover:scale-[1.035] motion-reduce:transform-none" unoptimized={shouldBypassImageOptimization(post.imageUrl)} /></div> : null}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#827563]"><span className="font-medium uppercase tracking-[0.1em] text-[#91704a]">{post.category || "Design journal"}</span>{date ? <span>{date}</span> : null}</div>
+        <h2 className={`mt-2 font-primary font-medium leading-snug tracking-[-0.025em] transition group-hover:text-[#91704a] ${featured ? "text-[26px]" : "text-[18px]"}`}>{post.title}</h2>
+        <p className={`mt-2 text-xs leading-6 text-[#746e63] ${featured ? "line-clamp-3" : "line-clamp-2"}`}>{getBlogSeoDescription(post)}</p>
+        <span className="mt-3 inline-flex min-h-8 items-center gap-2 text-[11px] font-medium text-[#91704a]">Read the story<ArrowUpRight aria-hidden size={14} /></span>
+      </div>
+    </Link>
+  </article>;
 }

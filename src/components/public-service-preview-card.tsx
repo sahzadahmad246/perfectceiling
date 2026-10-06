@@ -1,54 +1,23 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Layers } from "lucide-react";
+import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import Link from "next/link";
 
-import { PublicServiceCardMedia } from "@/components/public-service-card-media";
-import { ViewCount } from "@/components/view-count";
-import { formatServiceRate, getServicePublicPath } from "@/lib/services";
-import { getServiceSeoDescription } from "@/lib/service-seo";
 import type { PublicService } from "@/lib/public-content";
+import { formatServiceRate, getServicePublicPath, resolveServiceCardImageUrl } from "@/lib/services";
 
-type PublicServicePreviewCardProps = {
-  service: PublicService;
-};
-
-export function PublicServicePreviewCard({
-  service,
-}: PublicServicePreviewCardProps) {
-  const href = getServicePublicPath(service.slug);
-  const rateLabel = formatServiceRate(service.startingPrice, service.rateUnit);
-  const imageAlt = `${service.title} — ${getServiceSeoDescription(service)}`;
-
-  return (
-    <article className="group overflow-hidden rounded-2xl border border-border-soft bg-surface-raised/80 transition duration-200 hover:border-border-strong">
-      <Link className="block" href={href}>
-        <PublicServiceCardMedia
-          imageAlt={imageAlt}
-          images={service.galleryImages}
-          title={service.title}
-        />
-
-        <div className="p-4">
-          <h3 className="font-primary text-xl font-semibold leading-snug text-foreground">
-            {service.title}
-          </h3>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex max-w-full items-center rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-              <span className="truncate">{rateLabel}</span>
-            </span>
-            <ViewCount count={service.viewCount} />
-          </div>
-
-          <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">
-            {service.shortDescription}
-          </p>
-
-          <span className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 group-hover:bg-primary-hover">
-            View service
-            <ArrowUpRight size={15} />
-          </span>
-        </div>
-      </Link>
-    </article>
-  );
+export function PublicServicePreviewCard({ service, lcpImage = false }: { service: PublicService; lcpImage?: boolean }) {
+  const image = service.featuredImageUrl?.trim() || service.imageUrl?.trim() || service.galleryImages[0]?.url || resolveServiceCardImageUrl(null, service.content);
+  return <article className="h-full">
+    <Link href={getServicePublicPath(service.slug)} className="group flex h-full flex-col overflow-hidden rounded-2xl bg-[#fbfbfa] transition hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#91704a]">
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#e8e2d8]">
+        {image ? <Image alt={service.title} fill loading={lcpImage ? "eager" : "lazy"} fetchPriority={lcpImage ? "high" : "auto"} src={image} sizes="(max-width: 560px) calc((100vw - 48px) / 2), 240px" className="object-cover transition duration-300 group-hover:scale-[1.025] motion-reduce:transform-none" unoptimized={shouldBypassImageOptimization(image)} /> : <div className="flex h-full items-center justify-center text-[#91704a]"><Layers aria-hidden size={30} strokeWidth={1.2} /></div>}
+      </div>
+      <div className="flex flex-1 flex-col p-3.5">
+        <h3 className="font-primary text-sm font-semibold leading-5 text-[#292720]">{service.title}</h3>
+        <p className="mt-2 text-[11px] leading-5 text-[#746e63]">{formatServiceRate(service.startingPrice, service.rateUnit)}</p>
+        <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-[11px] font-medium text-[#91704a]">View details <ArrowUpRight aria-hidden size={15} /></span>
+      </div>
+    </Link>
+  </article>;
 }

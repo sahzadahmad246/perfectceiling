@@ -1,3 +1,4 @@
+import { NON_INDEXABLE_ROBOTS } from "@/lib/seo";
 import type { Metadata } from "next";
 
 import { PublicServiceDetailPage } from "@/components/public-service-detail-page";
@@ -34,10 +35,7 @@ export async function generateMetadata({
   if (!service) {
     return {
       title: "Service not found",
-      robots: {
-        index: false,
-        follow: false,
-      },
+      robots: NON_INDEXABLE_ROBOTS,
     };
   }
 

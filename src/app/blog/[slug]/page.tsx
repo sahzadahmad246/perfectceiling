@@ -1,3 +1,4 @@
+import { NON_INDEXABLE_ROBOTS } from "@/lib/seo";
 import type { Metadata } from "next";
 
 import { PublicBlogDetailPage } from "@/components/public-blog-detail-page";
@@ -32,10 +33,7 @@ export async function generateMetadata({
   if (!post) {
     return {
       title: "Article not found",
-      robots: {
-        index: false,
-        follow: false,
-      },
+      robots: NON_INDEXABLE_ROBOTS,
     };
   }
 

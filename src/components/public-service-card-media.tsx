@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Hammer } from "lucide-react";
 import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import { useCallback, useState } from "react";
 
 import type { ServiceGalleryImage } from "@/lib/services";
@@ -84,10 +85,10 @@ export function PublicServiceCardMedia({
         alt={activeAlt}
         className="object-cover transition duration-300 group-hover:scale-[1.02]"
         fill
-        priority={activeIndex === 0}
+        loading="lazy"
         sizes="560px"
         src={activeImage.url}
-        unoptimized={activeImage.url.startsWith("http")}
+        unoptimized={shouldBypassImageOptimization(activeImage.url)}
       />
 
       {hasMultiple ? (

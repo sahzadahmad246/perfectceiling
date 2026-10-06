@@ -58,7 +58,7 @@ export async function SiteHeader({
           logoUrl={settings.logoUrl}
         />
 
-        <SiteMenuDrawer isAdmin={isAdmin} overlay={overlay} profile={profile} />
+        <SiteMenuDrawer isAdmin={isAdmin} overlay={overlay} profile={profile} businessName={settings.businessName} logoUrl={settings.logoUrl} city={settings.city} />
       </div>
     </header>
   );

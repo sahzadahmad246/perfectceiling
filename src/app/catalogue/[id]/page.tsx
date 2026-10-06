@@ -1,3 +1,4 @@
+import { NON_INDEXABLE_ROBOTS } from "@/lib/seo";
 import type { Metadata } from "next";
 
 import { PublicCatalogueDetailPage } from "@/components/public-catalogue-detail-page";
@@ -34,10 +35,7 @@ export async function generateMetadata({
   if (!item) {
     return {
       title: "Design not found",
-      robots: {
-        index: false,
-        follow: false,
-      },
+      robots: NON_INDEXABLE_ROBOTS,
     };
   }
 

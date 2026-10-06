@@ -1,10 +1,11 @@
 "use client";
 
+import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ImageLightbox } from "@/components/image-lightbox";
-import { ViewCount } from "@/components/view-count";
 import {
   getCatalogueImageAlt,
   getCatalogueImagePublicPath,
@@ -38,21 +39,11 @@ export function PublicCatalogueDetailMedia({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(
     initialIndex >= 0 ? initialIndex : null,
   );
-  const [viewCounts, setViewCounts] = useState(() =>
-    Object.fromEntries(images.map((image) => [image.id, image.viewCount])),
-  );
   const active = lightboxIndex !== null ? images[lightboxIndex] : null;
   const seoContext = { city, businessName };
 
   const markViewed = useCallback(async (imageId: string) => {
-    const incremented = await recordContentView("catalogue_image", imageId);
-
-    if (incremented) {
-      setViewCounts((current) => ({
-        ...current,
-        [imageId]: (current[imageId] ?? 0) + 1,
-      }));
-    }
+    if (!imageId.startsWith("preview-")) await recordContentView("catalogue_image", imageId);
   }, []);
 
   function openImage(index: number) {
@@ -71,20 +62,11 @@ export function PublicCatalogueDetailMedia({
 
     const imageId = images[initialIndex]?.id;
 
-    if (!imageId) {
+    if (!imageId || imageId.startsWith("preview-")) {
       return;
     }
 
-    void recordContentView("catalogue_image", imageId).then((incremented) => {
-      if (!incremented) {
-        return;
-      }
-
-      setViewCounts((current) => ({
-        ...current,
-        [imageId]: (current[imageId] ?? 0) + 1,
-      }));
-    });
+    void recordContentView("catalogue_image", imageId);
   }, [images, initialIndex]);
 
   if (!images.length) {
@@ -93,11 +75,11 @@ export function PublicCatalogueDetailMedia({
 
   return (
     <>
-      <div className="mt-6 space-y-5" itemScope itemType="https://schema.org/ImageGallery">
+      <div className="my-6 columns-2 gap-3" itemScope itemType="https://schema.org/ImageGallery">
         {images.map((image, index) => {
           const alt = getCatalogueImageAlt(image, groupTitle, seoContext);
           const subtitle = image.subtitle?.trim() || "";
-          const caption = subtitle || `${groupTitle} ceiling design`;
+          const caption = subtitle || `Design ${index + 1}`;
           const href = getCatalogueImagePublicPath(groupId, image.id);
           const isPriority = index === 0;
 
@@ -111,7 +93,6 @@ export function PublicCatalogueDetailMedia({
               key={image.id}
               onOpen={() => openImage(index)}
               onView={markViewed}
-              viewCount={viewCounts[image.id] ?? image.viewCount}
             />
           );
         })}
@@ -131,6 +112,12 @@ export function PublicCatalogueDetailMedia({
             url: getCatalogueImageShareUrl(groupId, active.id),
           }}
           src={active.imageUrl}
+          caption={active.subtitle?.trim() || groupTitle}
+          navigation={images.length > 1 ? {
+            label: `${(lightboxIndex ?? 0) + 1} / ${images.length}`,
+            onPrevious: () => openImage(((lightboxIndex ?? 0) - 1 + images.length) % images.length),
+            onNext: () => openImage(((lightboxIndex ?? 0) + 1) % images.length),
+          } : undefined}
         />
       ) : null}
     </>
@@ -143,7 +130,6 @@ type CatalogueImageFigureProps = {
   caption: string;
   href: string;
   isPriority: boolean;
-  viewCount: number;
   onOpen: () => void;
   onView: (imageId: string) => void;
 };
@@ -154,7 +140,6 @@ function CatalogueImageFigure({
   caption,
   href,
   isPriority,
-  viewCount,
   onOpen,
   onView,
 }: CatalogueImageFigureProps) {
@@ -171,6 +156,10 @@ function CatalogueImageFigure({
     let timer: number | null = null;
     const observer = new IntersectionObserver(
       ([entry]) => {
+        if (timer !== null) {
+          window.clearTimeout(timer);
+          timer = null;
+        }
         if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
           timer = window.setTimeout(() => {
             if (viewedRef.current) {
@@ -205,13 +194,13 @@ function CatalogueImageFigure({
 
   return (
     <figure
-      className="overflow-hidden rounded-2xl border border-border-soft bg-surface-muted"
+      className="mb-4 break-inside-avoid"
       itemScope
       itemType="https://schema.org/ImageObject"
       ref={figureRef}
     >
       <a
-        className="relative block w-full text-left transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="group relative block overflow-hidden rounded-lg bg-[#e8e2d8] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#91704a]"
         href={href}
         itemProp="url"
         onClick={(event) => {
@@ -221,25 +210,21 @@ function CatalogueImageFigure({
       >
         <Image
           alt={alt}
-          className="h-auto max-h-[min(70vh,640px)] w-full object-contain"
+          className="h-auto w-full transition duration-300 group-hover:scale-[1.02] motion-reduce:transform-none"
           height={900}
           itemProp="contentUrl"
           loading={isPriority ? "eager" : "lazy"}
-          priority={isPriority}
-          sizes="(max-width: 560px) 100vw, 560px"
+          fetchPriority={isPriority ? "high" : "auto"}
+          sizes="(max-width: 560px) calc((100vw - 44px) / 2), 242px"
           src={image.imageUrl}
-          unoptimized={image.imageUrl.startsWith("http")}
+          unoptimized={shouldBypassImageOptimization(image.imageUrl)}
           width={1200}
         />
-        <ViewCount
-          className="absolute right-3 top-3"
-          count={viewCount}
-          variant="on-image"
-        />
       </a>
-      <figcaption className="sr-only">
-        <span itemProp="name">{caption}</span>
-        <span itemProp="description">{alt}</span>
+      <figcaption className="mt-2 flex items-start justify-between gap-2">
+        <span itemProp="name" className="line-clamp-2 text-[11px] font-medium leading-5 text-[#514c43]">{caption}</span>
+        <ArrowUpRight aria-hidden className="mt-1 shrink-0 text-[#91704a]" size={12} />
+        <span itemProp="description" className="sr-only">{alt}</span>
       </figcaption>
     </figure>
   );

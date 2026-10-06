@@ -16,6 +16,18 @@ export const INDEXABLE_ROBOTS: Metadata["robots"] = {
   },
 };
 
+export const NON_INDEXABLE_ROBOTS: Metadata["robots"] = {
+  index: false,
+  follow: false,
+  googleBot: { index: false, follow: false },
+};
+
+/** Omit unknown/invalid dates instead of telling crawlers every request is an edit. */
+export function getLatestContentDate(values: Array<string | null | undefined>) {
+  const timestamps = values.filter((value): value is string => Boolean(value)).map((value) => Date.parse(value)).filter(Number.isFinite);
+  return timestamps.length ? new Date(Math.max(...timestamps)) : undefined;
+}
+
 export function toAbsoluteUrl(url: string) {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
@@ -28,8 +40,6 @@ export function buildOpenGraphImages(images: string[], alt: string) {
   return images.slice(0, 4).map((url) => ({
     url: toAbsoluteUrl(url),
     alt,
-    width: 1200,
-    height: 630,
   }));
 }
 
@@ -42,6 +52,7 @@ export function buildLocalBusinessNode(settings: PublicBusinessSettings) {
     telephone: settings.phone,
     email: settings.email,
     image: settings.logoUrl ? toAbsoluteUrl(settings.logoUrl) : undefined,
+    logo: settings.logoUrl ? { "@type": "ImageObject", url: toAbsoluteUrl(settings.logoUrl) } : undefined,
     address: {
       "@type": "PostalAddress",
       addressLocality: settings.city,
@@ -146,6 +157,7 @@ export function resolveSeoImageUrls(options: {
 }) {
   return collectPreviewImageUrls(
     [
+      ...(options.featuredUrls ?? []).map((imageUrl) => ({ imageUrl })),
       {
         featuredImageUrl: options.featuredUrls?.[0],
         imageUrl: options.featuredUrls?.find((url) => url?.trim()),
@@ -171,6 +183,7 @@ export type BuildPublicPageMetadataInput = {
   openGraphType?: "website" | "article";
   publishedTime?: string;
   modifiedTime?: string;
+  canonicalUrl?: string;
 };
 
 export function buildPublicPageMetadata(
@@ -195,7 +208,7 @@ export function buildPublicPageMetadata(
     description: input.description,
     keywords: input.keywords,
     alternates: {
-      canonical: input.url,
+      canonical: input.canonicalUrl ?? input.url,
     },
     robots: INDEXABLE_ROBOTS,
     openGraph: {

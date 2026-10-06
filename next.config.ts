@@ -4,6 +4,9 @@ import { MAX_UPLOAD_IMAGE_SIZE } from "./src/lib/upload-image";
 
 const nextConfig: NextConfig = {
   experimental: {
+    cpus: 1,
+    webpackBuildWorker: true,
+    webpackMemoryOptimizations: true,
     serverActions: {
       bodySizeLimit: MAX_UPLOAD_IMAGE_SIZE,
     },

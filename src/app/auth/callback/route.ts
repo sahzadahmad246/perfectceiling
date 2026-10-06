@@ -3,41 +3,13 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { upsertProfile } from "@/lib/auth/profile";
+import { getAuthRedirectPath } from "@/lib/auth/redirect";
 import { getRequiredEnv } from "@/lib/env";
-import { getSiteUrl } from "@/lib/site-url";
-
-function resolveRedirectBase(request: Request) {
-  const { origin } = new URL(request.url);
-  const isLocalEnv = process.env.NODE_ENV === "development";
-
-  if (isLocalEnv) {
-    return origin;
-  }
-
-  // Prefer configured production URL so OAuth cookies land on the real domain.
-  const siteUrl = getSiteUrl();
-  if (siteUrl.startsWith("https://") || siteUrl.startsWith("http://")) {
-    return siteUrl;
-  }
-
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  if (forwardedHost) {
-    return `https://${forwardedHost}`;
-  }
-
-  return origin;
-}
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin: base } = new URL(request.url);
   const code = searchParams.get("code");
-  let next = searchParams.get("next") ?? "/admin";
-
-  if (!next.startsWith("/")) {
-    next = "/admin";
-  }
-
-  const base = resolveRedirectBase(request);
+  const next = getAuthRedirectPath(searchParams.get("next"));
 
   if (!code) {
     return NextResponse.redirect(`${base}/login?error=callback-missing-code`);
@@ -69,9 +41,9 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error("[auth/callback] exchangeCodeForSession failed", error.message);
-    return NextResponse.redirect(
-      `${base}/login?error=${encodeURIComponent(error.message.slice(0, 80))}`,
-    );
+    // Preserve cookie updates (including removal of the used PKCE verifier).
+    response.headers.set("Location", `${base}/login?error=oauth-exchange`);
+    return response;
   }
 
   const {

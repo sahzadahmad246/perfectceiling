@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import Link from "next/link";
 
 import { getBrandLogoUrl } from "@/lib/brand-logo";
@@ -22,7 +23,6 @@ export function BrandLogo({
   className,
 }: BrandLogoProps) {
   const src = getBrandLogoUrl(logoUrl);
-  const isRemote = src.startsWith("http");
 
   const image = (
     <Image
@@ -32,8 +32,10 @@ export function BrandLogo({
         imageClassName,
       )}
       height={40}
+      sizes="40px"
+      loading="eager"
       src={src}
-      unoptimized={isRemote}
+      unoptimized={shouldBypassImageOptimization(src)}
       width={40}
     />
   );

@@ -1,164 +1,41 @@
-import { MessageCircle, Phone } from "lucide-react";
+import { ArrowUpRight, MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-
 import { JsonLd } from "@/components/json-ld";
+import { PublicInquiry, PublicPageHeading, PublicPageLayout } from "@/components/public-page-layout";
+import { PublicServicePreviewCard } from "@/components/public-service-preview-card";
 import { RecordContentView } from "@/components/record-content-view";
 import { ServiceImageCarousel } from "@/components/service-image-carousel";
 import { ShareButton } from "@/components/share-button";
-import { SiteHeader } from "@/components/site-header";
-import { ViewCount } from "@/components/view-count";
-import {
-  getPublicBusinessSettings,
-  toTelLink,
-  toWhatsAppLink,
-} from "@/lib/business-settings";
-import { getPublicServiceBySlug } from "@/lib/public-content";
-import {
-  formatServiceRate,
-  getServiceGalleryImages,
-  prepareServicePageContent,
-} from "@/lib/services";
+import { getPublicBusinessSettings, toWhatsAppLink } from "@/lib/business-settings";
+import { getPublicServiceBySlug, getPublicServices } from "@/lib/public-content";
+import { formatServiceRate, getServiceGalleryImages, prepareServicePageContent } from "@/lib/services";
 import { buildServiceDetailJsonLd, getServicePageUrl } from "@/lib/service-seo";
 
-type PublicServiceDetailPageProps = {
-  slug: string;
-};
-
-export async function PublicServiceDetailPage({
-  slug,
-}: PublicServiceDetailPageProps) {
-  const [service, settings] = await Promise.all([
-    getPublicServiceBySlug(slug),
-    getPublicBusinessSettings(),
-  ]);
-
-  if (!service) {
-    notFound();
-  }
-
-  const whatsappHref = toWhatsAppLink(
-    settings.whatsapp,
-    `Hi Perfect Ceiling, I want a quotation for ${service.title}.`,
-  );
-  const telHref = toTelLink(settings.phone);
-  const galleryImages = getServiceGalleryImages(
-    service.featuredImageUrl,
-    service.content,
-  );
-  const contentHtml = prepareServicePageContent(service.content, {
-    title: service.title,
-    shortDescription: service.shortDescription,
-    seoTitle: service.seoTitle,
-    seoDescription: service.seoDescription,
-  });
-  const hasContent = Boolean(contentHtml.trim());
-
-  return (
-    <main className="mx-auto min-h-screen w-full max-w-[560px] bg-surface px-4 pb-10 text-foreground sm:px-8">
-      <JsonLd data={buildServiceDetailJsonLd(service, settings)} />
-      {service.id.startsWith("fallback-") ? null : (
-        <RecordContentView id={service.id} kind="service" />
-      )}
-
-      <SiteHeader />
-
-      <nav aria-label="Breadcrumb" className="mt-4 text-sm text-muted">
-        <ol className="flex flex-wrap items-center gap-2">
-          <li>
-            <Link className="minimal-link" href="/">
-              Home
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li>
-            <Link className="minimal-link" href="/services">
-              Services
-            </Link>
-          </li>
-          <li aria-hidden>/</li>
-          <li className="line-clamp-1 text-foreground">{service.title}</li>
-        </ol>
-      </nav>
-
-      <article itemScope itemType="https://schema.org/Service">
-        <meta content={service.title} itemProp="name" />
-        <meta
-          content={service.seoDescription?.trim() || service.shortDescription}
-          itemProp="description"
-        />
-        <meta content={getServicePageUrl(service.slug)} itemProp="url" />
-
-        <header className="mt-5">
-          <p className="text-sm text-muted">{settings.city}</p>
-          <h1 className="mt-2 font-primary text-3xl font-medium">{service.title}</h1>
-          <div className="mt-2">
-            <ViewCount count={service.viewCount} />
-          </div>
-        </header>
-
-        <ServiceImageCarousel images={galleryImages} title={service.title} />
-
-        <section className="mt-6">
-          <p className="text-sm font-medium text-foreground">
-            {formatServiceRate(service.startingPrice, service.rateUnit)}
-          </p>
-          <p className="mt-4 text-sm leading-7 text-foreground">
-            {service.shortDescription}
-          </p>
-          <div className="mt-5">
-            <ShareButton
-              text={
-                service.seoDescription?.trim() || service.shortDescription
-              }
-              title={`${service.title} — ${settings.businessName}`}
-              url={getServicePageUrl(service.slug)}
-            />
-          </div>
-        </section>
-
-        {hasContent ? (
-          <section className="mt-8 border-t border-border-soft pt-8">
-            <div
-              className="article-editor-preview text-sm leading-7 text-foreground"
-              dangerouslySetInnerHTML={{ __html: contentHtml }}
-            />
-          </section>
-        ) : null}
-      </article>
-
-      <section className="mt-10 rounded-2xl bg-surface-muted/80 px-4 py-5">
-        <p className="text-sm text-muted">Get a quote</p>
-        <h2 className="mt-2 text-2xl font-medium">Ready to get started?</h2>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          Share room photos and measurements on WhatsApp. We will send a measured
-          quotation for work in {settings.city}.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition duration-200 hover:bg-primary-hover"
-            href={whatsappHref}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <MessageCircle size={17} />
-            WhatsApp
-          </a>
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-border-strong px-5 text-sm font-medium text-foreground transition duration-200 hover:border-primary"
-            href={telHref}
-          >
-            <Phone size={17} />
-            Call now
-          </a>
-        </div>
+export async function PublicServiceDetailPage({ slug }: { slug: string }) {
+  const [service, settings, services] = await Promise.all([getPublicServiceBySlug(slug), getPublicBusinessSettings(), getPublicServices()]);
+  if (!service) notFound();
+  const whatsappHref = toWhatsAppLink(settings.whatsapp, `Hi, I would like a quotation for ${service.title}.`);
+  const images = getServiceGalleryImages(service.featuredImageUrl, service.content);
+  const contentHtml = prepareServicePageContent(service.content, { title: service.title, shortDescription: service.shortDescription, seoTitle: service.seoTitle, seoDescription: service.seoDescription });
+  const related = services.filter((item) => item.id !== service.id && !item.id.startsWith("fallback-")).slice(0, 2);
+  return <PublicPageLayout settings={settings} whatsappHref={whatsappHref}>
+    <JsonLd data={buildServiceDetailJsonLd(service, settings)} />
+    {!service.id.startsWith("fallback-") ? <RecordContentView id={service.id} kind="service" /> : null}
+    <article itemScope itemType="https://schema.org/Service">
+      <meta content={service.title} itemProp="name" /><meta content={service.seoDescription?.trim() || service.shortDescription} itemProp="description" /><meta content={getServicePageUrl(service.slug)} itemProp="url" />
+      <PublicPageHeading href="/services" backLabel="All services" eyebrow="Ceilings & interior finishes" title={service.title} share={<ShareButton variant="icon" label="Share this service" title={`${service.title} — ${settings.businessName}`} text={service.shortDescription} url={getServicePageUrl(service.slug)} className="border-[#d8d0c3] bg-transparent" />}>
+        <p className="mt-4 text-sm leading-7 text-[#746e63]">{service.shortDescription}</p>
+        <p className="mt-4 flex items-center gap-1.5 text-[11px] text-[#827563]"><MapPin aria-hidden size={12} />Available in {settings.city}</p>
+      </PublicPageHeading>
+      <ServiceImageCarousel images={images} title={service.title} />
+      <section aria-label="Pricing and quotation" className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-[#e1dbcf] py-5">
+        <div><p className="text-[10px] uppercase tracking-[0.12em] text-[#91704a]">Service rate</p><p className="mt-2 font-primary text-lg font-medium">{formatServiceRate(service.startingPrice, service.rateUnit)}</p></div>
+        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#292720] px-4 text-xs font-medium text-white"><MessageCircle aria-hidden size={14} />Get a quote</a>
       </section>
-
-      <footer className="mt-8 border-t border-border-soft pt-5 text-sm text-muted">
-        <Link className="minimal-link" href="/services">
-          Back to all services
-        </Link>
-      </footer>
-    </main>
-  );
+      {contentHtml.trim() ? <section className="mt-8"><p className="mb-5 text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">About this service</p><div className="article-editor-preview public-reading-content" dangerouslySetInnerHTML={{ __html: contentHtml }} /></section> : null}
+    </article>
+    <PublicInquiry settings={settings} whatsappHref={whatsappHref} title={`Let’s plan your ${service.title.toLowerCase()}.`} description={`Share photos and measurements of your space in ${settings.city}. We’ll help you work out the details and quotation.`} />
+    {related.length ? <section className="mt-10"><div className="flex items-center justify-between gap-3"><h2 className="font-primary text-xl font-medium tracking-tight">More for your space</h2><Link href="/services" className="inline-flex min-h-10 items-center gap-1 text-[11px] text-[#91704a]">All services<ArrowUpRight aria-hidden size={14} /></Link></div><div className="mt-4 grid grid-cols-2 gap-3">{related.map((item) => <PublicServicePreviewCard key={item.id} service={item} />)}</div></section> : null}
+  </PublicPageLayout>;
 }

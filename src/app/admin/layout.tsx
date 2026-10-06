@@ -1,8 +1,12 @@
 import { AdminBottomNav } from "@/components/admin-bottom-nav";
+import type { Metadata } from "next";
+import { NON_INDEXABLE_ROBOTS } from "@/lib/seo";
 import { AdminHeader } from "@/components/admin-header";
 import { requireAdmin } from "@/lib/auth/admin";
 import { getAuthProfile } from "@/lib/auth/profile";
 import { getPublicBusinessSettings } from "@/lib/business-settings";
+
+export const metadata: Metadata = { robots: NON_INDEXABLE_ROBOTS };
 
 export default async function AdminLayout({
   children,
