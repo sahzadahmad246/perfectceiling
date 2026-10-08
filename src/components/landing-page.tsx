@@ -119,9 +119,9 @@ export async function LandingPage() {
           Ceiling specialists · {settings.city}
         </p>
         <h1 className="mt-5 max-w-lg font-primary text-[clamp(2.25rem,8vw,3.25rem)] font-semibold leading-[1.08] tracking-[-0.045em] text-[#292720]">
-          A beautiful space<br />starts <span className="font-normal text-[#91704a]">above.</span>
+          A beautiful space<br />starts <span className="font-normal text-[#80603e]">above.</span>
         </h1>
-        <p className="mt-5 max-w-md text-sm leading-7 text-[#746e63]">
+        <p className="mt-5 max-w-md text-sm leading-7 text-[#6c665c]">
           Thoughtfully designed POP, gypsum, PVC and wooden ceilings.
           From your first idea to the finishing touches, we bring it together.
         </p>
@@ -159,7 +159,7 @@ export async function LandingPage() {
 
         <section className="px-4 py-9 sm:px-8">
           <div className="landing-section-content">
-            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">How it works</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#80603e]">How it works</p>
             <h2 className="mt-2 font-primary text-[26px] font-medium leading-tight tracking-[-0.035em] text-[#292720]">
               Your project, in three steps.
             </h2>
@@ -168,10 +168,10 @@ export async function LandingPage() {
               {processSteps.map((step, index) => (
                 <li className="relative grid grid-cols-[2rem_1fr] gap-4 pb-7 last:pb-0" key={step.title}>
                   {index < processSteps.length - 1 ? <span aria-hidden className="absolute bottom-0 left-[15px] top-8 w-px bg-[#d6c7b1]" /> : null}
-                  <span aria-hidden className="relative z-10 flex size-8 items-center justify-center rounded-full border border-[#c9b69a] bg-[#f3eee5] text-xs font-medium text-[#91704a]">{index + 1}</span>
+                  <span aria-hidden className="relative z-10 flex size-8 items-center justify-center rounded-full border border-[#c9b69a] bg-[#f3eee5] text-xs font-medium text-[#80603e]">{index + 1}</span>
                   <div className="pt-1">
                     <h3 className="font-primary text-sm font-medium text-[#292720]">{step.title}</h3>
-                    <p className="mt-2 text-xs leading-6 text-[#746e63]">{step.text}</p>
+                    <p className="mt-2 text-xs leading-6 text-[#6c665c]">{step.text}</p>
                   </div>
                 </li>
               ))}
@@ -184,11 +184,11 @@ export async function LandingPage() {
           id="contact"
         >
           <div className="landing-section-content">
-            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">Let’s create your space</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#80603e]">Let’s create your space</p>
             <h2 className="mt-2 font-primary text-[26px] font-medium leading-tight tracking-[-0.035em] text-[#292720]">
               Have a room in mind?
             </h2>
-            <p className="mt-4 text-sm leading-7 text-muted">
+            <p className="mt-4 text-sm leading-7 text-[#6c665c]">
               Share photos, measurements, and the finish you want. We reply with a
               measured quotation for POP, PVC, gypsum, wooden, or repair work in{" "}
               {settings.city}.

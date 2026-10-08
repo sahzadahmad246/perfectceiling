@@ -89,10 +89,11 @@ export function HeroMediaCarousel({ slides, className }: { slides: HeroSlide[]; 
               alt={slide.overlayTitle}
               className="object-cover"
               fill
-              loading="eager"
-              fetchPriority={slideIndex === 0 ? "high" : "low"}
+              preload={slideIndex === 0}
+              loading={slideIndex === 0 ? undefined : "eager"}
+              fetchPriority={slideIndex === 0 ? undefined : "low"}
               onLoad={() => setLoadedSlides((current) => current.has(slideIndex) ? current : new Set(current).add(slideIndex))}
-              sizes="(max-width: 560px) calc(100vw - 32px), 496px"
+              sizes="(max-width: 559px) calc(100vw - 32px), (max-width: 639px) 528px, 496px"
               src={slide.mediaUrl}
               unoptimized={shouldBypassImageOptimization(slide.mediaUrl)}
             />

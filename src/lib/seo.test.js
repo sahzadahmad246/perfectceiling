@@ -32,10 +32,12 @@ test("JSON-LD cannot break out of its script tag", () => {
   expect(html.match(/<script/g)).toHaveLength(1);
   expect(html).toContain("\\u003c/script>");
 });
-test("only the first hero image is requested in initial HTML and has high priority", () => {
+test("only the first hero image is requested and responsively preloaded in initial HTML", () => {
   const slides = [0, 1, 2, 3, 4].map((index) => ({ id: String(index), mediaType: "image", mediaUrl: `/photo-${index}.png`, overlayTitle: "Ceiling" }));
   const html = renderToStaticMarkup(createElement(HeroMediaCarousel, { slides }));
   expect(html.match(/<img/g)).toHaveLength(1);
-  expect(html).toContain('fetchPriority="high"');
+  expect(html).toContain('rel="preload"');
+  expect(html).toContain('as="image"');
+  expect(html).toContain('imageSrcSet=');
   expect(html).not.toContain('loading="lazy"');
 });

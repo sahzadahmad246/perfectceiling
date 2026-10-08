@@ -22,6 +22,10 @@ export function GoogleReviewAvatar({ name, photoUrl }: GoogleReviewAvatarProps) 
         // eslint-disable-next-line @next/next/no-img-element
         <img
           alt=""
+          loading="lazy"
+          decoding="async"
+          width={44}
+          height={44}
           className="size-full object-cover"
           onError={() => setFailed(true)}
           referrerPolicy="no-referrer"

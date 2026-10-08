@@ -27,8 +27,8 @@ export function PublicCatalogueCard({ item, city, businessName, delayMs, lcpImag
     <CatalogueAlbumMosaic photos={photos} href={href} title={title} delayMs={delayMs} lcpImage={lcpImage} />
     <figcaption><Link href={href} className="mt-3 flex items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#91704a]">
       <h3 className="min-w-0 flex-1 truncate font-primary text-base font-medium leading-snug text-[#292720]">{title}</h3>
-      <span aria-label={`${photos.length} photos`} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eee9df] px-2.5 py-1 text-[10px] font-medium text-[#746e63]"><Images aria-hidden size={11} />{photos.length}</span>
-      <ArrowUpRight aria-hidden className="shrink-0 text-[#91704a]" size={18} />
+      <span aria-label={`${photos.length} photos`} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eee9df] px-2.5 py-1 text-[10px] font-medium text-[#6c665c]"><Images aria-hidden size={11} />{photos.length}</span>
+      <ArrowUpRight aria-hidden className="shrink-0 text-[#80603e]" size={18} />
     </Link></figcaption>
   </figure>;
 }

@@ -12,7 +12,7 @@ export function HomeServicesSection({ services }: { services: PublicService[] })
     <section id="services" aria-labelledby="home-services-heading" className="bg-[#f3f0e9] px-4 py-8 sm:px-8 sm:py-10">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">Our services</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#80603e]">Our services</p>
           <h2 id="home-services-heading" className="mt-2 font-primary text-[26px] font-medium leading-tight tracking-[-0.035em] text-[#292720]">Details that make a home.</h2>
         </div>
       </div>

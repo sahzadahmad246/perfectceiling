@@ -5,10 +5,10 @@ import type { PublicService } from "@/lib/public-content";
 import { getServicePublicPath } from "@/lib/services";
 
 const styles = [
-  { icon: LampCeiling, background: "bg-[#f1ede5]", color: "text-[#92734e]" },
-  { icon: PanelsTopLeft, background: "bg-[#edf1ec]", color: "text-[#677d64]" },
-  { icon: Layers, background: "bg-[#f3ebe6]", color: "text-[#a07863]" },
-  { icon: Waves, background: "bg-[#eeedf2]", color: "text-[#80728c]" },
+  { icon: LampCeiling, background: "bg-[#f1ede5]", color: "text-[#7b5b38]" },
+  { icon: PanelsTopLeft, background: "bg-[#edf1ec]", color: "text-[#52674f]" },
+  { icon: Layers, background: "bg-[#f3ebe6]", color: "text-[#805946]" },
+  { icon: Waves, background: "bg-[#eeedf2]", color: "text-[#665770]" },
 ] as const;
 
 export function CeilingDesignGuide({ services, whatsappHref }: { services: PublicService[]; whatsappHref: string }) {
@@ -17,7 +17,7 @@ export function CeilingDesignGuide({ services, whatsappHref }: { services: Publi
 
   return (
     <section aria-labelledby="ceiling-guide-heading" className="px-4 py-9 sm:px-8">
-      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#91704a]">A little inspiration</p>
+      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#80603e]">A little inspiration</p>
       <h2 id="ceiling-guide-heading" className="mt-2 font-primary text-[26px] font-medium leading-tight tracking-[-0.035em] text-[#292720]">Find your interior style.</h2>
       <div className="mt-5 grid grid-cols-2 gap-3">
         {choices.map((service, index) => {
@@ -33,7 +33,7 @@ export function CeilingDesignGuide({ services, whatsappHref }: { services: Publi
                 <ArrowUpRight aria-hidden className="text-[#292720]/40 transition group-hover:text-[#292720]" size={15} />
               </div>
               <h3 className="mt-5 text-sm font-semibold leading-5 text-[#292720]">{service.title}</h3>
-              <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#746e63]">{service.shortDescription}</p>
+              <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#6c665c]">{service.shortDescription}</p>
               <span className={`mt-auto pt-4 text-[10px] font-medium uppercase tracking-[0.12em] ${color}`}>Explore service</span>
             </Link>
           );
