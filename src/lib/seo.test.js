@@ -38,6 +38,9 @@ test("only the first hero image is requested and responsively preloaded in initi
   expect(html.match(/<img/g)).toHaveLength(1);
   expect(html).toContain('rel="preload"');
   expect(html).toContain('as="image"');
+  const preloadTag = html.match(/<link[^>]+rel="preload"[^>]*>/)?.[0];
+  expect(preloadTag).toContain('fetchPriority="high"');
+  expect(html.match(/rel="preload"/g)).toHaveLength(1);
   expect(html).toContain('imageSrcSet=');
   expect(html).not.toContain('loading="lazy"');
 });

@@ -1,13 +1,16 @@
 "use client";
 
 import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
+import { preload } from "react-dom";
 import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { HeroSlide } from "@/lib/public-content";
 import { cn } from "@/lib/utils";
+
+const HERO_IMAGE_SIZES = "(max-width: 559px) calc(100vw - 32px), (max-width: 639px) 528px, 496px";
 
 export function HeroMediaCarousel({ slides, className }: { slides: HeroSlide[]; className?: string }) {
   const photos = slides.filter((slide) => slide.mediaType === "image" && slide.mediaUrl).slice(0, 5);
@@ -19,6 +22,13 @@ export function HeroMediaCarousel({ slides, className }: { slides: HeroSlide[]; 
   const [loadedSlides, setLoadedSlides] = useState(() => new Set<number>());
   const activeIndex = index % (photos.length || 1);
   const active = photos[activeIndex];
+  // Match the browser's responsive image selection and prioritize its head preload.
+  const first = photos[0];
+  if (first) {
+    const { props } = getImageProps({ src: first.mediaUrl, alt: first.overlayTitle, fill: true, sizes: HERO_IMAGE_SIZES, unoptimized: shouldBypassImageOptimization(first.mediaUrl) });
+    preload(props.src, { as: "image", imageSrcSet: props.srcSet, imageSizes: props.sizes, fetchPriority: "high" });
+  }
+
 
   useEffect(() => {
     if (!loadedSlides.has(activeIndex) || paused || reducedMotion || photos.length < 2) return;
@@ -89,11 +99,10 @@ export function HeroMediaCarousel({ slides, className }: { slides: HeroSlide[]; 
               alt={slide.overlayTitle}
               className="object-cover"
               fill
-              preload={slideIndex === 0}
-              loading={slideIndex === 0 ? undefined : "eager"}
-              fetchPriority={slideIndex === 0 ? undefined : "low"}
+              loading="eager"
+              fetchPriority={slideIndex === 0 ? "high" : "low"}
               onLoad={() => setLoadedSlides((current) => current.has(slideIndex) ? current : new Set(current).add(slideIndex))}
-              sizes="(max-width: 559px) calc(100vw - 32px), (max-width: 639px) 528px, 496px"
+              sizes={HERO_IMAGE_SIZES}
               src={slide.mediaUrl}
               unoptimized={shouldBypassImageOptimization(slide.mediaUrl)}
             />

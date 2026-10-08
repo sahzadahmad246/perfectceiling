@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["@react-pdf/renderer"],
   images: {
-    qualities: [65, 75],
+    qualities: [55, 65, 75],
     remotePatterns: [
       {
         protocol: "https",

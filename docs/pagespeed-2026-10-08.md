@@ -36,3 +36,17 @@ Reports:
 - **Legacy JavaScript:** the 12 KiB warning points to Next's compatibility polyfills. They have not been stripped using an unsupported webpack alias or an unverified browser-support change.
 
 The screenshot references the same saved report ID (`crpxs981qy`). It continues to display its original findings after code changes; run a new analysis after the new deployment finishes.
+
+## Final targeted pass: report oeytsfjgo8
+
+New report: https://pagespeed.web.dev/analysis/https-www-perfectceiling-co-in/oeytsfjgo8?form_factor=mobile
+
+Measured before this final pass: performance 97 mobile / 98 desktop; accessibility, best practices, SEO and the additional agentic category all 100. Mobile FCP 0.9 s, LCP 1.6 s, TBT 10 ms, CLS 0, speed index 4.3 s.
+
+The LCP discovery checklist passes eager loading and initial-document discovery, but specifically flags the missing high-priority hint on the image preload. Replace the automatic Next preload with React's documented responsive resource preload, generated from Next's getImageProps. Both the preload and the first image carry high priority, and use matching srcset/sizes. Tests verify exactly one prioritized hero preload, avoiding requests for all five slides.
+
+The sole image-delivery saving is the small PVC service preview (about 5 KiB mobile / 4 KiB desktop). Small service-card previews now use quality 55; hero/detail/project imagery is unchanged. The optimizer allowlist includes 55, 65 and 75.
+
+Desktop reports 35.934 ms of forced reflow with an unattributed source; no application stack is provided. The initial public homepage components do not perform synchronous geometry reads. Do not claim a fix to an unidentified task. Required CSS (about 15 KiB, estimated 110 ms mobile saving), framework unused code and compatibility polyfills remain. Do not globally inline large admin/editor styles or remove supported browser behavior solely to hide these warnings.
+
+A fresh deployed run is required to measure this final patch. No further score increase is claimed.
