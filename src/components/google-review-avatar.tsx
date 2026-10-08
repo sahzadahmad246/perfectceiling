@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/image-loading";
 import { useState } from "react";
 
 type GoogleReviewAvatarProps = {
@@ -7,10 +9,6 @@ type GoogleReviewAvatarProps = {
   photoUrl: string | null;
 };
 
-/**
- * Google review avatars often block hotlinking without referrerPolicy.
- * Use a plain img (not next/image) so photos load reliably.
- */
 export function GoogleReviewAvatar({ name, photoUrl }: GoogleReviewAvatarProps) {
   const [failed, setFailed] = useState(false);
   const initial = name.trim().slice(0, 1).toUpperCase() || "G";
@@ -19,8 +17,7 @@ export function GoogleReviewAvatar({ name, photoUrl }: GoogleReviewAvatarProps) 
   return (
     <div className="relative size-11 shrink-0 overflow-hidden rounded-full border border-border-soft bg-gradient-to-br from-amber-100 to-surface-muted">
       {showPhoto ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           alt=""
           loading="lazy"
           decoding="async"
@@ -30,6 +27,8 @@ export function GoogleReviewAvatar({ name, photoUrl }: GoogleReviewAvatarProps) 
           onError={() => setFailed(true)}
           referrerPolicy="no-referrer"
           src={photoUrl!}
+          sizes="44px"
+          unoptimized={shouldBypassImageOptimization(photoUrl!)}
         />
       ) : (
         <span className="flex size-full items-center justify-center text-sm font-semibold text-amber-800/80">

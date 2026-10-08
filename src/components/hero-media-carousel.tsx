@@ -130,7 +130,7 @@ export function HeroMediaCarousel({ slides, className }: { slides: HeroSlide[]; 
           </div>
           <div className="flex items-center">
             <button aria-label="Previous image" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10 focus-visible:outline-2" onClick={() => navigate(activeIndex - 1)} type="button"><ChevronLeft aria-hidden size={17} /></button>
-            {!reducedMotion ? <button aria-label={paused ? "Play slideshow" : "Pause slideshow"} className="flex size-11 items-center justify-center rounded-full hover:bg-white/10 focus-visible:outline-2" onClick={() => setPaused((current) => !current)} type="button">{paused ? <Play aria-hidden size={14} /> : <Pause aria-hidden size={14} />}</button> : null}
+            <button aria-label={paused ? "Play slideshow" : "Pause slideshow"} aria-hidden={reducedMotion || undefined} disabled={reducedMotion} tabIndex={reducedMotion ? -1 : 0} className={cn("flex size-11 items-center justify-center rounded-full hover:bg-white/10 focus-visible:outline-2", reducedMotion && "invisible")} onClick={() => setPaused((current) => !current)} type="button">{paused ? <Play aria-hidden size={14} /> : <Pause aria-hidden size={14} />}</button>
             <button aria-label="Next image" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10 focus-visible:outline-2" onClick={() => navigate(activeIndex + 1)} type="button"><ChevronRight aria-hidden size={17} /></button>
           </div>
         </> : null}

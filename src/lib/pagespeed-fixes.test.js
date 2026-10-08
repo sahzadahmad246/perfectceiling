@@ -1,6 +1,8 @@
 import { test, expect } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { HeroMediaCarousel } from "../components/hero-media-carousel";
+import { GoogleReviewAvatar } from "../components/google-review-avatar";
 import { StarRating } from "../components/star-rating";
 function luminance(hex) {
   const channels = hex.match(/[a-f\d]{2}/gi).map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
@@ -16,4 +18,15 @@ test("homepage text colors meet 4.5:1 against their warm backgrounds", () => {
 test("rating stars expose one valid named image to assistive technology", () => {
  const html = renderToStaticMarkup(createElement(StarRating, { rating: 4.7 }));
  expect(html).toContain('role="img"'); expect(html).toContain('aria-label="4.7 out of 5 stars"');
+});
+
+test("hero reserves the playback control before motion preferences hydrate", () => {
+ const slides = [0, 1].map(id => ({ id: String(id), mediaType: "image", mediaUrl: `/photo-${id}.png`, overlayTitle: "Ceiling" }));
+ const html = renderToStaticMarkup(createElement(HeroMediaCarousel, { slides }));
+ expect(html).toContain('aria-label="Pause slideshow" aria-hidden="true" disabled=""');
+ expect(html).toContain('invisible');
+});
+test("supported reviewer photos use first-party optimized delivery", () => {
+ const html = renderToStaticMarkup(createElement(GoogleReviewAvatar, { name: "Reviewer", photoUrl: "https://lh3.googleusercontent.com/avatar" }));
+ expect(html).toContain('/_next/image?'); expect(html).toContain('loading="lazy"'); expect(html).toContain('width="44"');
 });

@@ -25,3 +25,14 @@ The original report is a fixed historical snapshot. These changes have passed ty
 Reports:
 - https://pagespeed.web.dev/analysis/https-perfectceiling-co-in/crpxs981qy?form_factor=mobile
 - https://pagespeed.web.dev/analysis/https-perfectceiling-co-in/crpxs981qy?form_factor=desktop
+
+## Follow-up for the remaining screenshot findings
+
+- **Render-blocking CSS:** editor-only toolbar and popup rules now load with the dynamically imported BlockNote editor. Public reading typography remains in the shared stylesheet. This reduces unnecessary shared styles; required Tailwind/layout styles remain render-blocking.
+- **Unused application JavaScript:** the public-page toast renderer is dynamically loaded after window load/idle or first interaction. Admin/login routes mount it immediately. The report's unused React/Next runtime bytes are not claimed eliminated.
+- **Caching and third parties:** supported reviewer avatar URLs now use Next's image optimizer and first-party delivery, retaining lazy loading, dimensions, no-referrer behavior and initials on failure. Unknown hosts keep the existing fallback.
+- **Layout shift:** the slideshow play/pause control reserves its 44px slot even before the reduced-motion preference is resolved. The report's other small shift came from the preloaded web font swapping in; metric-adjusted Next font fallback is already enabled. CLS 0.005 passes the lab threshold and is not a field measurement.
+- **Long task:** the sole reported task is 61 ms in the framework bootstrap, contributing roughly 10 ms of blocking time. A fresh deployed run is needed to assess whether deferred work changes it.
+- **Legacy JavaScript:** the 12 KiB warning points to Next's compatibility polyfills. They have not been stripped using an unsupported webpack alias or an unverified browser-support change.
+
+The screenshot references the same saved report ID (`crpxs981qy`). It continues to display its original findings after code changes; run a new analysis after the new deployment finishes.

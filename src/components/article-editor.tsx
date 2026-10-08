@@ -1,5 +1,7 @@
 "use client";
 
+import "./article-editor-controls.css";
+
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
