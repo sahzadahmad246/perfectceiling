@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, BookOpen, FolderKanban, Hammer, Home, Images, LayoutDashboard, LogIn, LogOut, Menu, Phone, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, FolderKanban, Hammer, Home, Images, LayoutDashboard, LogIn, LogOut, MapPin, Menu, Phone, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ const menuItems = [
   { href: "/catalogue", label: "Catalogue", icon: Images },
   { href: "/projects", label: "Our projects", icon: FolderKanban },
   { href: "/blog", label: "Journal", icon: BookOpen },
+  { href: "/areas", label: "Choose your area", icon: MapPin },
   { href: "/#contact", label: "Get in touch", icon: Phone },
 ] as const;
 

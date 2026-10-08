@@ -55,3 +55,15 @@ Official reference: https://developers.google.com/speed/docs/insights/v5/get-sta
 The `/services/false-celing` service and existing project mix POP and gypsum wording. Confirm the actual materials before editing those claims. Confirm actual city coverage, primary business number, public address policy, hours and Google Business Profile URL in business settings. The current call and WhatsApp numbers remain separate. No private address or unverified hours are published.
 
 Validate representative pages in Google Rich Results Test and Search Console URL Inspection after deployment. Track enquiries and query performance; no score or page count guarantees local rankings.
+
+## Updated locality editor and visitor selectors
+
+The editor now groups the existing fields into four steps: Location, Page content, Services & work, SEO & publish. City pages automatically get a city slug; locality pages select a saved parent city and get a locality slug. Published URL fields remain locked. Saved page types cannot be switched, and city URLs with child pages are protected. Incomplete FAQs can be saved in drafts; published FAQs need both a question and an answer.
+
+No additional columns or migration are required for this update. If the original table has not been created, run `supabase/migrations/20261008_locality_pages.sql`. Existing locality records and content are retained. No locality content is generated or published automatically.
+
+The public `/areas` page offers an area/service selector and remembers the last area explicitly visited through it in local storage. The website menu includes “Choose your area”. There is no IP lookup, location permission prompt or automatic redirect. Google’s search query and private location signals are not used.
+
+Area details support `?service=<published-service-slug>` for services selected for that area. The page heading, displayed service description/rate and WhatsApp quotation message use the selected record and area. Unknown or unavailable services fall back to the general area view. Query variants canonicalize to the original city/locality URL and are not separate sitemap entries. This does not generate a matrix of service-by-locality SEO pages.
+
+Shared descriptions, prices and images come from existing service records. Project links show only published completed work and retain its real location. Client selectors receive summary fields rather than full service content. Actual locality-specific introduction, work information, local details and FAQ content remain editable in admin.

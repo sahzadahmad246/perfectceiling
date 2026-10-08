@@ -17,9 +17,16 @@ export async function saveLocality(input: Partial<LocalityPage>) {
   if (input.id) {
     const previous = await client.from("locality_pages").select("city_slug,slug,published").eq("id", input.id).single();
     if (previous.error) return { error: "This locality page no longer exists." };
+    if (Boolean(previous.data.slug) !== Boolean(input.slug)) return { error: "A saved city/locality page keeps its type. Create a new page to use another type." };
+    if (!previous.data.slug && previous.data.city_slug !== input.city_slug) {
+      const children = await client.from("locality_pages").select("id").eq("city_slug", previous.data.city_slug).neq("slug", "").limit(1);
+      if (children.error) return { error: "Could not check this city's locality pages. Please retry." };
+      if (children.data?.length) return { error: "Keep the city URL unchanged while it has locality pages." };
+    }
     if (previous.data.published && (previous.data.city_slug !== input.city_slug || previous.data.slug !== (input.slug || ""))) return { error: "Keep a published page's URL unchanged to preserve existing links." };
     if (!previous.data.slug && !input.published) {
       const children = await client.from("locality_pages").select("id").eq("city_slug", previous.data.city_slug).neq("slug", "").eq("published", true).limit(1);
+      if (children.error) return { error: "Could not check this city’s published localities. Please retry." };
       if (children.data?.length) return { error: "Unpublish this city's locality pages before unpublishing the city page." };
     }
   }
@@ -30,6 +37,10 @@ export async function saveLocality(input: Partial<LocalityPage>) {
   if (input.published) {
     const available = await client.from("services").select("id").in("id", input.service_ids || []).eq("published", true);
     if (available.error || available.data.length !== input.service_ids?.length) return { error: "Select currently published services before publishing this page." };
+  }
+  if (input.published && input.project_ids?.length) {
+    const projects = await client.from("projects").select("id").in("id", input.project_ids).eq("published", true).eq("status", "completed");
+    if (projects.error || projects.data.length !== input.project_ids.length) return { error: "Select currently published, completed projects before publishing this page." };
   }
   const row = { name: input.name!.trim(), city: input.city!.trim(), city_slug: input.city_slug, slug: input.slug || "", intro: input.intro?.trim() || "", content: input.content?.trim() || "", local_details: input.local_details?.trim() || "", seo_title: input.seo_title?.trim() || "", seo_description: input.seo_description?.trim() || "", service_ids: input.service_ids || [], project_ids: input.project_ids || [], faqs: input.faqs || [], published: Boolean(input.published), updated_at: new Date().toISOString() };
   const result = input.id ? await client.from("locality_pages").update(row).eq("id", input.id).select("id").single() : await client.from("locality_pages").insert(row).select("id").single();
@@ -45,6 +56,7 @@ export async function deleteLocality(id: string) {
   if (previous.error) return { error: "This locality page no longer exists." };
   if (!previous.data.slug) {
     const children = await client.from("locality_pages").select("id").eq("city_slug", previous.data.city_slug).neq("slug", "").limit(1);
+    if (children.error) return { error: "Could not check this city’s localities. Please retry." };
     if (children.data?.length) return { error: "Delete this city's locality pages before deleting its city page." };
   }
   const { error } = await client.from("locality_pages").delete().eq("id", id);
