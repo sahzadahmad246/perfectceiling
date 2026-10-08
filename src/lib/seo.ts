@@ -49,7 +49,7 @@ export function buildLocalBusinessNode(settings: PublicBusinessSettings) {
     "@id": `${siteConfig.url}/#business`,
     name: settings.businessName,
     url: siteConfig.url,
-    telephone: settings.phone,
+    telephone: settings.phone.replace(/\D/g, "").length === 10 ? `+91${settings.phone.replace(/\D/g, "")}` : settings.phone,
     email: settings.email,
     image: settings.logoUrl ? toAbsoluteUrl(settings.logoUrl) : undefined,
     logo: settings.logoUrl ? { "@type": "ImageObject", url: toAbsoluteUrl(settings.logoUrl) } : undefined,
@@ -59,6 +59,7 @@ export function buildLocalBusinessNode(settings: PublicBusinessSettings) {
       addressCountry: "IN",
     },
     areaServed: settings.serviceAreas || settings.city,
+    sameAs: process.env.GOOGLE_BUSINESS_URL?.startsWith("https://") ? [process.env.GOOGLE_BUSINESS_URL] : undefined,
   };
 }
 
@@ -198,13 +199,14 @@ export function buildPublicPageMetadata(
         : [];
   const ogImages = buildOpenGraphImages(imageCandidates, imageAlt);
   const hasImages = ogImages.length > 0;
-  const listTitle =
-    input.openGraphType === "article"
-      ? input.title
-      : `${input.title} | ${input.settings.businessName}`;
+  const brand = input.settings.businessName;
+  const cleanTitle = input.title.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  const parts = cleanTitle.split("|").map((part) => part.trim()).filter((part) => part && part.toLowerCase() !== brand.toLowerCase());
+  const readable = parts.map(part => /^[a-z]+(?:-[a-z]+)+$/.test(part) ? part.split("-").map(word => word[0].toUpperCase() + word.slice(1)).join(" ") : part).join(" | ");
+  const listTitle = readable ? `${readable} | ${brand}` : brand;
 
   return {
-    title: input.title,
+    title: { absolute: listTitle },
     description: input.description,
     keywords: input.keywords,
     alternates: {

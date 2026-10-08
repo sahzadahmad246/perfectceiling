@@ -7,7 +7,7 @@ import { toTelLink, type PublicBusinessSettings } from "@/lib/business-settings"
 export function HomeFooter({ settings, showAdminLogin, hasReviews }: { settings: PublicBusinessSettings; showAdminLogin: boolean; hasReviews: boolean }) {
   const links = [
     ["Services", "/services"], ["Catalogue", "/catalogue"],
-    ["Our projects", "/projects"], ["Journal", "/blog"],
+    ["Our projects", "/projects"], ["Journal", "/blog"], ["Service areas", "/areas"], ["About", "/about"], ["Contact", "/contact"],
     ["Contact", "/#contact"], ...(hasReviews ? [["Client reviews", "/#reviews"]] : []),
   ];
   return (

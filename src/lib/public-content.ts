@@ -102,6 +102,8 @@ export type PublicBlogPost = {
 };
 
 export type PublicCatalogueGroupImage = {
+  width?: number | null;
+  height?: number | null;
   id: string;
   imageUrl: string;
   subtitle: string | null;
@@ -547,6 +549,8 @@ type CatalogueGroupRow = {
 };
 
 type CatalogueGroupImageRow = {
+  width?: number | null;
+  height?: number | null;
   id: string;
   group_id: string;
   image_url: string;
@@ -611,7 +615,7 @@ async function fetchPublishedCatalogueGroups(
     .from("catalogue_group_images")
     .select(
       withViewCountColumn(
-        "id, group_id, image_url, subtitle, is_thumbnail, sort_order",
+        "*",
         includeViews,
       ),
     )
@@ -634,6 +638,8 @@ async function fetchPublishedCatalogueGroups(
     list.push({
       id: row.id,
       imageUrl: row.image_url,
+      width: row.width,
+      height: row.height,
       subtitle: row.subtitle,
       isThumbnail: Boolean(row.is_thumbnail),
       viewCount: row.view_count ?? 0,
@@ -671,7 +677,7 @@ async function fetchPublishedCatalogueGroupById(
     .from("catalogue_group_images")
     .select(
       withViewCountColumn(
-        "id, group_id, image_url, subtitle, is_thumbnail, sort_order",
+        "*",
         includeViews,
       ),
     )
@@ -688,6 +694,8 @@ async function fetchPublishedCatalogueGroupById(
     .map((row) => ({
       id: row.id,
       imageUrl: row.image_url,
+      width: row.width,
+      height: row.height,
       subtitle: row.subtitle,
       isThumbnail: Boolean(row.is_thumbnail),
       viewCount: row.view_count ?? 0,
@@ -837,16 +845,20 @@ type BlogRow = {
   view_count?: number | null;
 };
 
+function cleanEditorialLabel(value: string) {
+  const clean = value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  return /^[a-z]+(?:-[a-z]+)+$/.test(clean) ? clean.split("-").map((word) => word[0].toUpperCase() + word.slice(1)).join(" ") : clean;
+}
 function mapPublicBlogPost(row: BlogRow): PublicBlogPost {
   return {
     id: row.id,
-    title: row.title,
+    title: cleanEditorialLabel(row.title),
     slug: row.slug,
-    excerpt: row.excerpt,
+    excerpt: row.excerpt?.replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/"$/, "").trim() ?? row.excerpt,
     content: row.content,
-    category: row.category,
-    seoTitle: row.seo_title,
-    seoDescription: row.seo_description,
+    category: row.category ? cleanEditorialLabel(row.category) : row.category,
+    seoTitle: row.seo_title ? cleanEditorialLabel(row.seo_title) : null,
+    seoDescription: row.seo_description?.replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/"$/, "").trim() || null,
     featuredImageUrl: row.featured_image_url,
     imageUrl: resolveBlogCardImageUrl(row.featured_image_url, row.content),
     publishedAt: row.published_at,

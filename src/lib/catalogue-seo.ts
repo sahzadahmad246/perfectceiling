@@ -40,7 +40,7 @@ function getGroupDescription(
 ) {
   return (
     item.description?.trim() ||
-    `${item.title} ceiling design ideas from ${settings.businessName} in ${settings.city}.`
+    `${item.title} design ideas from ${settings.businessName} in ${settings.city}.`
   );
 }
 
@@ -107,7 +107,7 @@ export function buildCatalogueDetailMetadata(
     );
     const description =
       sharedImage.subtitle?.trim()
-        ? `${sharedImage.subtitle.trim()} — ${groupTitle} false ceiling design by ${settings.businessName} in ${settings.city}.`
+        ? `${sharedImage.subtitle.trim()} — ${groupTitle} design photo from ${settings.businessName} in ${settings.city}.`
         : getGroupDescription(item, settings);
     const alt = getCatalogueImageAlt(sharedImage, groupTitle, seoContext);
     const url = getCatalogueImageShareUrl(item.id, sharedImage.id);
@@ -135,7 +135,7 @@ export function buildCatalogueDetailMetadata(
     });
   }
 
-  const title = `${groupTitle} ceiling designs in ${settings.city}`;
+  const title = `${groupTitle} design ideas in ${settings.city}`;
   const description = getGroupDescription(item, settings);
   const cover =
     item.images.find((image) => image.isThumbnail) ?? item.images[0];
@@ -220,7 +220,7 @@ export function buildCatalogueDetailJsonLd(
       businessName: settings.businessName,
     });
     const imagePageUrl = getCatalogueImageShareUrl(item.id, image.id);
-    const caption = image.subtitle?.trim() || `${title} ceiling design`;
+    const caption = getCatalogueImageAlt(image, title);
     const extension = image.imageUrl.split("?")[0]?.split(".").pop()?.toLowerCase();
     const encodingFormat =
       extension === "png"

@@ -195,6 +195,7 @@ export function buildBlogDetailJsonLd(
       datePublished: post.publishedAt ?? undefined,
       dateModified: post.updatedAt ?? undefined,
       author: {
+        url: `${siteConfig.url}/about`,
         "@type": "Organization",
         name: settings.businessName,
       },

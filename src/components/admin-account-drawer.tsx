@@ -9,6 +9,8 @@ import {
   LogOut,
   PanelRightClose,
   Settings,
+  MapPin,
+  ChartNoAxesCombined,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +26,8 @@ const drawerItems = [
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/catalogue", label: "Catalogue", icon: Images },
   { href: "/admin/blog", label: "Blogs", icon: BookOpenText },
+  { href: "/admin/areas", label: "Locality pages", icon: MapPin },
+  { href: "/admin/seo", label: "SEO & search", icon: ChartNoAxesCombined },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

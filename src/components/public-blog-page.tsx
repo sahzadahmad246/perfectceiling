@@ -11,7 +11,7 @@ export async function PublicBlogPage() {
   const whatsappHref = toWhatsAppLink(settings.whatsapp, "Hi, I read your design journal and would like advice for my space.");
   return <PublicPageLayout settings={settings} whatsappHref={whatsappHref}>
     <JsonLd data={buildBlogListJsonLd(posts, settings)} />
-    <PublicPageHeading eyebrow="The design journal" title="Ideas for better spaces." share={<ShareButton variant="icon" label="Share articles" title={`Design journal — ${settings.businessName}`} text="Ceiling ideas, materials and practical guides." url={getBlogListUrl()} className="border-[#d8d0c3] bg-transparent" />}>
+    <PublicPageHeading eyebrow="Ceiling & interior design articles" title="Ideas for better spaces." share={<ShareButton variant="icon" label="Share articles" title={`Design journal — ${settings.businessName}`} text="Ceiling ideas, materials and practical guides." url={getBlogListUrl()} className="border-[#d8d0c3] bg-transparent" />}>
       <p className="mt-4 max-w-[36ch] text-sm leading-6 text-[#746e63]">Design inspiration and practical advice, from choosing a finish to caring for it.</p>
     </PublicPageHeading>
     <ArticlesBrowser posts={posts} />

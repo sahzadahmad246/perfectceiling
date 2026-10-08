@@ -1,4 +1,5 @@
 "use server";
+import sharp from "sharp";
 
 import { revalidatePath } from "next/cache";
 
@@ -29,7 +30,7 @@ export type CatalogueActionResult =
 export type CatalogueUploadResult =
   | {
       success: true;
-      image: { url: string; storagePath: string };
+      image: { url: string; storagePath: string; width?: number; height?: number };
     }
   | { success: false; error: string };
 
@@ -42,6 +43,8 @@ type GroupRow = {
 };
 
 type ImageRow = {
+  width?: number | null;
+  height?: number | null;
   id: string;
   group_id: string;
   image_url: string;
@@ -60,6 +63,8 @@ type ValidatedGroupData = {
 };
 
 type ValidatedImageData = {
+  width?: number | null;
+  height?: number | null;
   id?: string;
   image_url: string;
   storage_path: string;
@@ -77,6 +82,8 @@ function mapImage(row: ImageRow): CatalogueGroupImage {
   return {
     id: row.id,
     imageUrl: row.image_url,
+    width: row.width,
+    height: row.height,
     storagePath: row.storage_path,
     subtitle: row.subtitle,
     isThumbnail: Boolean(row.is_thumbnail),
@@ -135,6 +142,8 @@ function validateGroupInput(
     images.push({
       id: image.id?.trim() || undefined,
       image_url: imageUrl,
+      width: image.width,
+      height: image.height,
       storage_path: storagePath,
       subtitle: subtitle || null,
       is_thumbnail: Boolean(image.isThumbnail),
@@ -209,7 +218,7 @@ export async function listCatalogueGroups(): Promise<CatalogueGroupItem[]> {
   const { data: images, error: imagesError } = await supabase
     .from(IMAGES_TABLE)
     .select(
-      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order, view_count",
+      "*",
     )
     .in("group_id", groupIds)
     .order("sort_order", { ascending: true })
@@ -254,7 +263,7 @@ export async function getCatalogueGroupById(
   const { data: images, error: imagesError } = await supabase
     .from(IMAGES_TABLE)
     .select(
-      "id, group_id, image_url, storage_path, subtitle, is_thumbnail, sort_order, view_count",
+      "*",
     )
     .eq("group_id", id)
     .order("sort_order", { ascending: true })
@@ -305,6 +314,7 @@ export async function createCatalogueGroup(
     validated.images.map((image, index) => ({
       group_id: groupId,
       image_url: image.image_url,
+      ...(image.width && image.height ? { width: image.width, height: image.height } : {}),
       storage_path: image.storage_path,
       subtitle: image.subtitle,
       is_thumbnail: image.is_thumbnail,
@@ -406,6 +416,7 @@ export async function updateCatalogueGroup(
         .from(IMAGES_TABLE)
         .update({
           image_url: image.image_url,
+      ...(image.width && image.height ? { width: image.width, height: image.height } : {}),
           storage_path: image.storage_path,
           subtitle: image.subtitle,
           is_thumbnail: image.is_thumbnail,
@@ -430,6 +441,7 @@ export async function updateCatalogueGroup(
       const { error: insertError } = await supabase.from(IMAGES_TABLE).insert({
         group_id: id,
         image_url: image.image_url,
+      ...(image.width && image.height ? { width: image.width, height: image.height } : {}),
         storage_path: image.storage_path,
         subtitle: image.subtitle,
         is_thumbnail: image.is_thumbnail,
@@ -504,6 +516,10 @@ export async function uploadCatalogueImage(
       slugifyUploadStem(subtitleHint || titleHint) || "ceiling-design";
     const path = `catalogue/${seoStem}-${imageId.slice(0, 8)}.${extension}`;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const metadata = await sharp(fileBuffer).metadata();
+    const rotated = metadata.orientation && metadata.orientation >= 5;
+    const width = rotated ? metadata.height : metadata.width;
+    const height = rotated ? metadata.width : metadata.height;
     const storageClient = createServiceClient() ?? supabase;
 
     const { error: uploadError } = await storageClient.storage
@@ -531,6 +547,8 @@ export async function uploadCatalogueImage(
       image: {
         url: publicUrl,
         storagePath: path,
+        width,
+        height,
       },
     };
   } catch (error) {

@@ -1,3 +1,5 @@
+import { getPublishedLocalities } from "@/lib/locality-data";
+import { localityPath } from "@/lib/localities";
 import type { MetadataRoute } from "next";
 
 import { getBlogPageUrl } from "@/lib/blog-seo";
@@ -27,11 +29,12 @@ function sitemapImages(urls: string[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, projects, blogPosts, catalogueGroups] = await Promise.all([
+  const [services, projects, blogPosts, catalogueGroups, localities] = await Promise.all([
     getPublicServices(),
     getAllPublicProjects(),
     getPublicBlogPosts(),
     getAllPublicCatalogueGroups(),
+    getPublishedLocalities(),
   ]);
 
   const publishedServices = services.filter(
@@ -163,6 +166,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticEntries,
+    { url: `${siteConfig.url}/about` },
+    { url: `${siteConfig.url}/contact` },
+    { url: `${siteConfig.url}/areas`, lastModified: getLatestContentDate(localities.map(p => p.updated_at)) },
+    ...localities.map(page => ({ url: `${siteConfig.url}${localityPath(page)}`, lastModified: getLatestContentDate([page.updated_at]) })),
     ...serviceEntries,
     ...projectEntries,
     ...blogEntries,

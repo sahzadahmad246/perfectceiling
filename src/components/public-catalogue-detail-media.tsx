@@ -79,7 +79,7 @@ export function PublicCatalogueDetailMedia({
         {images.map((image, index) => {
           const alt = getCatalogueImageAlt(image, groupTitle, seoContext);
           const subtitle = image.subtitle?.trim() || "";
-          const caption = subtitle || `Design ${index + 1}`;
+          const caption = /^\d+$/.test(subtitle) || !subtitle ? `${groupTitle} design ${index + 1}` : subtitle;
           const href = getCatalogueImagePublicPath(groupId, image.id);
           const isPriority = index === 0;
 
@@ -211,14 +211,14 @@ function CatalogueImageFigure({
         <Image
           alt={alt}
           className="h-auto w-full transition duration-300 group-hover:scale-[1.02] motion-reduce:transform-none"
-          height={900}
+          height={image.height || 900}
           itemProp="contentUrl"
           loading={isPriority ? "eager" : "lazy"}
           fetchPriority={isPriority ? "high" : "auto"}
           sizes="(max-width: 560px) calc((100vw - 44px) / 2), 242px"
           src={image.imageUrl}
           unoptimized={shouldBypassImageOptimization(image.imageUrl)}
-          width={1200}
+          width={image.width || 1200}
         />
       </a>
       <figcaption className="mt-2 flex items-start justify-between gap-2">

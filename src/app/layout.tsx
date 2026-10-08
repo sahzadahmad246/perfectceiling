@@ -68,6 +68,7 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined },
   manifest: "/manifest.webmanifest",
   applicationName: siteConfig.name,
   appleWebApp: {

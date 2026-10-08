@@ -113,7 +113,7 @@ export function buildServiceDetailMetadata(
     keywords: buildServiceKeywords(service, settings),
     images,
     imageAlt: title,
-    openGraphType: "article",
+    openGraphType: "website",
     modifiedTime: service.updatedAt ?? undefined,
   });
 }
@@ -193,7 +193,7 @@ export function buildServiceDetailJsonLd(
     provider: {
       "@id": `${siteConfig.url}/#business`,
     },
-    areaServed: settings.city,
+    areaServed: settings.serviceAreas || settings.city,
     serviceType: service.title,
     ...(service.viewCount > 0
       ? {
@@ -209,9 +209,13 @@ export function buildServiceDetailJsonLd(
   if (service.startingPrice !== null && Number.isFinite(service.startingPrice)) {
     serviceNode.offers = {
       "@type": "Offer",
-      price: service.startingPrice,
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: service.startingPrice,
+        priceCurrency: "INR",
+        ...(service.rateUnit && service.rateUnit !== "lump_sum" ? { referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitText: service.rateUnit === "sq_ft" ? "square foot" : service.rateUnit === "running_ft" ? "running foot" : "piece" } } : {}),
+      },
       priceCurrency: "INR",
-      availability: "https://schema.org/InStock",
       url: pageUrl,
       description: formatServiceRate(service.startingPrice, service.rateUnit),
     };

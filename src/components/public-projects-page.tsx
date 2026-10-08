@@ -11,7 +11,7 @@ export async function PublicProjectsPage() {
   const whatsappHref = toWhatsAppLink(settings.whatsapp, "Hi, I saw your project portfolio and would like similar work for my space.");
   return <PublicPageLayout settings={settings} whatsappHref={whatsappHref}>
     <JsonLd data={buildProjectsListJsonLd(projects, settings)} />
-    <PublicPageHeading eyebrow="Our portfolio" title="Spaces brought to life." share={<ShareButton variant="icon" label="Share projects" title={`Projects — ${settings.businessName}`} text={`Ceiling and interior projects in ${settings.city}`} url={getProjectsListUrl()} className="border-[#d8d0c3] bg-transparent" />}>
+    <PublicPageHeading eyebrow="Ceiling & interior project portfolio" title="Spaces brought to life." share={<ShareButton variant="icon" label="Share projects" title={`Projects — ${settings.businessName}`} text={`Ceiling and interior projects in ${settings.city}`} url={getProjectsListUrl()} className="border-[#d8d0c3] bg-transparent" />}>
       <p className="mt-4 max-w-[36ch] text-sm leading-6 text-[#746e63]">Explore our work, the finishes we chose and the details that made each space.</p>
     </PublicPageHeading>
     <ProjectsBrowser projects={projects} />

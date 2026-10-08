@@ -185,6 +185,7 @@ export function buildProjectDetailJsonLd(
     "@type": "Article",
     "@id": `${pageUrl}#article`,
     headline: title,
+    mainEntityOfPage: { "@id": `${pageUrl}#webpage` },
     description,
     url: pageUrl,
     image: absoluteImages.length > 0 ? absoluteImages : undefined,

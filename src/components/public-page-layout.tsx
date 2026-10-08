@@ -22,6 +22,9 @@ export function PublicPageLayout({ settings, whatsappHref, children }: {
         <Link href="/catalogue" className="hover:text-[#292720]">Catalogue</Link>
         <Link href="/projects" className="hover:text-[#292720]">Projects</Link>
         <Link href="/blog" className="hover:text-[#292720]">Articles</Link>
+        <Link href="/areas" className="hover:text-[#292720]">Service areas</Link>
+        <Link href="/about" className="hover:text-[#292720]">About</Link>
+        <Link href="/contact" className="hover:text-[#292720]">Contact</Link>
       </nav>
     </footer>
     <WhatsAppFab href={whatsappHref} />

@@ -41,6 +41,9 @@ export function getAdminNavPage(pathname: string): AdminNavPage | null {
     return { label: "Catalogue", href: "/admin/catalogue" };
   }
 
+  if (pathname.startsWith("/admin/areas")) return { label: "Locality pages", href: "/admin/areas" };
+  if (pathname.startsWith("/admin/seo")) return { label: "SEO & search", href: "/admin/seo" };
+
   if (pathname === "/admin/settings") {
     return { label: "Settings", href: "/admin/settings" };
   }

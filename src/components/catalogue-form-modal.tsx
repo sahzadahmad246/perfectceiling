@@ -318,6 +318,8 @@ function CatalogueFormModalInner({
         image: {
           id: draft.id,
           imageUrl: upload.image.url,
+          width: upload.image.width,
+          height: upload.image.height,
           storagePath: upload.image.storagePath,
           subtitle: draft.subtitle,
           isThumbnail: draft.isThumbnail,
@@ -334,6 +336,8 @@ function CatalogueFormModalInner({
       image: {
         id: draft.id,
         imageUrl: draft.imageUrl,
+        width: draft.width,
+        height: draft.height,
         storagePath: draft.storagePath,
         subtitle: draft.subtitle,
         isThumbnail: draft.isThumbnail,

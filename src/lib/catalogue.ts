@@ -2,6 +2,8 @@
 export type CatalogueGroupImage = {
   id: string;
   imageUrl: string;
+  width?: number | null;
+  height?: number | null;
   storagePath: string;
   /** Optional label under the photo; also used as image alt text. */
   subtitle: string | null;
@@ -28,6 +30,8 @@ export type CatalogueImageDraft = {
   id?: string;
   /** Preview URL (blob: for local picks, https for existing). */
   imageUrl: string;
+  width?: number | null;
+  height?: number | null;
   storagePath: string;
   /** Local file held until save — only then is it uploaded. */
   file?: File | null;
@@ -46,6 +50,8 @@ export type CatalogueFormInput = {
     /** Existing image id when updating; omit for new uploads. */
     id?: string;
     imageUrl: string;
+    width?: number | null;
+    height?: number | null;
     storagePath: string;
     subtitle: string;
     isThumbnail: boolean;
@@ -63,35 +69,15 @@ export function getCatalogueImageAlt(
   groupTitle?: string,
   options?: { city?: string | null; businessName?: string | null },
 ) {
-  const subject =
-    image.subtitle?.trim() ||
-    groupTitle?.trim() ||
-    "Ceiling design";
-  const city = options?.city?.trim();
-  const business = options?.businessName?.trim();
-
-  if (city && business) {
-    return `${subject} false ceiling design in ${city} by ${business}`;
-  }
-
-  if (city) {
-    return `${subject} false ceiling design in ${city}`;
-  }
-
-  return `${subject} false ceiling design`;
+  void options;
+  const label = image.subtitle?.trim();
+  return label && !/^\d+(?:\.[a-z]+)?$/i.test(label) ? label : `${groupTitle?.trim() || "Interior"} design photo`;
 }
 
 export function getCatalogueImageSeoTitle(
-  image: { subtitle?: string | null },
-  groupTitle: string,
-  city?: string | null,
+  image: { subtitle?: string | null }, groupTitle: string, city?: string | null,
 ) {
-  const subject = image.subtitle?.trim() || groupTitle.trim();
-  const place = city?.trim();
-
-  return place
-    ? `${subject} | ${groupTitle} ceiling design in ${place}`
-    : `${subject} | ${groupTitle} ceiling design`;
+  return `${getCatalogueImageAlt(image, groupTitle)}${city ? ` | ${city}` : ""}`;
 }
 
 export function getCataloguePublicPath(id: string) {
@@ -132,6 +118,8 @@ export function groupItemToImageDrafts(
     clientId: image.id,
     id: image.id,
     imageUrl: image.imageUrl,
+    width: image.width,
+    height: image.height,
     storagePath: image.storagePath,
     file: null,
     subtitle: image.subtitle ?? "",
